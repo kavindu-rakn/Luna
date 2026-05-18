@@ -26,14 +26,14 @@ const MoonVisualization = ({ lunarDetails }) => {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: '4rem 0',
+      padding: 'clamp(0.5rem, 2vh, 1.5rem) 0',
       position: 'relative'
     }}>
       {/* Background Glow */}
       <div style={{
         position: 'absolute',
-        width: '300px',
-        height: '300px',
+        width: 'var(--glow-size)',
+        height: 'var(--glow-size)',
         background: `radial-gradient(circle, var(--color-accent-glow) 0%, transparent 70%)`,
         opacity: (fraction / 100) + 0.2,
         transition: 'opacity 0.5s ease',
@@ -42,15 +42,15 @@ const MoonVisualization = ({ lunarDetails }) => {
       
       {/* Moon Orb */}
       <div style={{
-        width: '240px',
-        height: '240px',
+        width: 'var(--moon-size)',
+        height: 'var(--moon-size)',
         borderRadius: '50%',
         background: 'url("https://www.transparenttextures.com/patterns/stardust.png"), #111111', 
         position: 'relative',
         overflow: 'hidden',
         boxShadow: `
-          inset -10px -10px 40px rgba(0,0,0,0.8),
-          0 0 20px rgba(255,255,255,${(fraction/100) * 0.4})
+          inset calc(var(--moon-size) * -0.04) calc(var(--moon-size) * -0.04) calc(var(--moon-size) * 0.16) rgba(0,0,0,0.8),
+          0 0 calc(var(--moon-size) * 0.08) rgba(255,255,255,${(fraction/100) * 0.4})
         `,
         zIndex: 1,
         transition: 'all 0.5s ease'
@@ -66,11 +66,9 @@ const MoonVisualization = ({ lunarDetails }) => {
           background: 'url("https://www.transparenttextures.com/patterns/stardust.png"), #e8e8ed',
           opacity: 0.95,
           // CSS trick to clip the illuminated half:
-          // We move it right or left based on waxing/waning, and skew it.
-          // For simplicity and elegance, we'll use a dynamic box-shadow over a sphere instead.
           boxShadow: isWaxing 
-            ? `inset ${-(120 - (fraction/100)*240)}px 0 30px rgba(0,0,0,0.9)` 
-            : `inset ${(120 - (fraction/100)*240)}px 0 30px rgba(0,0,0,0.9)`,
+            ? `inset calc(-1 * (var(--moon-radius) - (${fraction} / 100) * var(--moon-size))) 0 calc(var(--moon-size) * 0.125) rgba(0,0,0,0.9)` 
+            : `inset calc(var(--moon-radius) - (${fraction} / 100) * var(--moon-size)) 0 calc(var(--moon-size) * 0.125) rgba(0,0,0,0.9)`,
             
           // A more robust pure CSS moon requires SVG or complex clip-paths.
           // Since we want premium, let's use a dual-hemisphere approach:
@@ -82,7 +80,7 @@ const MoonVisualization = ({ lunarDetails }) => {
         <div style={{
           position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
           background: 'radial-gradient(circle at 30% 30%, #ffffff 0%, #d4d4dc 60%, #9a9a9f 100%)',
-          boxShadow: 'inset -20px -20px 40px rgba(0,0,0,0.5)',
+          boxShadow: 'inset calc(var(--moon-size) * -0.083) calc(var(--moon-size) * -0.083) calc(var(--moon-size) * 0.166) rgba(0,0,0,0.5)',
         }}>
           {/* Shadow Overlay */}
           <div style={{
@@ -90,7 +88,9 @@ const MoonVisualization = ({ lunarDetails }) => {
             background: 'var(--color-bg-deep)',
             opacity: 0.95,
             transform: isWaxing ? `translateX(${fraction}%)` : `translateX(-${fraction}%)`,
-            boxShadow: isWaxing ? '-20px 0 20px rgba(0,0,0,0.8)' : '20px 0 20px rgba(0,0,0,0.8)',
+            boxShadow: isWaxing 
+              ? 'calc(var(--moon-size) * -0.083) 0 calc(var(--moon-size) * 0.083) rgba(0,0,0,0.8)' 
+              : 'calc(var(--moon-size) * 0.083) 0 calc(var(--moon-size) * 0.083) rgba(0,0,0,0.8)',
             transition: 'transform 0.5s ease-in-out',
             // this gives the crescent a rounded edge
             borderRadius: isWaxing 

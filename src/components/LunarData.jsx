@@ -5,7 +5,7 @@ const LunarData = ({ lunarDetails }) => {
   const { name, fraction, phase, age } = lunarDetails;
 
   return (
-    <div className="glass-panel" style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
+    <div className="glass-panel" style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'clamp(1rem, 2.5vmin, 2rem)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-secondary)' }}>
           <Moon size={18} />

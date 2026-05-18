@@ -1,5 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap');
 
+html {
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
 :root {
   --font-body: 'Inter', sans-serif;
   --font-heading: 'Outfit', sans-serif;
@@ -14,9 +19,14 @@
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+
+  /* Responsive Moon Sizing System */
+  --moon-size: clamp(140px, 20vh, 220px);
+  --moon-radius: calc(var(--moon-size) / 2);
+  --glow-size: calc(var(--moon-size) * 1.25);
 }
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -24,6 +34,7 @@
 
 body {
   font-family: var(--font-body);
+  font-size: 1rem;
   background-color: var(--color-bg-deep);
   color: var(--color-text-primary);
   min-height: 100vh;
@@ -86,7 +97,7 @@ body {
   border: 1px solid var(--glass-border);
   border-radius: 24px;
   box-shadow: var(--glass-shadow);
-  padding: 2rem;
+  padding: clamp(1rem, 2.5vh, 2rem);
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
@@ -127,11 +138,11 @@ body {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: clamp(1rem, 2.5vh, 2rem) 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
+  gap: clamp(1rem, 2.5vh, 2rem);
 }
 
 h1, h2, h3 {
