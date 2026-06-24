@@ -53,3 +53,27 @@ export const getNextPhaseDates = (date = new Date()) => {
   
   return { nextFullDate, nextNewDate };
 };
+
+// Get the full lunar cycle (29 days) centered around the current date
+// Returns an array of { date, phase, fraction, name, isCurrent } objects
+export const getCyclePhases = (centerDate = new Date()) => {
+  const daysInCycle = 30; // render 30 days total
+  const halfCycle = Math.floor(daysInCycle / 2);
+  const phases = [];
+
+  for (let i = -halfCycle; i <= halfCycle; i++) {
+    const d = new Date(centerDate);
+    d.setDate(d.getDate() + i);
+    const details = getLunarDetails(d);
+    phases.push({
+      date: d,
+      dayOffset: i,
+      phase: details.phase,
+      fraction: parseFloat(details.fraction),
+      name: details.name,
+      isCurrent: i === 0
+    });
+  }
+
+  return phases;
+};

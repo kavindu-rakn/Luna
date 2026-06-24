@@ -3,6 +3,7 @@ import MoonVisualization from './components/MoonVisualization';
 import LunarData from './components/LunarData';
 import DateControls from './components/DateControls';
 import Starfield from './components/Starfield';
+import LunarTimeline from './components/LunarTimeline';
 import { getLunarDetails } from './utils/lunarCalc';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -30,6 +31,7 @@ function App() {
       .to('.hero-subtitle', { autoAlpha: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.9')
       .to('.moon-container', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'power2.out' }, '-=0.6')
       .to('.data-panel', { autoAlpha: 1, y: 0, duration: 1, ease: 'back.out(1.2)' }, '-=1')
+      .to('.timeline-panel', { autoAlpha: 1, y: 0, duration: 1, ease: 'back.out(1.2)' }, '-=0.8')
       .to('.controls-panel', { autoAlpha: 1, y: 0, duration: 1, ease: 'back.out(1.2)' }, '-=0.8')
       .to('.footer-text', { autoAlpha: 1, y: 0, duration: 1 }, '-=0.8');
       
@@ -55,6 +57,10 @@ function App() {
         <LunarData lunarDetails={lunarDetails} />
       </div>
       
+      <div className="gsap-reveal timeline-panel" style={{ width: '100%', marginBottom: '2rem' }}>
+        <LunarTimeline currentDate={currentDate} setCurrentDate={setCurrentDate} />
+      </div>
+
       <div className="gsap-reveal controls-panel" style={{ width: '100%' }}>
         <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
       </div>
