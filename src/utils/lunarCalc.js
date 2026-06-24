@@ -77,3 +77,61 @@ export const getCyclePhases = (centerDate = new Date()) => {
 
   return phases;
 };
+
+// Get moon and sun sky position data for a specific date and location
+export const getSkyData = (date = new Date(), lat = 0, lon = 0) => {
+  // Moon times (rise, set)
+  const moonTimes = SunCalc.getMoonTimes(date, lat, lon);
+  // Sun times (rise, set)
+  const sunTimes = SunCalc.getTimes(date, lat, lon);
+  
+  // Current moon position
+  const moonPos = SunCalc.getMoonPosition(date, lat, lon);
+  // Current sun position
+  const sunPos = SunCalc.getPosition(date, lat, lon);
+  
+  // Convert radians to degrees
+  const toDeg = (rad) => (rad * 180) / Math.PI;
+  
+  // Format time nicely
+  const formatTime = (d) => {
+    if (!d || isNaN(d.getTime())) return '--:--';
+    return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+
+  // Calculate hourly moon altitude for the arc visualization
+  // From 6pm to 6am (night hours) in 1hr steps
+  const altitudePoints = [];
+  const startHour = 18; // 6 PM
+  const totalHours = 12; // through to 6 AM
+  
+  for (let h = 0; h <= totalHours; h++) {
+    const pointDate = new Date(date);
+    pointDate.setHours(startHour + h, 0, 0, 0);
+    const pos = SunCalc.getMoonPosition(pointDate, lat, lon);
+    altitudePoints.push({
+      hour: (startHour + h) % 24,
+      altitude: toDeg(pos.altitude),
+      azimuth: toDeg(pos.azimuth),
+      label: pointDate.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
+    });
+  }
+  
+  // Find when the moon is highest
+  const peakPoint = altitudePoints.reduce((max, p) => p.altitude > max.altitude ? p : max, altitudePoints[0]);
+
+  return {
+    moonrise: formatTime(moonTimes.rise),
+    moonset: formatTime(moonTimes.set),
+    sunrise: formatTime(sunTimes.sunrise),
+    sunset: formatTime(sunTimes.sunset),
+    moonAltitude: toDeg(moonPos.altitude).toFixed(1),
+    moonAzimuth: toDeg(moonPos.azimuth).toFixed(1),
+    sunAltitude: toDeg(sunPos.altitude).toFixed(1),
+    isMoonUp: moonPos.altitude > 0,
+    isSunUp: sunPos.altitude > 0,
+    altitudePoints,
+    peakAltitude: peakPoint.altitude.toFixed(1),
+    peakTime: peakPoint.label
+  };
+};
