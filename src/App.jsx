@@ -4,6 +4,7 @@ import LunarData from './components/LunarData';
 import DateControls from './components/DateControls';
 import Starfield from './components/Starfield';
 import LunarTimeline from './components/LunarTimeline';
+import CustomCursor from './components/CustomCursor';
 import { getLunarDetails } from './utils/lunarCalc';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -39,6 +40,7 @@ function App() {
 
   return (
     <div ref={containerRef} style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <CustomCursor />
       <Starfield />
       <div className="nebula"></div>
       

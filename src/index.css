@@ -118,12 +118,49 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
 }
 
+/* Custom cursor: hide the native cursor on non-touch devices */
+@media (pointer: fine) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
+}
+
 /* Utilities */
 .text-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, #a5aae3 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #a5aae3 33%, #6b77e8 66%, #ffffff 100%);
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: gradient-shift 6s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Button ripple effect */
+.glass-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-button .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(107, 119, 232, 0.4);
+  transform: scale(0);
+  animation: ripple-expand 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes ripple-expand {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
 /* Timeline pulse animation */
