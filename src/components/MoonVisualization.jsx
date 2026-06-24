@@ -67,30 +67,29 @@ const MoonVisualization = ({ lunarDetails }) => {
   return (
     <div style={{
       width: '100%',
-      height: '400px', // Fixed height for the canvas container
+      height: '55vh',
+      minHeight: '350px',
+      maxHeight: '600px',
       position: 'relative',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: '2rem 0',
-      marginBottom: '2rem'
     }}>
       {/* Background Glow based on illumination fraction */}
       <div style={{
         position: 'absolute',
-        width: '350px',
-        height: '350px',
+        width: '450px',
+        height: '450px',
         background: `radial-gradient(circle, var(--color-accent-glow) 0%, transparent 60%)`,
         opacity: (parseFloat(fraction) / 100) + 0.1,
         transition: 'opacity 0.8s ease',
         zIndex: 0,
-        pointerEvents: 'none', // Allow clicks to pass through to the canvas
-        transform: 'translateY(10%)'
+        pointerEvents: 'none',
       }} />
 
       {/* R3F Canvas Container */}
       <div style={{ width: '100%', height: '100%', zIndex: 1 }}>
-        <Canvas camera={{ position: [0, 0, 6], fov: 45 }}>
+        <Canvas camera={{ position: [0, 0, 5.5], fov: 45 }}>
           <React.Suspense fallback={null}>
             <Moon phase={phase} />
           </React.Suspense>
