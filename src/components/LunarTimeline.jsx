@@ -103,10 +103,10 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
     <div className="glass-panel" style={{ width: '100%', padding: '1.5rem 2rem', position: 'relative' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-        <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-text-secondary)' }}>
+        <span className="utility-label">
           Lunar Cycle Timeline
         </span>
-        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', opacity: 0.6 }}>
+        <span className="utility-label" style={{ opacity: 0.6 }}>
           Drag to explore
         </span>
       </div>
@@ -132,11 +132,12 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
             boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem'
+            gap: '0.5rem',
+            backdropFilter: 'blur(10px)'
           }}
         >
           <MoonIcon phase={cyclePhases[hoveredIndex].phase} size={16} />
-          <span style={{ fontWeight: 600 }}>{cyclePhases[hoveredIndex].name}</span>
+          <span className="font-serif" style={{ fontSize: '1.2rem', lineHeight: 1 }}>{cyclePhases[hoveredIndex].name}</span>
           <span style={{ color: 'var(--color-text-secondary)' }}>
             {formatShortDate(cyclePhases[hoveredIndex].date)}
           </span>
@@ -164,14 +165,14 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
           touchAction: 'none'
         }}
       >
-        {/* Background track line */}
+        {/* Background track line - Dashed elegant */}
         <div style={{
           position: 'absolute',
           top: '50%',
           left: 0,
           right: 0,
-          height: '2px',
-          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 10%, rgba(255,255,255,0.08) 90%, transparent 100%)',
+          height: '1px',
+          background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 4px, transparent 4px, transparent 8px)',
           transform: 'translateY(-50%)'
         }} />
 
@@ -181,8 +182,9 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
           top: '50%',
           left: 0,
           width: `${(currentIdx / (cyclePhases.length - 1)) * 100}%`,
-          height: '2px',
-          background: 'linear-gradient(90deg, transparent 0%, var(--color-accent) 100%)',
+          height: '1px',
+          background: 'var(--color-accent)',
+          boxShadow: '0 0 8px var(--color-accent)',
           transform: 'translateY(-50%)',
           transition: 'width 0.5s ease'
         }} />
@@ -245,16 +247,14 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
       </div>
 
       {/* Date labels row */}
-      <div style={{
+      <div className="utility-label" style={{
         display: 'flex',
         justifyContent: 'space-between',
-        marginTop: '0.5rem',
-        fontSize: '0.7rem',
-        color: 'var(--color-text-secondary)',
-        opacity: 0.6
+        marginTop: '0.75rem',
+        opacity: 0.8
       }}>
         <span>{formatShortDate(cyclePhases[0].date)}</span>
-        <span style={{ color: 'var(--color-accent)', opacity: 1, fontWeight: 600 }}>
+        <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
           {formatShortDate(currentDate)}
         </span>
         <span>{formatShortDate(cyclePhases[cyclePhases.length - 1].date)}</span>

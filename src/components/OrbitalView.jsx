@@ -171,40 +171,26 @@ const CameraOrbit = () => {
 
 const OrbitalView = ({ lunarDetails }) => {
   const { phase, name, fraction } = lunarDetails;
-  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="glass-panel" style={{ width: '100%', padding: '1.5rem' }}>
-      {/* Header with toggle */}
+      {/* Header */}
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: isExpanded ? '1rem' : '0'
+        marginBottom: '1rem'
       }}>
-        <span style={{
-          fontSize: '0.8rem',
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          color: 'var(--color-text-secondary)'
-        }}>
+        <span className="utility-label">
           Earth–Moon Orbit
         </span>
-        <button
-          className="glass-button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          style={{ padding: '0.4rem 1rem', fontSize: '0.75rem' }}
-        >
-          {isExpanded ? 'Collapse' : 'Expand View'}
-        </button>
       </div>
 
       {/* 3D Orbital Canvas */}
       <div style={{
         width: '100%',
-        height: isExpanded ? '450px' : '0px',
+        height: '450px',
         overflow: 'hidden',
-        transition: 'height 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
         borderRadius: '16px',
         position: 'relative'
       }}>
@@ -222,24 +208,22 @@ const OrbitalView = ({ lunarDetails }) => {
         {/* Overlay info */}
         <div style={{
           position: 'absolute',
-          bottom: '1rem',
-          left: '1rem',
+          bottom: '1.5rem',
+          left: '1.5rem',
           display: 'flex',
-          gap: '1.5rem',
-          fontSize: '0.75rem',
-          color: 'var(--color-text-secondary)',
+          gap: '2rem',
           pointerEvents: 'none'
         }}>
           <div>
-            <span style={{ color: 'var(--color-text-primary)', fontWeight: 600 }}>{name}</span>
+            <div className="font-serif" style={{ fontSize: '1.75rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>{name}</div>
           </div>
           <div>
-            <span style={{ opacity: 0.6 }}>Phase: </span>
-            <span style={{ color: 'var(--color-accent)' }}>{(phase * 100).toFixed(1)}%</span>
+            <div className="utility-label" style={{ opacity: 0.6, marginBottom: '0.25rem' }}>Phase</div>
+            <div className="font-serif" style={{ fontSize: '1.5rem', color: 'var(--color-accent)', lineHeight: 1 }}>{(phase * 100).toFixed(1)}%</div>
           </div>
           <div>
-            <span style={{ opacity: 0.6 }}>Illumination: </span>
-            <span>{fraction}%</span>
+            <div className="utility-label" style={{ opacity: 0.6, marginBottom: '0.25rem' }}>Illumination</div>
+            <div className="font-serif" style={{ fontSize: '1.5rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>{fraction}%</div>
           </div>
         </div>
       </div>

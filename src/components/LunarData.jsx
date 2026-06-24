@@ -28,8 +28,54 @@ const AnimatedNumber = ({ value, isPercent = false }) => {
 const LunarData = ({ lunarDetails }) => {
   const { name, fraction, age } = lunarDetails;
   
+  const cardRef = useRef();
+  
   // Create a ref for phase name to fade out/in on change
   const nameRef = useRef();
+
+  // 3D Tilt Effect
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const handleMouseMove = (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      const rotateX = ((y - centerY) / centerY) * -10;
+      const rotateY = ((x - centerX) / centerX) * 10;
+
+      gsap.to(card, {
+        rotateX: rotateX,
+        rotateY: rotateY,
+        duration: 0.5,
+        ease: 'power2.out',
+        transformPerspective: 1000,
+        transformOrigin: 'center'
+      });
+    };
+
+    const handleMouseLeave = () => {
+      gsap.to(card, {
+        rotateX: 0,
+        rotateY: 0,
+        duration: 0.8,
+        ease: 'power2.out'
+      });
+    };
+
+    card.addEventListener('mousemove', handleMouseMove);
+    card.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      card.removeEventListener('mousemove', handleMouseMove);
+      card.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
   
   useEffect(() => {
     // Simple fade effect when phase name changes
@@ -40,34 +86,34 @@ const LunarData = ({ lunarDetails }) => {
   }, [name]);
 
   return (
-    <div className="glass-panel" style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+    <div ref={cardRef} className="glass-panel" style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', transformStyle: 'preserve-3d' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', transform: 'translateZ(20px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-secondary)' }}>
           <Moon size={18} />
-          <span style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phase Name</span>
+          <span className="utility-label">Phase Name</span>
         </div>
-        <div ref={nameRef} style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>
+        <div ref={nameRef} className="font-serif" style={{ fontSize: '2.5rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>
           {name}
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', transform: 'translateZ(30px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-secondary)' }}>
           <Info size={18} />
-          <span style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Illumination</span>
+          <span className="utility-label">Illumination</span>
         </div>
-        <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>
+        <div className="font-serif" style={{ fontSize: '2.5rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>
           <AnimatedNumber value={fraction} isPercent={true} />
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', transform: 'translateZ(20px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-text-secondary)' }}>
           <Orbit size={18} />
-          <span style={{ fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Moon Age</span>
+          <span className="utility-label">Moon Age</span>
         </div>
-        <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>
-          <AnimatedNumber value={age} /> <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-secondary)' }}>Days</span>
+        <div className="font-serif" style={{ fontSize: '2.5rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+          <AnimatedNumber value={age} /> <span className="utility-label" style={{ fontSize: '0.85rem' }}>Days</span>
         </div>
       </div>
     </div>

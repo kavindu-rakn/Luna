@@ -3,17 +3,18 @@
 :root {
   --font-body: 'Inter', sans-serif;
   --font-heading: 'Outfit', sans-serif;
+  --font-serif: 'Cormorant Garamond', serif;
   
-  --color-bg-deep: #050510;
+  --color-bg-deep: #03040a;
   --color-bg-mid: #0a0b1a;
-  --color-text-primary: #f0f0f5;
-  --color-text-secondary: #8a8db5;
-  --color-accent: #6b77e8;
-  --color-accent-glow: rgba(107, 119, 232, 0.4);
+  --color-text-primary: #f8f8fb;
+  --color-text-secondary: #9ea1c2;
+  --color-accent: #8e9bf2;
+  --color-accent-glow: rgba(142, 155, 242, 0.4);
   
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-bg: rgba(255, 255, 255, 0.015);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 12px 48px -10px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -40,12 +41,26 @@ body {
   left: -20vw;
   width: 140vw;
   height: 140vh;
-  z-index: -1;
+  z-index: -2;
   background: 
-    radial-gradient(circle at 20% 30%, rgba(45, 30, 90, 0.3) 0%, transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(30, 40, 90, 0.2) 0%, transparent 50%);
-  filter: blur(60px);
-  animation: drift 30s ease-in-out infinite alternate;
+    radial-gradient(circle at 20% 30%, rgba(35, 20, 70, 0.35) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(20, 30, 80, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.8) 0%, transparent 100%);
+  filter: blur(80px);
+  animation: drift 40s ease-in-out infinite alternate;
+}
+
+.noise {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');
+  mix-blend-mode: overlay;
 }
 
 
@@ -58,13 +73,16 @@ body {
 /* Glassmorphism Classes */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  box-shadow: var(--glass-shadow);
-  padding: 2rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  padding: 2.5rem;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .glass-panel:hover {
@@ -162,6 +180,19 @@ body {
 h1, h2, h3 {
   font-family: var(--font-heading);
   letter-spacing: -0.02em;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
+.utility-label {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--color-text-secondary);
 }
 
 /* Custom cursor: hide the native cursor on non-touch devices */

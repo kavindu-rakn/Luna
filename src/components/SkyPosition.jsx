@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Sunrise, Sunset, ArrowUp, ArrowDown, MapPin } from 'lucide-react';
 
 // SVG arc showing the moon's altitude path across the night sky
@@ -116,10 +116,10 @@ const StatItem = ({ icon, label, value, subValue, highlight = false }) => (
     <div style={{ color: highlight ? 'var(--color-accent)' : 'var(--color-text-secondary)', marginBottom: '0.15rem' }}>
       {icon}
     </div>
-    <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-secondary)' }}>
+    <div className="utility-label" style={{ marginBottom: '0.25rem' }}>
       {label}
     </div>
-    <div style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+    <div className="font-serif" style={{ fontSize: '1.75rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>
       {value}
     </div>
     {subValue && (
@@ -131,13 +131,64 @@ const StatItem = ({ icon, label, value, subValue, highlight = false }) => (
 );
 
 const SkyPosition = ({ skyData, locationName }) => {
+  const cardRef = useRef();
+
+  // 3D Tilt Effect
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const handleMouseMove = (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      const rotateX = ((y - centerY) / centerY) * -6;
+      const rotateY = ((x - centerX) / centerX) * 6;
+
+      import('gsap').then(({ default: gsap }) => {
+        gsap.to(card, {
+          rotateX: rotateX,
+          rotateY: rotateY,
+          duration: 0.5,
+          ease: 'power2.out',
+          transformPerspective: 1000,
+          transformOrigin: 'center'
+        });
+      });
+    };
+
+    const handleMouseLeave = () => {
+      import('gsap').then(({ default: gsap }) => {
+        gsap.to(card, {
+          rotateX: 0,
+          rotateY: 0,
+          duration: 0.8,
+          ease: 'power2.out'
+        });
+      });
+    };
+
+    card.addEventListener('mousemove', handleMouseMove);
+    card.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      card.removeEventListener('mousemove', handleMouseMove);
+      card.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
+
   if (!skyData) return null;
 
   return (
-    <div className="glass-panel" style={{ width: '100%' }}>
+    <div ref={cardRef} className="glass-panel" style={{ width: '100%', transformStyle: 'preserve-3d' }}>
+      <div style={{ transform: 'translateZ(20px)' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-        <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-text-secondary)' }}>
+        <span className="utility-label">
           Sky Position
         </span>
         {locationName && (
@@ -185,6 +236,7 @@ const SkyPosition = ({ skyData, locationName }) => {
           subValue={skyData.peakTime}
           highlight={true}
         />
+      </div>
       </div>
     </div>
   );

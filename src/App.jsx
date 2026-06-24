@@ -11,6 +11,7 @@ import OrbitalView from './components/OrbitalView';
 import { getLunarDetails, getSkyData } from './utils/lunarCalc';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import Lenis from 'lenis';
 
 gsap.registerPlugin(useGSAP);
 
@@ -41,6 +42,30 @@ function App() {
     }
   }, []);
 
+  // Setup Lenis smooth scrolling
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1,
+      smoothTouch: false,
+      touchMultiplier: 2,
+    });
+
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
+
   // Reverse geocode the location name (lightweight, no API key needed)
   useEffect(() => {
     if (location && location.name === null) {
@@ -68,20 +93,20 @@ function App() {
     const tl = gsap.timeline();
     
     // Initial state setup to avoid flash of unstyled content
-    gsap.set('.gsap-reveal', { autoAlpha: 0, y: 30 });
+    gsap.set('.gsap-reveal', { autoAlpha: 0, y: 40 });
     
     // Staggered entrance choreography
-    tl.to('.hero-title', { autoAlpha: 1, y: 0, duration: 1.2, ease: 'power3.out' })
-      .to('.hero-subtitle', { autoAlpha: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.9')
-      .to('.moon-container', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'power2.out' }, '-=0.6')
-      .to('.hero-phase-name', { autoAlpha: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.8')
-      .to('.scroll-hint', { autoAlpha: 1, y: 0, duration: 1, ease: 'power3.out' }, '-=0.6')
-      .to('.data-panel', { autoAlpha: 1, y: 0, duration: 1, ease: 'back.out(1.2)' }, '-=0.4')
-      .to('.sky-panel', { autoAlpha: 1, y: 0, duration: 1, ease: 'back.out(1.2)' }, '-=0.8')
-      .to('.timeline-panel', { autoAlpha: 1, y: 0, duration: 1, ease: 'back.out(1.2)' }, '-=0.6')
-      .to('.controls-panel', { autoAlpha: 1, y: 0, duration: 1, ease: 'back.out(1.2)' }, '-=0.8')
-      .to('.orbital-panel', { autoAlpha: 1, y: 0, duration: 1, ease: 'back.out(1.2)' }, '-=0.6')
-      .to('.footer-text', { autoAlpha: 1, y: 0, duration: 1 }, '-=0.8');
+    tl.to('.hero-title', { autoAlpha: 1, y: 0, duration: 1.8, ease: 'expo.out' })
+      .to('.hero-subtitle', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.4')
+      .to('.moon-container', { autoAlpha: 1, y: 0, duration: 2, ease: 'power2.out' }, '-=1.2')
+      .to('.hero-phase-name', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.5')
+      .to('.scroll-hint', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.2')
+      .to('.data-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.0')
+      .to('.sky-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.3')
+      .to('.timeline-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.2')
+      .to('.controls-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.3')
+      .to('.orbital-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.2')
+      .to('.footer-text', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'power2.out' }, '-=1.0');
       
   }, { scope: containerRef });
 
@@ -91,12 +116,13 @@ function App() {
       <Starfield />
       <NavDots />
       <div className="nebula"></div>
+      <div className="noise"></div>
 
       {/* ═══ HERO SECTION ═══ */}
       <section id="hero" className="section section-hero">
-        <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-          <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(3rem, 8vw, 5rem)', marginBottom: '0.5rem' }}>Luna</h1>
-          <p className="gsap-reveal hero-subtitle" style={{ color: 'var(--color-text-secondary)', fontSize: 'clamp(1rem, 2vw, 1.35rem)', fontWeight: 300 }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem', zIndex: 10 }}>
+          <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(4rem, 10vw, 7rem)', marginBottom: '0.5rem', lineHeight: 1 }}>Luna</h1>
+          <p className="gsap-reveal hero-subtitle utility-label" style={{ opacity: 0.8 }}>
             Interactive Lunar Cycle Explorer
           </p>
         </div>
@@ -106,21 +132,18 @@ function App() {
         </div>
 
         {/* Phase name floating below the moon */}
-        <div className="gsap-reveal hero-phase-name" style={{ textAlign: 'center', marginTop: '-1rem' }}>
-          <span style={{
-            fontSize: 'clamp(1.1rem, 2.5vw, 1.5rem)',
-            fontFamily: 'var(--font-heading)',
-            fontWeight: 700,
+        <div className="gsap-reveal hero-phase-name" style={{ textAlign: 'center', marginTop: '-2rem', zIndex: 10 }}>
+          <span className="font-serif" style={{
+            fontSize: 'clamp(2rem, 4vw, 3rem)',
             color: 'var(--color-text-primary)',
-            letterSpacing: '0.04em'
+            lineHeight: 1
           }}>
             {lunarDetails.name}
           </span>
-          <span style={{
+          <span className="utility-label" style={{
             display: 'block',
-            fontSize: '0.85rem',
-            color: 'var(--color-text-secondary)',
-            marginTop: '0.25rem'
+            marginTop: '0.75rem',
+            opacity: 0.7
           }}>
             {lunarDetails.fraction}% illuminated
           </span>
@@ -129,14 +152,15 @@ function App() {
         {/* Scroll indicator */}
         <div className="gsap-reveal scroll-hint" style={{
           position: 'absolute',
-          bottom: '2rem',
+          bottom: '3rem',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '0.5rem',
-          animation: 'scroll-bounce 2s ease-in-out infinite'
+          gap: '0.75rem',
+          animation: 'scroll-bounce 2s ease-in-out infinite',
+          zIndex: 10
         }}>
-          <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--color-text-secondary)', opacity: 0.5 }}>
+          <span className="utility-label" style={{ opacity: 0.5 }}>
             Explore
           </span>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>

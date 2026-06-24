@@ -13,7 +13,6 @@ const CustomCursor = () => {
 
     let mouseX = -100, mouseY = -100;
     let dotX = -100, dotY = -100;
-    let glowX = -100, glowY = -100;
     const trailPositions = Array.from({ length: numTrails }, () => ({ x: -100, y: -100 }));
 
     const handleMouseMove = (e) => {
@@ -23,13 +22,11 @@ const CustomCursor = () => {
 
     const handleMouseEnter = () => {
       dot.style.opacity = '1';
-      glow.style.opacity = '1';
       trails.forEach(t => { if (t) t.style.opacity = '1'; });
     };
 
     const handleMouseLeave = () => {
       dot.style.opacity = '0';
-      glow.style.opacity = '0';
       trails.forEach(t => { if (t) t.style.opacity = '0'; });
     };
 
@@ -37,9 +34,8 @@ const CustomCursor = () => {
     const handlePointerOver = (e) => {
       const target = e.target;
       if (target.closest('button, a, [role="button"], .glass-button, canvas')) {
-        dot.style.transform = 'translate(-50%, -50%) scale(2.5)';
-        dot.style.background = 'var(--color-accent)';
-        glow.style.transform = 'translate(-50%, -50%) scale(1.5)';
+        dot.style.transform = 'translate(-50%, -50%) scale(5)';
+        dot.style.background = 'rgba(255, 255, 255, 1)';
       }
     };
 
@@ -47,8 +43,7 @@ const CustomCursor = () => {
       const target = e.target;
       if (target.closest('button, a, [role="button"], .glass-button, canvas')) {
         dot.style.transform = 'translate(-50%, -50%) scale(1)';
-        dot.style.background = 'rgba(255, 255, 255, 0.9)';
-        glow.style.transform = 'translate(-50%, -50%) scale(1)';
+        dot.style.background = 'rgba(255, 255, 255, 1)';
       }
     };
 
@@ -65,12 +60,6 @@ const CustomCursor = () => {
       dotY += (mouseY - dotY) * 0.2;
       dot.style.left = dotX + 'px';
       dot.style.top = dotY + 'px';
-
-      // Slower follow for glow
-      glowX += (mouseX - glowX) * 0.1;
-      glowY += (mouseY - glowY) * 0.1;
-      glow.style.left = glowX + 'px';
-      glow.style.top = glowY + 'px';
 
       // Trail particles follow with increasing delay
       for (let i = 0; i < numTrails; i++) {
@@ -114,38 +103,19 @@ const CustomCursor = () => {
             position: 'fixed',
             top: 0,
             left: 0,
-            width: `${3 - i * 0.3}px`,
-            height: `${3 - i * 0.3}px`,
+            width: `${4 - i * 0.4}px`,
+            height: `${4 - i * 0.4}px`,
             borderRadius: '50%',
-            background: 'var(--color-accent)',
+            background: 'white',
             opacity: 0,
             pointerEvents: 'none',
             zIndex: 9997,
             transform: 'translate(-50%, -50%)',
-            transition: 'opacity 0.3s ease'
+            transition: 'opacity 0.3s ease',
+            mixBlendMode: 'difference'
           }}
         />
       ))}
-
-      {/* Soft glow ring */}
-      <div
-        ref={glowRef}
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '40px',
-          height: '40px',
-          borderRadius: '50%',
-          border: '1px solid rgba(107, 119, 232, 0.25)',
-          background: 'radial-gradient(circle, rgba(107, 119, 232, 0.08) 0%, transparent 70%)',
-          pointerEvents: 'none',
-          zIndex: 9998,
-          opacity: 0,
-          transform: 'translate(-50%, -50%)',
-          transition: 'transform 0.3s ease, opacity 0.3s ease'
-        }}
-      />
 
       {/* Core dot */}
       <div
@@ -154,16 +124,16 @@ const CustomCursor = () => {
           position: 'fixed',
           top: 0,
           left: 0,
-          width: '6px',
-          height: '6px',
+          width: '12px',
+          height: '12px',
           borderRadius: '50%',
-          background: 'rgba(255, 255, 255, 0.9)',
+          background: 'white',
           pointerEvents: 'none',
           zIndex: 9999,
           opacity: 0,
           transform: 'translate(-50%, -50%)',
-          transition: 'transform 0.2s ease, background 0.2s ease, opacity 0.3s ease',
-          boxShadow: '0 0 8px rgba(255, 255, 255, 0.4)'
+          transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease',
+          mixBlendMode: 'difference'
         }}
       />
     </>
