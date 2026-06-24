@@ -12,8 +12,11 @@ const CustomCursor = () => {
     const trails = trailRefs.current;
 
     let mouseX = -100, mouseY = -100;
-    let dotX = -100, dotY = -100;
-    const trailPositions = Array.from({ length: numTrails }, () => ({ x: -100, y: -100 }));
+    
+    // History array to store past mouse positions for perfect path tracking (no corner cutting)
+    let history = [];
+    const historySize = 30; // Max history length
+    const spacing = 3; // Number of frames between each trail bead
 
     const handleMouseMove = (e) => {
       mouseX = e.clientX;
@@ -55,21 +58,26 @@ const CustomCursor = () => {
 
     let animId;
     const animate = () => {
-      // Smooth follow for main dot
-      dotX += (mouseX - dotX) * 0.2;
-      dotY += (mouseY - dotY) * 0.2;
-      dot.style.left = dotX + 'px';
-      dot.style.top = dotY + 'px';
+      // Add current mouse position to the start of the history array
+      history.unshift({ x: mouseX, y: mouseY });
+      
+      // Keep array size capped
+      if (history.length > historySize) {
+        history.pop();
+      }
 
-      // Trail particles follow with increasing delay
+      // Main dot has ZERO lag, perfectly follows mouse
+      dot.style.left = mouseX + 'px';
+      dot.style.top = mouseY + 'px';
+
+      // Trail particles read from exact past positions
       for (let i = 0; i < numTrails; i++) {
-        const target = i === 0 ? { x: dotX, y: dotY } : trailPositions[i - 1];
-        trailPositions[i].x += (target.x - trailPositions[i].x) * (0.15 - i * 0.015);
-        trailPositions[i].y += (target.y - trailPositions[i].y) * (0.15 - i * 0.015);
-
-        if (trails[i]) {
-          trails[i].style.left = trailPositions[i].x + 'px';
-          trails[i].style.top = trailPositions[i].y + 'px';
+        // Calculate the exact frame to pull from history
+        const historyIdx = Math.min((i + 1) * spacing, history.length - 1);
+        
+        if (history[historyIdx] && trails[i]) {
+          trails[i].style.left = history[historyIdx].x + 'px';
+          trails[i].style.top = history[historyIdx].y + 'px';
         }
       }
 
