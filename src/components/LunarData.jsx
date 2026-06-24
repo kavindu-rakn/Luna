@@ -2,7 +2,7 @@ import React from 'react';
 import { Info, Moon, Orbit } from 'lucide-react';
 
 const LunarData = ({ lunarDetails }) => {
-  const { name, fraction, phase, age } = lunarDetails;
+  const { name, fraction, age } = lunarDetails;
 
   return (
     <div className="glass-panel" style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>

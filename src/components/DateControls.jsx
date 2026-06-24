@@ -7,10 +7,6 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
     newDate.setDate(newDate.getDate() + days);
     setCurrentDate(newDate);
   };
-  
-  const resetToToday = () => {
-    setCurrentDate(newDate);
-  };
 
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', { 
