@@ -128,45 +128,49 @@ function App() {
       {/* ═══ MAIN IMMERSIVE VIEW ═══ */}
       <div ref={mainViewRef} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         
-        {/* Top Bar with Title and Toggle */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '1rem 2rem', zIndex: 20 }}>
-          <div>
+        {/* Top Bar with Title, Controls, and Toggle */}
+        <div className="top-bar-grid">
+          {/* Left: Logo */}
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
             <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', margin: 0, lineHeight: 1 }}>Luna</h1>
           </div>
-          <button 
-            className="gsap-reveal toggle-btn glass-button"
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            style={{ padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
-          >
-            <span className="utility-label" style={{ margin: 0 }}>
-              {isDrawerOpen ? 'Close Details' : 'Deep Dive'}
-            </span>
-          </button>
+          
+          {/* Center: DateControls */}
+          <div className="gsap-reveal controls-panel" style={{ display: 'flex', justifyContent: 'center' }}>
+            <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
+          </div>
+
+          {/* Right: Toggle Button */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button 
+              className="gsap-reveal toggle-btn glass-button"
+              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              style={{ padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+            >
+              <span className="utility-label" style={{ margin: 0 }}>
+                {isDrawerOpen ? 'Close Details' : 'Deep Dive'}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Center: 3D Moon & Phase Name */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '-4rem' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div className="gsap-reveal moon-container" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
             <MoonVisualization lunarDetails={lunarDetails} />
           </div>
           
-          <div className="gsap-reveal hero-phase-name" style={{ textAlign: 'center', marginTop: '-1.5rem', zIndex: 10 }}>
-            <span className="font-serif" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+          <div className="gsap-reveal hero-phase-name" style={{ textAlign: 'center', marginTop: '1rem', zIndex: 10 }}>
+            <span className="font-serif" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
               {lunarDetails.name}
-            </span>
-            <span className="utility-label" style={{ display: 'block', marginTop: '0.5rem', opacity: 0.7 }}>
-              {lunarDetails.fraction}% illuminated
             </span>
           </div>
         </div>
 
-        {/* Bottom: Timeline and Controls */}
-        <div style={{ padding: '0 1rem 1rem 1rem', zIndex: 20 }}>
-          <div className="gsap-reveal timeline-panel" style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+        {/* Bottom: Timeline */}
+        <div style={{ width: '100%', zIndex: 20 }}>
+          <div className="gsap-reveal timeline-panel" style={{ width: '100%' }}>
             <LunarTimeline currentDate={currentDate} setCurrentDate={setCurrentDate} />
-          </div>
-          <div className="gsap-reveal controls-panel" style={{ width: '100%', maxWidth: '800px', margin: '1rem auto 0 auto' }}>
-            <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </div>
         </div>
       </div>

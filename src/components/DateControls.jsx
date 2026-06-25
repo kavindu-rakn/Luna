@@ -1,41 +1,9 @@
-import React, { useRef, useCallback } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
-import gsap from 'gsap';
-
-// Standard button with ripple effect
-const RippleButton = ({ children, onClick, style = {} }) => {
-  const btnRef = useRef(null);
-
-  const handleClick = useCallback((e) => {
-    // Create ripple element
-    const btn = btnRef.current;
-    if (!btn) return;
-    const rect = btn.getBoundingClientRect();
-    const ripple = document.createElement('span');
-    ripple.className = 'ripple';
-    const size = Math.max(rect.width, rect.height);
-    ripple.style.width = ripple.style.height = size + 'px';
-    ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
-    ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
-    btn.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 600);
-
-    if (onClick) onClick(e);
-  }, [onClick]);
-
-  return (
-    <button
-      ref={btnRef}
-      className="glass-button"
-      onClick={handleClick}
-      style={style}
-    >
-      {children}
-    </button>
-  );
-};
+import React, { useState } from 'react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 
 const DateControls = ({ currentDate, setCurrentDate }) => {
+  const [hoveredBtn, setHoveredBtn] = useState('');
+
   const changeDate = (days) => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + days);
@@ -52,29 +20,98 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
   };
 
   return (
-    <div className="glass-panel" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center', padding: '1.25rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        <CalendarDays size={20} style={{ color: 'var(--color-accent)' }} />
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>{formatDate(currentDate)}</h2>
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', position: 'relative' }}>
       
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.5rem' }}>
-        <RippleButton onClick={() => changeDate(-7)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          <ChevronLeft size={18} /> -1 Week
-        </RippleButton>
-        <RippleButton onClick={() => changeDate(-1)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          <ChevronLeft size={16} /> -1 Day
-        </RippleButton>
-        <RippleButton onClick={() => setCurrentDate(new Date())} style={{ borderColor: 'var(--color-accent)', padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          <RefreshCw size={16} /> Today
-        </RippleButton>
-        <RippleButton onClick={() => changeDate(1)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          +1 Day <ChevronRight size={16} />
-        </RippleButton>
-        <RippleButton onClick={() => changeDate(7)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-          +1 Week <ChevronRight size={16} />
-        </RippleButton>
+      {/* Centralized Tooltip */}
+      <div style={{
+        position: 'absolute',
+        top: '-1.5rem',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        height: '1rem',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        pointerEvents: 'none'
+      }}>
+        <span style={{
+          fontSize: '0.65rem',
+          letterSpacing: '0.15em',
+          textTransform: 'uppercase',
+          color: 'var(--color-accent)',
+          opacity: hoveredBtn ? 1 : 0,
+          transition: 'opacity 0.2s ease',
+          whiteSpace: 'nowrap'
+        }}>
+          {hoveredBtn || ' '}
+        </span>
       </div>
+
+      {/* Left Controls */}
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Last Week')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => changeDate(-7)}
+          aria-label="Last Week"
+        >
+          <ChevronsLeft size={20} strokeWidth={1.5} />
+        </button>
+
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Yesterday')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => changeDate(-1)}
+          aria-label="Yesterday"
+        >
+          <ChevronLeft size={20} strokeWidth={1.5} />
+        </button>
+      </div>
+
+      {/* Center: Date & Today Dot */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', minWidth: '220px' }}>
+        <h2 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 400, margin: 0, color: 'var(--color-text-primary)', letterSpacing: '0.02em', textAlign: 'center', lineHeight: 1 }}>
+          {formatDate(currentDate)}
+        </h2>
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Today')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => setCurrentDate(new Date())}
+          aria-label="Today"
+          style={{ padding: '0.25rem' }} 
+        >
+          <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
+            <circle cx="3" cy="3" r="3" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Right Controls */}
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Tomorrow')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => changeDate(1)}
+          aria-label="Tomorrow"
+        >
+          <ChevronRight size={20} strokeWidth={1.5} />
+        </button>
+
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Next Week')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => changeDate(7)}
+          aria-label="Next Week"
+        >
+          <ChevronsRight size={20} strokeWidth={1.5} />
+        </button>
+      </div>
+
     </div>
   );
 };
