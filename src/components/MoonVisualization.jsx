@@ -4,6 +4,7 @@ import { useTexture, Sphere } from '@react-three/drei';
 
 const Moon = ({ phase }) => {
   const moonRef = useRef();
+  const isHovered = useRef(false);
   
   // Load high-res NASA texture from three.js examples
   const colorMap = useTexture('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg');
@@ -27,11 +28,16 @@ const Moon = ({ phase }) => {
     // 1. Subtle idle rotation (moon rotating on its axis)
     moonRef.current.rotation.y += 0.001;
     
-    // 2. Mouse Parallax (tilting the moon based on cursor position)
-    const targetTiltX = (state.pointer.y * Math.PI) / 10;
-    const targetTiltZ = -(state.pointer.x * Math.PI) / 10;
+    // 2. Mouse Parallax (tilting the moon based on cursor position ONLY when hovered)
+    let targetTiltX = 0;
+    let targetTiltZ = 0;
+
+    if (isHovered.current) {
+      targetTiltX = (state.pointer.y * Math.PI) / 10;
+      targetTiltZ = -(state.pointer.x * Math.PI) / 10;
+    }
     
-    // Smooth interpolation for the tilt
+    // Smooth interpolation for the tilt (returns to zero when not hovered)
     moonRef.current.rotation.x += (targetTiltX - moonRef.current.rotation.x) * 0.05;
     moonRef.current.rotation.z += (targetTiltZ - moonRef.current.rotation.z) * 0.05;
   });
@@ -48,7 +54,25 @@ const Moon = ({ phase }) => {
         color="#ffffff" 
       />
       
-      <Sphere ref={moonRef} args={[2, 64, 64]}>
+      <Sphere 
+        ref={moonRef} 
+        args={[2, 64, 64]}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          isHovered.current = true;
+          const dot = document.getElementById('custom-cursor-dot');
+          if (dot) {
+            dot.style.transform = 'translate(-50%, -50%) scale(3.75)';
+          }
+        }}
+        onPointerOut={(e) => {
+          isHovered.current = false;
+          const dot = document.getElementById('custom-cursor-dot');
+          if (dot) {
+            dot.style.transform = 'translate(-50%, -50%) scale(1)';
+          }
+        }}
+      >
         <meshStandardMaterial 
           map={colorMap} 
           bumpMap={colorMap} // Use color map as a weak bump map for surface texture

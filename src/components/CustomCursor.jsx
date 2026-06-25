@@ -33,10 +33,9 @@ const CustomCursor = () => {
       trails.forEach(t => { if (t) t.style.opacity = '0'; });
     };
 
-    // Scale up on interactive elements
     const handlePointerOver = (e) => {
       const target = e.target;
-      if (target.closest('button, a, [role="button"], .glass-button, canvas')) {
+      if (target.closest('button, a, [role="button"], .glass-button')) {
         dot.style.transform = 'translate(-50%, -50%) scale(3.75)';
         dot.style.background = 'rgba(255, 255, 255, 1)';
       }
@@ -44,7 +43,7 @@ const CustomCursor = () => {
 
     const handlePointerOut = (e) => {
       const target = e.target;
-      if (target.closest('button, a, [role="button"], .glass-button, canvas')) {
+      if (target.closest('button, a, [role="button"], .glass-button')) {
         dot.style.transform = 'translate(-50%, -50%) scale(1)';
         dot.style.background = 'rgba(255, 255, 255, 1)';
       }
@@ -127,6 +126,7 @@ const CustomCursor = () => {
 
       {/* Core dot */}
       <div
+        id="custom-cursor-dot"
         ref={dotRef}
         style={{
           position: 'fixed',
