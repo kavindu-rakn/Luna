@@ -37,7 +37,7 @@ const CustomCursor = () => {
     const handlePointerOver = (e) => {
       const target = e.target;
       if (target.closest('button, a, [role="button"], .glass-button, canvas')) {
-        dot.style.transform = 'translate(-50%, -50%) scale(5)';
+        dot.style.transform = 'translate(-50%, -50%) scale(3.75)';
         dot.style.background = 'rgba(255, 255, 255, 1)';
       }
     };

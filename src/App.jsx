@@ -128,29 +128,28 @@ function App() {
       {/* ═══ MAIN IMMERSIVE VIEW ═══ */}
       <div ref={mainViewRef} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         
-        {/* Top Bar with Title, Controls, and Toggle */}
-        <div className="top-bar-grid">
-          {/* Left: Logo */}
-          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', margin: 0, lineHeight: 1 }}>Luna</h1>
-          </div>
-          
-          {/* Center: DateControls */}
-          <div className="gsap-reveal controls-panel" style={{ display: 'flex', justifyContent: 'center' }}>
-            <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
-          </div>
+        {/* Absolute Top Left: Logo */}
+        <div style={{ position: 'absolute', top: '1.5rem', left: '2rem', zIndex: 30 }}>
+          <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', margin: 0, lineHeight: 1 }}>Luna</h1>
+        </div>
 
-          {/* Right: Toggle Button */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button 
-              className="gsap-reveal toggle-btn glass-button"
-              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-              style={{ padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
-            >
-              <span className="utility-label" style={{ margin: 0 }}>
-                {isDrawerOpen ? 'Close Details' : 'Deep Dive'}
-              </span>
-            </button>
+        {/* Absolute Top Right: Toggle Button */}
+        <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 30 }}>
+          <button 
+            className="gsap-reveal toggle-btn glass-button"
+            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+            style={{ padding: '0 1.25rem', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: '20px' }}
+          >
+            <span className="utility-label" style={{ margin: 0 }}>
+              {isDrawerOpen ? 'Close Details' : 'Deep Dive'}
+            </span>
+          </button>
+        </div>
+
+        {/* Top Center: DateControls */}
+        <div className="controls-container">
+          <div className="gsap-reveal controls-panel">
+            <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </div>
         </div>
 

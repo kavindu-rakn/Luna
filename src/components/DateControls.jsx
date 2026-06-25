@@ -20,35 +20,42 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', position: 'relative' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', position: 'relative' }}>
       
-      {/* Centralized Tooltip */}
-      <div style={{
-        position: 'absolute',
-        top: '-1.5rem',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        height: '1rem',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        pointerEvents: 'none'
-      }}>
-        <span style={{
-          fontSize: '0.65rem',
-          letterSpacing: '0.15em',
-          textTransform: 'uppercase',
-          color: 'var(--color-accent)',
-          opacity: hoveredBtn ? 1 : 0,
-          transition: 'opacity 0.2s ease',
-          whiteSpace: 'nowrap'
-        }}>
-          {hoveredBtn || ' '}
-        </span>
-      </div>
+      {/* Top Row: Date Display */}
+      <h2 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 400, margin: 0, color: 'var(--color-text-primary)', letterSpacing: '0.02em', textAlign: 'center', lineHeight: 1 }}>
+        {formatDate(currentDate)}
+      </h2>
 
-      {/* Left Controls */}
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
+      {/* Bottom Row: Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
+        
+        {/* Centralized Tooltip (between date and buttons) */}
+        <div style={{
+          position: 'absolute',
+          top: '-1.25rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          height: '1rem',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          pointerEvents: 'none'
+        }}>
+          <span style={{
+            fontSize: '0.65rem',
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color: 'var(--color-accent)',
+            opacity: hoveredBtn ? 1 : 0,
+            transition: 'opacity 0.2s ease',
+            whiteSpace: 'nowrap'
+          }}>
+            {hoveredBtn || ' '}
+          </span>
+        </div>
+
+        {/* The 5 Buttons */}
         <button 
           className="ghost-control-btn"
           onMouseEnter={() => setHoveredBtn('Last Week')}
@@ -68,29 +75,20 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
         >
           <ChevronLeft size={20} strokeWidth={1.5} />
         </button>
-      </div>
 
-      {/* Center: Date & Today Dot */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', minWidth: '220px' }}>
-        <h2 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 400, margin: 0, color: 'var(--color-text-primary)', letterSpacing: '0.02em', textAlign: 'center', lineHeight: 1 }}>
-          {formatDate(currentDate)}
-        </h2>
         <button 
           className="ghost-control-btn"
           onMouseEnter={() => setHoveredBtn('Today')}
           onMouseLeave={() => setHoveredBtn('')}
           onClick={() => setCurrentDate(new Date())}
           aria-label="Today"
-          style={{ padding: '0.25rem' }} 
+          style={{ padding: '0.5rem', margin: '0 0.5rem' }} 
         >
           <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
             <circle cx="3" cy="3" r="3" />
           </svg>
         </button>
-      </div>
 
-      {/* Right Controls */}
-      <div style={{ display: 'flex', gap: '0.5rem' }}>
         <button 
           className="ghost-control-btn"
           onMouseEnter={() => setHoveredBtn('Tomorrow')}
@@ -110,8 +108,8 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
         >
           <ChevronsRight size={20} strokeWidth={1.5} />
         </button>
-      </div>
 
+      </div>
     </div>
   );
 };
