@@ -100,9 +100,9 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
   };
 
   return (
-    <div className="glass-panel" style={{ width: '100%', padding: '1.5rem 2rem', position: 'relative' }}>
+    <div className="glass-panel" style={{ width: '100%', padding: '1rem 2rem', position: 'relative' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
         <span className="utility-label">
           Lunar Cycle Timeline
         </span>

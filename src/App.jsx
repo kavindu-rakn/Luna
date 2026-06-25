@@ -129,14 +129,14 @@ function App() {
       <div ref={mainViewRef} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
         
         {/* Top Bar with Title and Toggle */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '2rem 3rem', zIndex: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '1rem 2rem', zIndex: 20 }}>
           <div>
-            <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: 0, lineHeight: 1 }}>Luna</h1>
+            <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', margin: 0, lineHeight: 1 }}>Luna</h1>
           </div>
           <button 
             className="gsap-reveal toggle-btn glass-button"
             onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            style={{ padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+            style={{ padding: '0.5rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
           >
             <span className="utility-label" style={{ margin: 0 }}>
               {isDrawerOpen ? 'Close Details' : 'Deep Dive'}
@@ -150,22 +150,22 @@ function App() {
             <MoonVisualization lunarDetails={lunarDetails} />
           </div>
           
-          <div className="gsap-reveal hero-phase-name" style={{ textAlign: 'center', marginTop: '-1rem', zIndex: 10 }}>
-            <span className="font-serif" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+          <div className="gsap-reveal hero-phase-name" style={{ textAlign: 'center', marginTop: '-1.5rem', zIndex: 10 }}>
+            <span className="font-serif" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
               {lunarDetails.name}
             </span>
-            <span className="utility-label" style={{ display: 'block', marginTop: '0.75rem', opacity: 0.7 }}>
+            <span className="utility-label" style={{ display: 'block', marginTop: '0.5rem', opacity: 0.7 }}>
               {lunarDetails.fraction}% illuminated
             </span>
           </div>
         </div>
 
         {/* Bottom: Timeline and Controls */}
-        <div style={{ padding: '0 2rem 2rem 2rem', zIndex: 20 }}>
+        <div style={{ padding: '0 1rem 1rem 1rem', zIndex: 20 }}>
           <div className="gsap-reveal timeline-panel" style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
             <LunarTimeline currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </div>
-          <div className="gsap-reveal controls-panel" style={{ width: '100%', maxWidth: '800px', margin: '2rem auto 0 auto' }}>
+          <div className="gsap-reveal controls-panel" style={{ width: '100%', maxWidth: '800px', margin: '1rem auto 0 auto' }}>
             <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </div>
         </div>

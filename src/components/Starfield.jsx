@@ -87,7 +87,7 @@ const Starfield = () => {
       });
 
       // Randomly spawn shooting stars
-      if (Math.random() < 0.003) {
+      if (Math.random() < 0.00375) {
         shootingStars.push({
           x: Math.random() * width,
           y: 0,

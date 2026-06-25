@@ -2,24 +2,9 @@ import React, { useRef, useCallback } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import gsap from 'gsap';
 
-// Magnetic button wrapper — subtly pulls toward the cursor on hover
-const MagneticButton = ({ children, onClick, style = {} }) => {
+// Standard button with ripple effect
+const RippleButton = ({ children, onClick, style = {} }) => {
   const btnRef = useRef(null);
-
-  const handleMouseMove = useCallback((e) => {
-    const btn = btnRef.current;
-    if (!btn) return;
-    const rect = btn.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.3, ease: 'power2.out' });
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    const btn = btnRef.current;
-    if (!btn) return;
-    gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1, 0.4)' });
-  }, []);
 
   const handleClick = useCallback((e) => {
     // Create ripple element
@@ -42,8 +27,6 @@ const MagneticButton = ({ children, onClick, style = {} }) => {
     <button
       ref={btnRef}
       className="glass-button"
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
       onClick={handleClick}
       style={style}
     >
@@ -69,28 +52,28 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
   };
 
   return (
-    <div className="glass-panel" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <CalendarDays size={24} style={{ color: 'var(--color-accent)' }} />
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{formatDate(currentDate)}</h2>
+    <div className="glass-panel" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center', padding: '1.25rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <CalendarDays size={20} style={{ color: 'var(--color-accent)' }} />
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>{formatDate(currentDate)}</h2>
       </div>
       
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '1rem' }}>
-        <MagneticButton onClick={() => changeDate(-7)}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '0.5rem' }}>
+        <RippleButton onClick={() => changeDate(-7)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
           <ChevronLeft size={18} /> -1 Week
-        </MagneticButton>
-        <MagneticButton onClick={() => changeDate(-1)}>
-          <ChevronLeft size={18} /> -1 Day
-        </MagneticButton>
-        <MagneticButton onClick={() => setCurrentDate(new Date())} style={{ borderColor: 'var(--color-accent)' }}>
-          <RefreshCw size={18} /> Today
-        </MagneticButton>
-        <MagneticButton onClick={() => changeDate(1)}>
-          +1 Day <ChevronRight size={18} />
-        </MagneticButton>
-        <MagneticButton onClick={() => changeDate(7)}>
-          +1 Week <ChevronRight size={18} />
-        </MagneticButton>
+        </RippleButton>
+        <RippleButton onClick={() => changeDate(-1)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+          <ChevronLeft size={16} /> -1 Day
+        </RippleButton>
+        <RippleButton onClick={() => setCurrentDate(new Date())} style={{ borderColor: 'var(--color-accent)', padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+          <RefreshCw size={16} /> Today
+        </RippleButton>
+        <RippleButton onClick={() => changeDate(1)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+          +1 Day <ChevronRight size={16} />
+        </RippleButton>
+        <RippleButton onClick={() => changeDate(7)} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+          +1 Week <ChevronRight size={16} />
+        </RippleButton>
       </div>
     </div>
   );
