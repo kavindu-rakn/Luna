@@ -6,12 +6,10 @@ import Starfield from './components/Starfield';
 import LunarTimeline from './components/LunarTimeline';
 import CustomCursor from './components/CustomCursor';
 import SkyPosition from './components/SkyPosition';
-import NavDots from './components/NavDots';
 import OrbitalView from './components/OrbitalView';
 import { getLunarDetails, getSkyData } from './utils/lunarCalc';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import Lenis from 'lenis';
 
 gsap.registerPlugin(useGSAP);
 
@@ -20,8 +18,11 @@ function App() {
   // Default location: Greenwich Observatory
   const DEFAULT_LOCATION = { lat: 51.4769, lon: -0.0005, name: 'Greenwich, UK (default)' };
   const [location, setLocation] = useState(DEFAULT_LOCATION);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   const containerRef = useRef();
+  const mainViewRef = useRef();
+  const drawerRef = useRef();
 
   // Request geolocation on mount
   useEffect(() => {
@@ -42,31 +43,7 @@ function App() {
     }
   }, []);
 
-  // Setup Lenis smooth scrolling
-  useEffect(() => {
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 1,
-      smoothTouch: false,
-      touchMultiplier: 2,
-    });
-
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-
-    return () => {
-      lenis.destroy();
-    };
-  }, []);
-
-  // Reverse geocode the location name (lightweight, no API key needed)
+  // Reverse geocode the location name
   useEffect(() => {
     if (location && location.name === null) {
       fetch(`https://nominatim.openstreetmap.org/reverse?lat=${location.lat}&lon=${location.lon}&format=json&zoom=10`)
@@ -82,129 +59,166 @@ function App() {
     }
   }, [location]);
 
-  // Derive lunar details and sky data from current state
+  // Derive lunar details and sky data
   const lunarDetails = useMemo(() => getLunarDetails(currentDate), [currentDate]);
   const computedSkyData = useMemo(() => {
     if (location) return getSkyData(currentDate, location.lat, location.lon);
     return null;
   }, [currentDate, location]);
 
+  // Initial Entrance Animation
   useGSAP(() => {
     const tl = gsap.timeline();
-    
-    // Initial state setup to avoid flash of unstyled content
     gsap.set('.gsap-reveal', { autoAlpha: 0, y: 40 });
     
-    // Staggered entrance choreography
     tl.to('.hero-title', { autoAlpha: 1, y: 0, duration: 1.8, ease: 'expo.out' })
-      .to('.hero-subtitle', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.4')
-      .to('.moon-container', { autoAlpha: 1, y: 0, duration: 2, ease: 'power2.out' }, '-=1.2')
+      .to('.moon-container', { autoAlpha: 1, y: 0, duration: 2, ease: 'power2.out' }, '-=1.4')
       .to('.hero-phase-name', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.5')
-      .to('.scroll-hint', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.2')
-      .to('.data-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.0')
-      .to('.sky-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.3')
       .to('.timeline-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.2')
       .to('.controls-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.3')
-      .to('.orbital-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.2')
-      .to('.footer-text', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'power2.out' }, '-=1.0');
-      
+      .to('.toggle-btn', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.2');
   }, { scope: containerRef });
 
+  // Drawer Toggle Animation
+  useGSAP(() => {
+    const isDesktop = window.innerWidth >= 900;
+    
+    if (isDrawerOpen) {
+      // Open Drawer
+      gsap.to(drawerRef.current, {
+        x: 0,
+        y: 0,
+        autoAlpha: 1,
+        duration: 0.8,
+        ease: 'power3.out'
+      });
+      // Shift Main View
+      gsap.to(mainViewRef.current, {
+        x: isDesktop ? '-225px' : 0,
+        y: isDesktop ? 0 : '-10vh',
+        duration: 0.8,
+        ease: 'power3.out'
+      });
+    } else {
+      // Close Drawer
+      gsap.to(drawerRef.current, {
+        x: isDesktop ? '100%' : 0,
+        y: isDesktop ? 0 : '100%',
+        autoAlpha: 0,
+        duration: 0.6,
+        ease: 'power3.inOut'
+      });
+      // Reset Main View
+      gsap.to(mainViewRef.current, {
+        x: 0,
+        y: 0,
+        duration: 0.6,
+        ease: 'power3.inOut'
+      });
+    }
+  }, { dependencies: [isDrawerOpen], scope: containerRef });
+
   return (
-    <div ref={containerRef} style={{ width: '100%' }}>
+    <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       <CustomCursor />
       <Starfield />
-      <NavDots />
       <div className="nebula"></div>
       <div className="noise"></div>
 
-      {/* ═══ HERO SECTION ═══ */}
-      <section id="hero" className="section section-hero">
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem', zIndex: 10 }}>
-          <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(4rem, 10vw, 7rem)', marginBottom: '0.5rem', lineHeight: 1 }}>Luna</h1>
-          <p className="gsap-reveal hero-subtitle utility-label" style={{ opacity: 0.8 }}>
-            Interactive Lunar Cycle Explorer
-          </p>
+      {/* ═══ MAIN IMMERSIVE VIEW ═══ */}
+      <div ref={mainViewRef} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+        
+        {/* Top Bar with Title and Toggle */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '2rem 3rem', zIndex: 20 }}>
+          <div>
+            <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', margin: 0, lineHeight: 1 }}>Luna</h1>
+          </div>
+          <button 
+            className="gsap-reveal toggle-btn glass-button"
+            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+            style={{ padding: '0.75rem 1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+          >
+            <span className="utility-label" style={{ margin: 0 }}>
+              {isDrawerOpen ? 'Close Details' : 'Deep Dive'}
+            </span>
+          </button>
         </div>
 
-        <div className="gsap-reveal moon-container" style={{ width: '100%', flex: '1 1 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <MoonVisualization lunarDetails={lunarDetails} />
+        {/* Center: 3D Moon & Phase Name */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '-4rem' }}>
+          <div className="gsap-reveal moon-container" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+            <MoonVisualization lunarDetails={lunarDetails} />
+          </div>
+          
+          <div className="gsap-reveal hero-phase-name" style={{ textAlign: 'center', marginTop: '-1rem', zIndex: 10 }}>
+            <span className="font-serif" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+              {lunarDetails.name}
+            </span>
+            <span className="utility-label" style={{ display: 'block', marginTop: '0.75rem', opacity: 0.7 }}>
+              {lunarDetails.fraction}% illuminated
+            </span>
+          </div>
         </div>
 
-        {/* Phase name floating below the moon */}
-        <div className="gsap-reveal hero-phase-name" style={{ textAlign: 'center', marginTop: '-2rem', zIndex: 10 }}>
-          <span className="font-serif" style={{
-            fontSize: 'clamp(2rem, 4vw, 3rem)',
-            color: 'var(--color-text-primary)',
-            lineHeight: 1
-          }}>
-            {lunarDetails.name}
-          </span>
-          <span className="utility-label" style={{
-            display: 'block',
-            marginTop: '0.75rem',
-            opacity: 0.7
-          }}>
-            {lunarDetails.fraction}% illuminated
-          </span>
+        {/* Bottom: Timeline and Controls */}
+        <div style={{ padding: '0 2rem 2rem 2rem', zIndex: 20 }}>
+          <div className="gsap-reveal timeline-panel" style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
+            <LunarTimeline currentDate={currentDate} setCurrentDate={setCurrentDate} />
+          </div>
+          <div className="gsap-reveal controls-panel" style={{ width: '100%', maxWidth: '800px', margin: '2rem auto 0 auto' }}>
+            <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
+          </div>
         </div>
+      </div>
 
-        {/* Scroll indicator */}
-        <div className="gsap-reveal scroll-hint" style={{
-          position: 'absolute',
-          bottom: '3rem',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '0.75rem',
-          animation: 'scroll-bounce 2s ease-in-out infinite',
-          zIndex: 10
-        }}>
-          <span className="utility-label" style={{ opacity: 0.5 }}>
-            Explore
-          </span>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}>
-            <polyline points="6 9 12 15 18 9"></polyline>
+      {/* ═══ DATA DRAWER ═══ */}
+      <div ref={drawerRef} className="data-drawer" style={{ visibility: 'hidden' }}>
+        {/* Drawer Close Button */}
+        <button 
+          onClick={() => setIsDrawerOpen(false)}
+          className="glass-button"
+          style={{ 
+            position: 'absolute', 
+            top: '1.5rem', 
+            right: '1.5rem', 
+            width: '40px', 
+            height: '40px', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            padding: 0,
+            borderRadius: '50%',
+            cursor: 'pointer',
+            zIndex: 10
+          }}
+          aria-label="Close details"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
-        </div>
-      </section>
+        </button>
 
-      {/* ═══ DATA SECTION ═══ */}
-      <section id="data" className="section section-content">
-        <div className="data-grid">
-          <div className="gsap-reveal data-panel">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '2rem' }}>
+          <div>
             <LunarData lunarDetails={lunarDetails} />
           </div>
+          
           {computedSkyData && (
-            <div className="gsap-reveal sky-panel">
+            <div>
               <SkyPosition skyData={computedSkyData} locationName={location?.name} />
             </div>
           )}
-        </div>
-      </section>
+          
+          <div>
+            <OrbitalView lunarDetails={lunarDetails} />
+          </div>
 
-      {/* ═══ TIMELINE SECTION ═══ */}
-      <section id="timeline" className="section section-content">
-        <div className="gsap-reveal timeline-panel" style={{ width: '100%' }}>
-          <LunarTimeline currentDate={currentDate} setCurrentDate={setCurrentDate} />
+          <footer style={{ marginTop: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
+            Data calculated astronomically. Moon texture represented stylistically.
+          </footer>
         </div>
-
-        <div className="gsap-reveal controls-panel" style={{ width: '100%', marginTop: '2rem' }}>
-          <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
-        </div>
-      </section>
-
-      {/* ═══ ORBITAL SECTION ═══ */}
-      <section id="orbital" className="section section-content">
-        <div className="gsap-reveal orbital-panel" style={{ width: '100%' }}>
-          <OrbitalView lunarDetails={lunarDetails} />
-        </div>
-      </section>
-
-      {/* ═══ FOOTER ═══ */}
-      <footer className="gsap-reveal footer-text" style={{ padding: '3rem 2rem', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.875rem' }}>
-        Data calculated astronomically. Moon texture represented stylistically.
-      </footer>
+      </div>
     </div>
   );
 }
