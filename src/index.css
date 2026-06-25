@@ -175,6 +175,39 @@ body {
   }
 }
 
+/* Drawer Close Button */
+.drawer-close-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem !important;
+  left: auto !important;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.drawer-close-btn:hover {
+  transform: none !important;
+}
+
+@media (max-width: 899px) {
+  .drawer-close-btn {
+    right: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  
+  .drawer-close-btn:hover {
+    transform: translateX(-50%) !important;
+  }
+}
+
 /* Section Layout */
 .section {
   width: 100%;

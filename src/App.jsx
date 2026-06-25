@@ -176,21 +176,8 @@ function App() {
         {/* Drawer Close Button */}
         <button 
           onClick={() => setIsDrawerOpen(false)}
-          className="glass-button"
-          style={{ 
-            position: 'absolute', 
-            top: '1.5rem', 
-            right: '1.5rem', 
-            width: '40px', 
-            height: '40px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            padding: 0,
-            borderRadius: '50%',
-            cursor: 'pointer',
-            zIndex: 10
-          }}
+          className="glass-button drawer-close-btn"
+          style={{ position: 'absolute', top: '1.5rem', right: '1.5rem' }}
           aria-label="Close details"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -199,7 +186,7 @@ function App() {
           </svg>
         </button>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '2rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '2.5rem' }}>
           <div>
             <LunarData lunarDetails={lunarDetails} />
           </div>
