@@ -16,14 +16,18 @@ export const getLunarDetails = (date = new Date()) => {
   // Moon cycle is approx 29.53 days
   const age = phase * 29.53;
   
+  const TOLERANCE = 0.03; // ~0.9 days tolerance for major phases
   let name = "";
-  if (phase === 0 || phase === 1) name = "New Moon";
+  
+  // Check major phases first using the tolerance window
+  if (phase <= TOLERANCE || phase >= 1 - TOLERANCE) name = "New Moon";
+  else if (Math.abs(phase - 0.25) <= TOLERANCE) name = "First Quarter";
+  else if (Math.abs(phase - 0.5) <= TOLERANCE) name = "Full Moon";
+  else if (Math.abs(phase - 0.75) <= TOLERANCE) name = "Last Quarter";
+  // Then fallback to the intermediate phases
   else if (phase < 0.25) name = "Waxing Crescent";
-  else if (Math.abs(phase - 0.25) < 0.05) name = "First Quarter";
   else if (phase < 0.5) name = "Waxing Gibbous";
-  else if (Math.abs(phase - 0.5) < 0.05) name = "Full Moon";
   else if (phase < 0.75) name = "Waning Gibbous";
-  else if (Math.abs(phase - 0.75) < 0.05) name = "Last Quarter";
   else name = "Waning Crescent";
 
   return {
