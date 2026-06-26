@@ -2,17 +2,25 @@ import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react'
 import { getCyclePhases } from '../utils/lunarCalc';
 import gsap from 'gsap';
 
-// Small SVG moon icon that visually represents a phase
 const MoonIcon = ({ phase, size = 20 }) => {
-  // phase 0 = new moon (dark), 0.5 = full moon (bright)
-  const illumination = Math.abs(phase <= 0.5 ? phase * 2 : 2 - phase * 2);
-  const isWaxing = phase <= 0.5;
-
-  // We draw a circle and an ellipse to create the terminator
   const r = size / 2;
-  // rx of the terminator ellipse: 1 = full circle edge, 0 = straight line
-  const terminatorRx = Math.abs(illumination * 2 - 1) * r;
-  const brightSide = illumination > 0.5;
+  // Illumination from 0 (new) to 1 (full) back to 0 (new)
+  const illumination = phase <= 0.5 ? phase * 2 : 2 - phase * 2;
+  const isWaxing = phase <= 0.5;
+  
+  // Outer arc: waxing -> right edge (1), waning -> left edge (0)
+  const sweepOuter = isWaxing ? 1 : 0;
+  
+  // Terminator ellipse width
+  const rx = Math.max(0.01, Math.abs(illumination * 2 - 1) * (r - 0.5));
+  
+  // Inner arc (terminator): 
+  // Bottom to top drawing: sweep 1 is LEFT, sweep 0 is RIGHT.
+  // Waxing Crescent: inner is RIGHT -> 0
+  // Waxing Gibbous: inner is LEFT -> 1
+  // Waning Crescent: inner is LEFT -> 1
+  // Waning Gibbous: inner is RIGHT -> 0
+  const sweepInner = illumination > 0.5 ? (isWaxing ? 1 : 0) : (isWaxing ? 0 : 1);
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -20,9 +28,9 @@ const MoonIcon = ({ phase, size = 20 }) => {
       <circle cx={r} cy={r} r={r - 0.5} fill="#1a1a2e" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
       {/* Bright half */}
       <path
-        d={`M ${r},${0.5}
-            A ${r - 0.5},${r - 0.5} 0 0 ${isWaxing ? 0 : 1} ${r},${size - 0.5}
-            A ${brightSide ? terminatorRx : terminatorRx},${r - 0.5} 0 0 ${(isWaxing && brightSide) || (!isWaxing && !brightSide) ? 1 : 0} ${r},${0.5}
+        d={`M ${r},0.5
+            A ${r - 0.5},${r - 0.5} 0 0 ${sweepOuter} ${r},${size - 0.5}
+            A ${rx},${r - 0.5} 0 0 ${sweepInner} ${r},0.5
             Z`}
         fill="#d4d4dc"
       />
@@ -233,12 +241,16 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
               {isActive && (
                 <div style={{
                   position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  margin: '-18px 0 0 -18px',
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
                   border: '1.5px solid var(--color-accent)',
                   opacity: 0.5,
-                  animation: 'pulse-ring 2s ease-in-out infinite'
+                  animation: 'pulse-ring 2s ease-in-out infinite',
+                  pointerEvents: 'none'
                 }} />
               )}
             </div>
