@@ -54,9 +54,22 @@ const Moon = ({ phase }) => {
         color="#ffffff" 
       />
       
+      <group ref={moonRef}>
+        <Sphere args={[2, 64, 64]}>
+          <meshStandardMaterial 
+            map={colorMap} 
+            bumpMap={colorMap} 
+            bumpScale={0.015}
+            roughness={0.9} 
+            metalness={0.1}
+          />
+        </Sphere>
+      </group>
+
+      {/* Invisible stationary hit box to prevent parallax raycast jitter */}
       <Sphere 
-        ref={moonRef} 
-        args={[2, 64, 64]}
+        args={[2.05, 32, 32]}
+        visible={false}
         onPointerOver={(e) => {
           e.stopPropagation();
           isHovered.current = true;
@@ -73,13 +86,7 @@ const Moon = ({ phase }) => {
           }
         }}
       >
-        <meshStandardMaterial 
-          map={colorMap} 
-          bumpMap={colorMap} // Use color map as a weak bump map for surface texture
-          bumpScale={0.015}
-          roughness={0.9} 
-          metalness={0.1}
-        />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </Sphere>
     </group>
   );
