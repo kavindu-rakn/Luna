@@ -4,7 +4,7 @@ const CustomCursor = () => {
   const dotRef = useRef(null);
   const glowRef = useRef(null);
   const trailRefs = useRef([]);
-  const numTrails = 20;
+  const numTrails = 38;
 
   useEffect(() => {
     const dot = dotRef.current;
@@ -12,11 +12,12 @@ const CustomCursor = () => {
     const trails = trailRefs.current;
 
     let mouseX = -100, mouseY = -100;
+    let lastMouseX = -100, lastMouseY = -100;
     
     // History array to store past mouse positions for perfect path tracking (no corner cutting)
     let history = [];
-    const historySize = 25; // Max history length
-    const spacing = 1; // Dense frames for continuous comet tail
+    const historySize = 100; // Max history length
+    const spacing = 2; // Distance between trail beads in history points
 
     const handleMouseMove = (e) => {
       mouseX = e.clientX;
@@ -38,6 +39,7 @@ const CustomCursor = () => {
       if (target.closest('button, a, [role="button"], .glass-button')) {
         dot.style.transform = 'translate(-50%, -50%) scale(3.75)';
         dot.style.background = 'rgba(255, 255, 255, 1)';
+        trails.forEach(t => { if (t) t.style.opacity = '0'; });
       }
     };
 
@@ -46,6 +48,7 @@ const CustomCursor = () => {
       if (target.closest('button, a, [role="button"], .glass-button')) {
         dot.style.transform = 'translate(-50%, -50%) scale(1)';
         dot.style.background = 'rgba(255, 255, 255, 1)';
+        trails.forEach((t, i) => { if (t) t.style.opacity = `${1 - (i / numTrails)}`; });
       }
     };
 
@@ -57,12 +60,38 @@ const CustomCursor = () => {
 
     let animId;
     const animate = () => {
-      // Add current mouse position to the start of the history array
-      history.unshift({ x: mouseX, y: mouseY });
+      // Interpolate between last recorded mouse position and current mouse position
+      // to ensure history points are physically close together for a continuous solid line.
+      if (lastMouseX === -100) {
+        history.unshift({ x: mouseX, y: mouseY });
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+      } else {
+        const dx = mouseX - lastMouseX;
+        const dy = mouseY - lastMouseY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > 0) {
+          // Insert a point every ~1.5 pixels
+          const steps = Math.max(1, Math.floor(dist / 1.5));
+          for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            history.unshift({
+              x: lastMouseX + dx * t,
+              y: lastMouseY + dy * t
+            });
+          }
+          lastMouseX = mouseX;
+          lastMouseY = mouseY;
+        } else {
+          // Mouse is stationary, continue adding points so the tail catches up and disappears
+          history.unshift({ x: mouseX, y: mouseY });
+        }
+      }
       
       // Keep array size capped
       if (history.length > historySize) {
-        history.pop();
+        history.length = historySize;
       }
 
       // Main dot has ZERO lag, perfectly follows mouse
@@ -105,16 +134,17 @@ const CustomCursor = () => {
       {Array.from({ length: numTrails }).map((_, i) => (
         <div
           key={i}
+          className="custom-cursor-trail"
           ref={el => trailRefs.current[i] = el}
           style={{
             position: 'fixed',
             top: 0,
             left: 0,
-            width: `${12 - i * 0.5}px`,
-            height: `${12 - i * 0.5}px`,
+            width: `${10 * (1 - i / numTrails)}px`,
+            height: `${10 * (1 - i / numTrails)}px`,
             borderRadius: '50%',
             background: 'var(--color-accent)',
-            boxShadow: `0 0 ${10 - i * 0.3}px var(--color-accent-glow)`,
+            boxShadow: `0 0 ${10 * (1 - i / numTrails)}px var(--color-accent-glow)`,
             opacity: 0,
             pointerEvents: 'none',
             zIndex: 9998 - i,
