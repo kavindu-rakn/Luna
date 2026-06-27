@@ -1,10 +1,12 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useTexture, Sphere } from '@react-three/drei';
 
 const Moon = ({ phase }) => {
   const moonRef = useRef();
   const isHovered = useRef(false);
+  const isDragging = useRef(false);
+  const previousX = useRef(0);
   
   // Load high-res NASA texture from three.js examples
   const colorMap = useTexture('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg');
@@ -22,24 +24,34 @@ const Moon = ({ phase }) => {
     ];
   }, [phase]);
 
-  useFrame((state) => {
+  useEffect(() => {
+    const handleMove = (e) => {
+      if (isDragging.current && moonRef.current) {
+        const deltaX = e.clientX - previousX.current;
+        // Spin horizontally based on mouse movement
+        moonRef.current.rotation.y += deltaX * 0.005; 
+        previousX.current = e.clientX;
+      }
+    };
+    const handleUp = () => {
+      isDragging.current = false;
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    window.addEventListener('pointerup', handleUp);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      window.removeEventListener('pointerup', handleUp);
+    };
+  }, []);
+
+  useFrame(() => {
     if (!moonRef.current) return;
     
-    // 1. Subtle idle rotation (moon rotating on its axis)
-    moonRef.current.rotation.y += 0.001;
-    
-    // 2. Mouse Parallax (tilting the moon based on cursor position ONLY when hovered)
-    let targetTiltX = 0;
-    let targetTiltZ = 0;
-
-    if (isHovered.current) {
-      targetTiltX = (state.pointer.y * Math.PI) / 10;
-      targetTiltZ = -(state.pointer.x * Math.PI) / 10;
+    // Subtle idle rotation when not being actively dragged
+    if (!isDragging.current) {
+      moonRef.current.rotation.y += 0.001;
     }
-    
-    // Smooth interpolation for the tilt (returns to zero when not hovered)
-    moonRef.current.rotation.x += (targetTiltX - moonRef.current.rotation.x) * 0.05;
-    moonRef.current.rotation.z += (targetTiltZ - moonRef.current.rotation.z) * 0.05;
   });
 
   return (
@@ -66,10 +78,15 @@ const Moon = ({ phase }) => {
         </Sphere>
       </group>
 
-      {/* Invisible stationary hit box to prevent parallax raycast jitter */}
+      {/* Invisible stationary hit box for raycasting and interaction */}
       <Sphere 
         args={[2.05, 32, 32]}
         visible={false}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          isDragging.current = true;
+          previousX.current = e.clientX;
+        }}
         onPointerOver={(e) => {
           e.stopPropagation();
           isHovered.current = true;
@@ -77,6 +94,8 @@ const Moon = ({ phase }) => {
           if (dot) {
             dot.style.transform = 'translate(-50%, -50%) scale(3.75)';
           }
+          const trails = document.querySelectorAll('.custom-cursor-trail');
+          trails.forEach(t => t.style.opacity = '0');
         }}
         onPointerOut={(e) => {
           isHovered.current = false;
@@ -84,6 +103,9 @@ const Moon = ({ phase }) => {
           if (dot) {
             dot.style.transform = 'translate(-50%, -50%) scale(1)';
           }
+          const trails = document.querySelectorAll('.custom-cursor-trail');
+          const numTrails = 38; // Must match CustomCursor.jsx
+          trails.forEach((t, i) => t.style.opacity = `${1 - (i / numTrails)}`);
         }}
       >
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
