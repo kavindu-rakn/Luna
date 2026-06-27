@@ -7,6 +7,8 @@ const CustomCursor = () => {
   const numTrails = 38;
 
   useEffect(() => {
+    if (!dotRef.current) return; // Prevent crash if component returned null on mobile
+
     const dot = dotRef.current;
     const glow = glowRef.current;
     const trails = trailRefs.current;
