@@ -4,7 +4,7 @@ const CustomCursor = () => {
   const dotRef = useRef(null);
   const glowRef = useRef(null);
   const trailRefs = useRef([]);
-  const numTrails = 6;
+  const numTrails = 20;
 
   useEffect(() => {
     const dot = dotRef.current;
@@ -15,8 +15,8 @@ const CustomCursor = () => {
     
     // History array to store past mouse positions for perfect path tracking (no corner cutting)
     let history = [];
-    const historySize = 30; // Max history length
-    const spacing = 3; // Number of frames between each trail bead
+    const historySize = 25; // Max history length
+    const spacing = 1; // Dense frames for continuous comet tail
 
     const handleMouseMove = (e) => {
       mouseX = e.clientX;
@@ -25,7 +25,7 @@ const CustomCursor = () => {
 
     const handleMouseEnter = () => {
       dot.style.opacity = '1';
-      trails.forEach(t => { if (t) t.style.opacity = '1'; });
+      trails.forEach((t, i) => { if (t) t.style.opacity = `${1 - (i / numTrails)}`; });
     };
 
     const handleMouseLeave = () => {
@@ -110,16 +110,18 @@ const CustomCursor = () => {
             position: 'fixed',
             top: 0,
             left: 0,
-            width: `${4 - i * 0.4}px`,
-            height: `${4 - i * 0.4}px`,
+            width: `${12 - i * 0.5}px`,
+            height: `${12 - i * 0.5}px`,
             borderRadius: '50%',
-            background: 'white',
+            background: 'var(--color-accent)',
+            boxShadow: `0 0 ${10 - i * 0.3}px var(--color-accent-glow)`,
             opacity: 0,
             pointerEvents: 'none',
-            zIndex: 9997,
+            zIndex: 9998 - i,
             transform: 'translate(-50%, -50%)',
             transition: 'opacity 0.3s ease',
-            mixBlendMode: 'difference'
+            mixBlendMode: 'screen',
+            filter: 'blur(1px)'
           }}
         />
       ))}
