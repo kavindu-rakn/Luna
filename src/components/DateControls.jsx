@@ -1,14 +1,12 @@
-import React from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 
 const DateControls = ({ currentDate, setCurrentDate }) => {
+  const [hoveredBtn, setHoveredBtn] = useState('');
+
   const changeDate = (days) => {
     const newDate = new Date(currentDate);
     newDate.setDate(newDate.getDate() + days);
-    setCurrentDate(newDate);
-  };
-  
-  const resetToToday = () => {
     setCurrentDate(newDate);
   };
 
@@ -22,31 +20,99 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
   };
 
   return (
-    <div className="glass-panel" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <CalendarDays size={24} style={{ color: 'var(--color-accent)' }} />
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>{formatDate(currentDate)}</h2>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', position: 'relative' }}>
       
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', marginTop: '1rem' }}>
-        <button className="glass-button" onClick={() => changeDate(-7)}>
-          <ChevronLeft size={18} /> -1 Week
+      {/* Top Row: Date Display */}
+      <h2 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 400, margin: 0, color: 'var(--color-text-primary)', letterSpacing: '0.02em', textAlign: 'center', lineHeight: 1 }}>
+        {formatDate(currentDate)}
+      </h2>
+
+      {/* Bottom Row: Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
+        
+        {/* Centralized Tooltip (between date and buttons) */}
+        <div style={{
+          position: 'absolute',
+          top: '-1.25rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          height: '1rem',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          pointerEvents: 'none'
+        }}>
+          <span style={{
+            fontSize: '0.65rem',
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color: 'var(--color-accent)',
+            opacity: hoveredBtn ? 1 : 0,
+            transition: 'opacity 0.2s ease',
+            whiteSpace: 'nowrap'
+          }}>
+            {hoveredBtn || ' '}
+          </span>
+        </div>
+
+        {/* The 5 Buttons */}
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Last Week')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => changeDate(-7)}
+          aria-label="Last Week"
+        >
+          <ChevronsLeft size={20} strokeWidth={1.5} />
         </button>
-        <button className="glass-button" onClick={() => changeDate(-1)}>
-          <ChevronLeft size={18} /> -1 Day
+
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Yesterday')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => changeDate(-1)}
+          aria-label="Yesterday"
+        >
+          <ChevronLeft size={20} strokeWidth={1.5} />
         </button>
-        <button className="glass-button" onClick={() => setCurrentDate(new Date())} style={{ borderColor: 'var(--color-accent)'}}>
-          <RefreshCw size={18} /> Today
+
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Today')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => setCurrentDate(new Date())}
+          aria-label="Today"
+          style={{ padding: '0.5rem', margin: '0 0.5rem' }} 
+        >
+          <svg width="6" height="6" viewBox="0 0 6 6" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.6 }}>
+            <circle cx="3" cy="3" r="3" />
+          </svg>
         </button>
-        <button className="glass-button" onClick={() => changeDate(1)}>
-          +1 Day <ChevronRight size={18} />
+
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Tomorrow')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => changeDate(1)}
+          aria-label="Tomorrow"
+        >
+          <ChevronRight size={20} strokeWidth={1.5} />
         </button>
-        <button className="glass-button" onClick={() => changeDate(7)}>
-          +1 Week <ChevronRight size={18} />
+
+        <button 
+          className="ghost-control-btn"
+          onMouseEnter={() => setHoveredBtn('Next Week')}
+          onMouseLeave={() => setHoveredBtn('')}
+          onClick={() => changeDate(7)}
+          aria-label="Next Week"
+        >
+          <ChevronsRight size={20} strokeWidth={1.5} />
         </button>
+
       </div>
     </div>
   );
 };
 
 export default DateControls;
+

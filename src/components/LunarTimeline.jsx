@@ -1,0 +1,278 @@
+import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
+import { getCyclePhases } from '../utils/lunarCalc';
+import gsap from 'gsap';
+
+const MoonIcon = ({ phase, size = 20 }) => {
+  const r = size / 2;
+  // Illumination from 0 (new) to 1 (full) back to 0 (new)
+  const illumination = phase <= 0.5 ? phase * 2 : 2 - phase * 2;
+  const isWaxing = phase <= 0.5;
+  
+  // Outer arc: waxing -> right edge (1), waning -> left edge (0)
+  const sweepOuter = isWaxing ? 1 : 0;
+  
+  // Terminator ellipse width
+  const rx = Math.max(0.01, Math.abs(illumination * 2 - 1) * (r - 0.5));
+  
+  // Inner arc (terminator): 
+  // Bottom to top drawing: sweep 1 is LEFT, sweep 0 is RIGHT.
+  // Waxing Crescent: inner is RIGHT -> 0
+  // Waxing Gibbous: inner is LEFT -> 1
+  // Waning Crescent: inner is LEFT -> 1
+  // Waning Gibbous: inner is RIGHT -> 0
+  const sweepInner = illumination > 0.5 ? (isWaxing ? 1 : 0) : (isWaxing ? 0 : 1);
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {/* Dark base circle */}
+      <circle cx={r} cy={r} r={r - 0.5} fill="#1a1a2e" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+      {/* Bright half */}
+      <path
+        d={`M ${r},0.5
+            A ${r - 0.5},${r - 0.5} 0 0 ${sweepOuter} ${r},${size - 0.5}
+            A ${rx},${r - 0.5} 0 0 ${sweepInner} ${r},0.5
+            Z`}
+        fill="#d4d4dc"
+      />
+    </svg>
+  );
+};
+
+const LunarTimeline = ({ currentDate, setCurrentDate }) => {
+  const trackRef = useRef(null);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const tooltipRef = useRef(null);
+
+  const cyclePhases = useMemo(() => getCyclePhases(currentDate), [currentDate]);
+
+  const handleDayClick = useCallback((dayDate) => {
+    setCurrentDate(new Date(dayDate));
+  }, [setCurrentDate]);
+
+  // Drag / scrub logic
+  const getIndexFromEvent = useCallback((e) => {
+    if (!trackRef.current) return null;
+    const rect = trackRef.current.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const x = clientX - rect.left;
+    const fraction = Math.max(0, Math.min(1, x / rect.width));
+    return Math.round(fraction * (cyclePhases.length - 1));
+  }, [cyclePhases]);
+
+  const handlePointerDown = useCallback((e) => {
+    setIsDragging(true);
+    const idx = getIndexFromEvent(e);
+    if (idx !== null && cyclePhases[idx]) {
+      handleDayClick(cyclePhases[idx].date);
+    }
+    e.preventDefault();
+  }, [getIndexFromEvent, cyclePhases, handleDayClick]);
+
+  const handlePointerMove = useCallback((e) => {
+    const idx = getIndexFromEvent(e);
+    if (idx !== null) {
+      setHoveredIndex(idx);
+      if (isDragging && cyclePhases[idx]) {
+        handleDayClick(cyclePhases[idx].date);
+      }
+    }
+  }, [getIndexFromEvent, isDragging, cyclePhases, handleDayClick]);
+
+  const handlePointerUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handlePointerLeave = useCallback(() => {
+    setHoveredIndex(null);
+    setIsDragging(false);
+  }, []);
+
+  // Animate tooltip on hover change
+  const lastHoveredRef = useRef(null);
+  useEffect(() => {
+    if (hoveredIndex !== null && hoveredIndex !== lastHoveredRef.current && tooltipRef.current) {
+      gsap.fromTo(tooltipRef.current,
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' }
+      );
+    }
+    lastHoveredRef.current = hoveredIndex;
+  }, [hoveredIndex]);
+
+  const currentIdx = cyclePhases.findIndex(p => p.isCurrent);
+
+  // Format short date label
+  const formatShortDate = (date) => {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <div className="bottom-bar" style={{ padding: '1.5rem 2rem', position: 'relative' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+        <span className="utility-label">
+          Lunar Cycle Timeline
+        </span>
+        <span className="utility-label" style={{ opacity: 0.6 }}>
+          Drag to explore
+        </span>
+      </div>
+
+      {/* Tooltip */}
+      {hoveredIndex !== null && cyclePhases[hoveredIndex] && (
+        <div
+          ref={tooltipRef}
+          style={{
+            position: 'absolute',
+            top: '-3rem',
+            left: `calc(${(hoveredIndex / (cyclePhases.length - 1)) * 100}% + 1rem)`,
+            transform: 'translateX(-50%)',
+            background: 'rgba(10, 11, 26, 0.95)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: '10px',
+            padding: '0.5rem 0.85rem',
+            fontSize: '0.8rem',
+            color: 'var(--color-text-primary)',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            zIndex: 10,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <MoonIcon phase={cyclePhases[hoveredIndex].phase} size={16} />
+          <span className="font-serif" style={{ fontSize: '1.2rem', lineHeight: 1 }}>{cyclePhases[hoveredIndex].name}</span>
+          <span style={{ color: 'var(--color-text-secondary)' }}>
+            {formatShortDate(cyclePhases[hoveredIndex].date)}
+          </span>
+          <span style={{ color: 'var(--color-accent)' }}>
+            {cyclePhases[hoveredIndex].fraction.toFixed(0)}%
+          </span>
+        </div>
+      )}
+
+      {/* Timeline Track */}
+      <div
+        ref={trackRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '60px',
+          display: 'flex',
+          alignItems: 'center',
+          cursor: isDragging ? 'grabbing' : 'grab',
+          userSelect: 'none',
+          touchAction: 'none'
+        }}
+      >
+        {/* Background track line - Dashed elegant */}
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: 0,
+          right: 0,
+          height: '1px',
+          background: 'repeating-linear-gradient(90deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 4px, transparent 4px, transparent 8px)',
+          transform: 'translateY(-50%)'
+        }} />
+
+        {/* Progress fill up to current day */}
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: 0,
+          width: `${(currentIdx / (cyclePhases.length - 1)) * 100}%`,
+          height: '1px',
+          background: 'var(--color-accent)',
+          boxShadow: '0 0 8px var(--color-accent)',
+          transform: 'translateY(-50%)',
+          transition: 'width 0.5s ease'
+        }} />
+
+        {/* Day markers */}
+        {cyclePhases.map((day, idx) => {
+          const isActive = day.isCurrent;
+          const isHovered = idx === hoveredIndex;
+          const isMajorPhase = ['New Moon', 'First Quarter', 'Full Moon', 'Last Quarter'].includes(day.name);
+
+          return (
+            <div
+              key={idx}
+              style={{
+                position: 'absolute',
+                left: `${(idx / (cyclePhases.length - 1)) * 100}%`,
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                zIndex: isActive ? 3 : isHovered ? 2 : 1
+              }}
+            >
+              {/* Moon icon for major phases / active / hovered */}
+              {(isActive || isMajorPhase || isHovered) ? (
+                <div style={{
+                  transition: 'transform 0.2s ease',
+                  transform: (isActive || isHovered) ? 'scale(1.4)' : 'scale(1)',
+                  filter: isActive ? 'drop-shadow(0 0 6px var(--color-accent))' : 'none'
+                }}>
+                  <MoonIcon phase={day.phase} size={isActive ? 24 : 18} />
+                </div>
+              ) : (
+                <div style={{
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  background: `rgba(255,255,255, ${0.15 + day.fraction / 200})`,
+                  transition: 'transform 0.15s ease',
+                  transform: isHovered ? 'scale(2)' : 'scale(1)'
+                }} />
+              )}
+
+              {/* Glow ring behind current day */}
+              {isActive && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  margin: '-18px 0 0 -18px',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  border: '1.5px solid var(--color-accent)',
+                  opacity: 0.5,
+                  animation: 'pulse-ring 2s ease-in-out infinite',
+                  pointerEvents: 'none'
+                }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Date labels row */}
+      <div className="utility-label" style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: '0.75rem',
+        opacity: 0.8
+      }}>
+        <span>{formatShortDate(cyclePhases[0].date)}</span>
+        <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
+          {formatShortDate(currentDate)}
+        </span>
+        <span>{formatShortDate(cyclePhases[cyclePhases.length - 1].date)}</span>
+      </div>
+    </div>
+  );
+};
+
+export default LunarTimeline;

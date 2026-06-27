@@ -3,17 +3,18 @@
 :root {
   --font-body: 'Inter', sans-serif;
   --font-heading: 'Outfit', sans-serif;
+  --font-serif: 'Cormorant Garamond', serif;
   
-  --color-bg-deep: #050510;
+  --color-bg-deep: #03040a;
   --color-bg-mid: #0a0b1a;
-  --color-text-primary: #f0f0f5;
-  --color-text-secondary: #8a8db5;
-  --color-accent: #6b77e8;
-  --color-accent-glow: rgba(107, 119, 232, 0.4);
+  --color-text-primary: #f8f8fb;
+  --color-text-secondary: #9ea1c2;
+  --color-accent: #8e9bf2;
+  --color-accent-glow: rgba(142, 155, 242, 0.4);
   
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  --glass-bg: rgba(255, 255, 255, 0.015);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 12px 48px -10px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -26,33 +27,14 @@ body {
   font-family: var(--font-body);
   background-color: var(--color-bg-deep);
   color: var(--color-text-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
   position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  scroll-behavior: smooth;
 }
 
 /* Cosmic Background Elements */
-.stars {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: -2;
-  background-image: 
-    radial-gradient(1px 1px at 20px 30px, #ffffff, rgba(0,0,0,0)),
-    radial-gradient(1px 1px at 40px 70px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
-    radial-gradient(1px 1px at 50px 160px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
-    radial-gradient(1.5px 1.5px at 90px 40px, #ffffff, rgba(0,0,0,0)),
-    radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
-    radial-gradient(1px 1px at 160px 120px, rgba(255,255,255,0.5), rgba(0,0,0,0));
-  background-repeat: repeat;
-  background-size: 200px 200px;
-  animation: twinkle 10s infinite linear alternate;
-}
 
 .nebula {
   position: fixed;
@@ -60,18 +42,29 @@ body {
   left: -20vw;
   width: 140vw;
   height: 140vh;
-  z-index: -1;
+  z-index: -2;
   background: 
-    radial-gradient(circle at 20% 30%, rgba(45, 30, 90, 0.3) 0%, transparent 40%),
-    radial-gradient(circle at 80% 70%, rgba(30, 40, 90, 0.2) 0%, transparent 50%);
-  filter: blur(60px);
-  animation: drift 30s ease-in-out infinite alternate;
+    radial-gradient(circle at 20% 30%, rgba(35, 20, 70, 0.35) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(20, 30, 80, 0.25) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.8) 0%, transparent 100%);
+  filter: blur(80px);
+  animation: drift 40s ease-in-out infinite alternate;
 }
 
-@keyframes twinkle {
-  0% { opacity: 0.7; }
-  100% { opacity: 1; }
+.noise {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');
+  mix-blend-mode: overlay;
 }
+
+
 
 @keyframes drift {
   0% { transform: translateY(0) scale(1); }
@@ -81,13 +74,16 @@ body {
 /* Glassmorphism Classes */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  box-shadow: var(--glass-shadow);
-  padding: 2rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  padding: 2.5rem;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .glass-panel:hover {
@@ -122,16 +118,168 @@ body {
   transform: translateY(0);
 }
 
+/* Ghost Control Button (Date Controls) */
+.ghost-control-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.ghost-control-btn:hover {
+  color: var(--color-accent);
+  background: rgba(255, 255, 255, 0.05);
+  transform: scale(1.1);
+}
+
+.ghost-control-btn:active {
+  transform: scale(0.95);
+}
+
 /* App Container */
 #root {
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+/* Data Drawer */
+.data-drawer {
+  position: absolute;
+  background: rgba(5, 5, 16, 0.6);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: -10px 0 50px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* hide scrollbar */
+  scrollbar-width: none;
+}
+.data-drawer::-webkit-scrollbar {
+  display: none;
+}
+
+/* Desktop Drawer (Right side) */
+@media (min-width: 900px) {
+  .data-drawer {
+    top: 0;
+    right: 0;
+    width: 450px;
+    height: 100vh;
+    border-top: none;
+    padding: 3rem 2rem;
+    transform: translateX(100%);
+  }
+}
+
+/* Mobile Drawer (Bottom sheet) */
+@media (max-width: 899px) {
+  .data-drawer {
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 75vh;
+    border-left: none;
+    border-radius: 24px 24px 0 0;
+    padding: 2rem 1.5rem;
+    transform: translateY(100%);
+  }
+}
+
+/* Drawer Close Button */
+.drawer-close-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem !important;
+  left: auto !important;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.drawer-close-btn:hover {
+  transform: none !important;
+}
+
+@media (max-width: 899px) {
+  .drawer-close-btn {
+    right: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  
+  .drawer-close-btn:hover {
+    transform: translateX(-50%) !important;
+  }
+}
+
+/* Section Layout */
+.section {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  scroll-margin-top: 1rem;
+}
+
+.section-hero {
+  width: 100%;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  z-index: 10;
+}
+
+/* Two-column grid for data + sky panels on desktop */
+.data-grid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 2rem;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .data-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .section {
+    padding: 1.25rem;
+  }
+  
+  .section-hero {
+    min-height: 100svh;
+    padding-top: 2rem;
+  }
 }
 
 h1, h2, h3 {
@@ -139,10 +287,115 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
 }
 
+.font-serif {
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
+.utility-label {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--color-text-secondary);
+}
+
+/* Custom cursor: hide the native cursor on non-touch devices */
+@media (pointer: fine) {
+  *, *::before, *::after {
+    cursor: none !important;
+  }
+}
+
 /* Utilities */
 .text-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, #a5aae3 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #a5aae3 33%, #6b77e8 66%, #ffffff 100%);
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: gradient-shift 6s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Button ripple effect */
+.glass-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-button .ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(107, 119, 232, 0.4);
+  transform: scale(0);
+  animation: ripple-expand 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes ripple-expand {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Ghost Control Button (Date Controls) */
+.ghost-control-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.ghost-control-btn:hover {
+  color: var(--color-accent);
+  background: rgba(255, 255, 255, 0.05);
+  transform: scale(1.1);
+}
+
+.ghost-control-btn:active {
+  transform: scale(0.95);
+}
+
+/* Timeline pulse animation */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.3); opacity: 0.15; }
+  100% { transform: scale(1); opacity: 0.5; }
+}
+
+/* Flush Bottom Bar for Timeline */
+.bottom-bar {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--glass-border);
+  width: 100%;
+}
+
+/* Date Controls Container */
+.controls-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-top: 1.5rem;
+  z-index: 20;
+}
+
+@media (max-width: 768px) {
+  .controls-container {
+    padding-top: 4.5rem;
+  }
 }

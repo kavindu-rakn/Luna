@@ -1,125 +1,131 @@
-import React from 'react';
+import React, { useRef, useMemo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { useTexture, Sphere } from '@react-three/drei';
+
+const Moon = ({ phase }) => {
+  const moonRef = useRef();
+  const isHovered = useRef(false);
+  
+  // Load high-res NASA texture from three.js examples
+  const colorMap = useTexture('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg');
+  
+  // Calculate sun (light) position based on lunar phase
+  // phase ranges from 0 to 1
+  const sunPosition = useMemo(() => {
+    // phase 0 is New Moon, 0.5 is Full Moon
+    const theta = phase * Math.PI * 2;
+    const distance = 15;
+    return [
+      Math.sin(theta) * distance,
+      0, // Keeping the sun level with the moon
+      -Math.cos(theta) * distance
+    ];
+  }, [phase]);
+
+  useFrame((state) => {
+    if (!moonRef.current) return;
+    
+    // 1. Subtle idle rotation (moon rotating on its axis)
+    moonRef.current.rotation.y += 0.001;
+    
+    // 2. Mouse Parallax (tilting the moon based on cursor position ONLY when hovered)
+    let targetTiltX = 0;
+    let targetTiltZ = 0;
+
+    if (isHovered.current) {
+      targetTiltX = (state.pointer.y * Math.PI) / 10;
+      targetTiltZ = -(state.pointer.x * Math.PI) / 10;
+    }
+    
+    // Smooth interpolation for the tilt (returns to zero when not hovered)
+    moonRef.current.rotation.x += (targetTiltX - moonRef.current.rotation.x) * 0.05;
+    moonRef.current.rotation.z += (targetTiltZ - moonRef.current.rotation.z) * 0.05;
+  });
+
+  return (
+    <group>
+      {/* Earthshine: Faint ambient light illuminating the dark side of the moon */}
+      <ambientLight intensity={0.05} color="#8a8db5" />
+      
+      {/* The Sun: Directional light causing the primary illumination and terminator line */}
+      <directionalLight 
+        position={sunPosition} 
+        intensity={2.5} 
+        color="#ffffff" 
+      />
+      
+      <group ref={moonRef}>
+        <Sphere args={[2, 64, 64]}>
+          <meshStandardMaterial 
+            map={colorMap} 
+            bumpMap={colorMap} 
+            bumpScale={0.015}
+            roughness={0.9} 
+            metalness={0.1}
+          />
+        </Sphere>
+      </group>
+
+      {/* Invisible stationary hit box to prevent parallax raycast jitter */}
+      <Sphere 
+        args={[2.05, 32, 32]}
+        visible={false}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          isHovered.current = true;
+          const dot = document.getElementById('custom-cursor-dot');
+          if (dot) {
+            dot.style.transform = 'translate(-50%, -50%) scale(3.75)';
+          }
+        }}
+        onPointerOut={(e) => {
+          isHovered.current = false;
+          const dot = document.getElementById('custom-cursor-dot');
+          if (dot) {
+            dot.style.transform = 'translate(-50%, -50%) scale(1)';
+          }
+        }}
+      >
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </Sphere>
+    </group>
+  );
+};
 
 const MoonVisualization = ({ lunarDetails }) => {
   const { phase, fraction } = lunarDetails;
   
-  // Phase 0: New Moon
-  // Phase 0.5: Full Moon
-  // Phase 1.0: New Moon (again)
-  
-  // Calculate light gradient based on phase
-  // We'll use CSS box-shadow and pseudo elements to create a 3D effect of the moon's terminator line.
-  
-  let lunarStyle = {};
-  let isWaxing = phase <= 0.5;
-  
-  // A simple visual trick for CSS moon phases:
-  // We have a dark circle (moon bg) and a light surface. We manipulate the size of the shadow
-  // to give the illusion of the moon phase.
-  
-  // fraction ranges 0-100.
-  const shadowSize = isWaxing ? (100 - fraction*2) : (fraction*2 - 100);
-  
   return (
     <div style={{
+      width: '100%',
+      height: '55vh',
+      minHeight: '350px',
+      maxHeight: '600px',
+      position: 'relative',
       display: 'flex',
-      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: '4rem 0',
-      position: 'relative'
     }}>
-      {/* Background Glow */}
+      {/* Background Glow based on illumination fraction */}
       <div style={{
         position: 'absolute',
-        width: '300px',
-        height: '300px',
-        background: `radial-gradient(circle, var(--color-accent-glow) 0%, transparent 70%)`,
-        opacity: (fraction / 100) + 0.2,
-        transition: 'opacity 0.5s ease',
-        zIndex: 0
+        width: '450px',
+        height: '450px',
+        background: `radial-gradient(circle, var(--color-accent-glow) 0%, transparent 60%)`,
+        opacity: (parseFloat(fraction) / 100) + 0.1,
+        transition: 'opacity 0.8s ease',
+        zIndex: 0,
+        pointerEvents: 'none',
       }} />
-      
-      {/* Moon Orb */}
-      <div style={{
-        width: '240px',
-        height: '240px',
-        borderRadius: '50%',
-        background: 'url("https://www.transparenttextures.com/patterns/stardust.png"), #111111', 
-        position: 'relative',
-        overflow: 'hidden',
-        boxShadow: `
-          inset -10px -10px 40px rgba(0,0,0,0.8),
-          0 0 20px rgba(255,255,255,${(fraction/100) * 0.4})
-        `,
-        zIndex: 1,
-        transition: 'all 0.5s ease'
-      }}>
-        {/* The illuminated portion */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          borderRadius: '50%',
-          background: 'url("https://www.transparenttextures.com/patterns/stardust.png"), #e8e8ed',
-          opacity: 0.95,
-          // CSS trick to clip the illuminated half:
-          // We move it right or left based on waxing/waning, and skew it.
-          // For simplicity and elegance, we'll use a dynamic box-shadow over a sphere instead.
-          boxShadow: isWaxing 
-            ? `inset ${-(120 - (fraction/100)*240)}px 0 30px rgba(0,0,0,0.9)` 
-            : `inset ${(120 - (fraction/100)*240)}px 0 30px rgba(0,0,0,0.9)`,
-            
-          // A more robust pure CSS moon requires SVG or complex clip-paths.
-          // Since we want premium, let's use a dual-hemisphere approach:
-          clipPath: `circle(50% at 50% 50%)`,
-        }} />
-        
-        {/* A true realistic CSS moon phase trick using absolute positioning */}
-        {/* Background is the lit moon */}
-        <div style={{
-          position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
-          background: 'radial-gradient(circle at 30% 30%, #ffffff 0%, #d4d4dc 60%, #9a9a9f 100%)',
-          boxShadow: 'inset -20px -20px 40px rgba(0,0,0,0.5)',
-        }}>
-          {/* Shadow Overlay */}
-          <div style={{
-            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', borderRadius: '50%',
-            background: 'var(--color-bg-deep)',
-            opacity: 0.95,
-            transform: isWaxing ? `translateX(${fraction}%)` : `translateX(-${fraction}%)`,
-            boxShadow: isWaxing ? '-20px 0 20px rgba(0,0,0,0.8)' : '20px 0 20px rgba(0,0,0,0.8)',
-            transition: 'transform 0.5s ease-in-out',
-            // this gives the crescent a rounded edge
-            borderRadius: isWaxing 
-              ? `${100 - fraction/2}% 50% 50% ${100 - fraction/2}%` 
-              : `50% ${100 - fraction/2}% ${100 - fraction/2}% 50%`
-          }} />
 
-          {/* Core Terminator Shadow for smooth blending */}
-           <div style={{
-            position: 'absolute',
-            top: 0,
-            left: isWaxing ? `${fraction}%` : `${100 - fraction}%`,
-            width: '200%',
-            height: '100%',
-            background: 'var(--color-bg-deep)',
-            transform: isWaxing ? 'translateX(0)' : 'translateX(-100%)',
-            transition: 'left 0.5s ease-in-out',
-           }}/>
-
-        </div>
-        
-        {/* Detailed Moon Texture Trick */}
-        <div style={{
-          position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
-          background: 'radial-gradient(circle at 70% 70%, transparent 40%, rgba(0,0,0,0.6) 100%)',
-          mixBlendMode: 'multiply'
-        }}/>
+      {/* R3F Canvas Container */}
+      <div style={{ width: '100%', height: '100%', zIndex: 1 }}>
+        <Canvas camera={{ position: [0, 0, 5.5], fov: 45 }}>
+          <React.Suspense fallback={null}>
+            <Moon phase={phase} />
+          </React.Suspense>
+        </Canvas>
       </div>
-      
     </div>
   );
 };
