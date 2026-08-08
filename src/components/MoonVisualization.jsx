@@ -1,8 +1,8 @@
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useTexture, Sphere } from '@react-three/drei';
 
-const Moon = ({ phase }) => {
+const Moon = ({ phase, scale = 1 }) => {
   const moonRef = useRef();
   const isHovered = useRef(false);
   const isDragging = useRef(false);
@@ -55,7 +55,7 @@ const Moon = ({ phase }) => {
   });
 
   return (
-    <group>
+    <group scale={scale}>
       {/* Earthshine: Faint ambient light illuminating the dark side of the moon */}
       <ambientLight intensity={0.05} color="#8a8db5" />
       
@@ -116,23 +116,31 @@ const Moon = ({ phase }) => {
 
 const MoonVisualization = ({ lunarDetails }) => {
   const { phase, fraction } = lunarDetails;
-  
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const updateIsMobile = (e) => setIsMobile(e.matches);
+    setIsMobile(media.matches);
+    if (media.addEventListener) {
+      media.addEventListener('change', updateIsMobile);
+      return () => media.removeEventListener('change', updateIsMobile);
+    } else {
+      media.addListener(updateIsMobile);
+      return () => media.removeListener(updateIsMobile);
+    }
+  }, []);
+
+  const moonScale = isMobile ? 0.75 : 1;
+  const glowSize = isMobile ? '337.5px' : '450px';
+
   return (
-    <div style={{
-      width: '100%',
-      height: '55vh',
-      minHeight: '350px',
-      maxHeight: '600px',
-      position: 'relative',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-    }}>
+    <div className="moon-viz-wrapper">
       {/* Background Glow based on illumination fraction */}
       <div style={{
         position: 'absolute',
-        width: '450px',
-        height: '450px',
+        width: glowSize,
+        height: glowSize,
         background: `radial-gradient(circle, var(--color-accent-glow) 0%, transparent 60%)`,
         opacity: (parseFloat(fraction) / 100) + 0.1,
         transition: 'opacity 0.8s ease',
@@ -144,7 +152,7 @@ const MoonVisualization = ({ lunarDetails }) => {
       <div style={{ width: '100%', height: '100%', zIndex: 1 }}>
         <Canvas camera={{ position: [0, 0, 5.5], fov: 45 }}>
           <React.Suspense fallback={null}>
-            <Moon phase={phase} />
+            <Moon phase={phase} scale={moonScale} />
           </React.Suspense>
         </Canvas>
       </div>

@@ -159,8 +159,8 @@ function App() {
             <MoonVisualization lunarDetails={lunarDetails} />
           </div>
           
-          <div className="gsap-reveal hero-phase-name" style={{ textAlign: 'center', marginTop: '1rem', zIndex: 10 }}>
-            <span className="font-serif" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+          <div className="gsap-reveal hero-phase-name">
+            <span className="font-serif">
               {lunarDetails.name}
             </span>
           </div>
