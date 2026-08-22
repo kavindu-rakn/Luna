@@ -1,16 +1,65 @@
-# React + Vite
+![Luna Landing Page](./screenshot.png)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# 🌑 Luna
 
-Currently, two official plugins are available:
+A stunning, interactive 3D web application that explores the lunar cycle and the cosmos. Built with modern web technologies, Luna offers an immersive deep dive into the phases of the moon, blending beautiful UI with realistic 3D renderings and fluid animations.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ✨ Features
 
-## React Compiler
+- **Interactive 3D Moon**: Realistic 3D moon visualization using Three.js and `@react-three/fiber`.
+- **Lunar Cycle Timeline**: Drag and explore the different phases of the moon interactively.
+- **Astronomical Precision**: Powered by `suncalc` for accurate lunar phase and illumination calculations.
+- **Cinematic Animations**: Seamless transitions and fluid micro-animations crafted with GSAP.
+- **Immersive Dark UI**: A premium, space-themed aesthetic that highlights the beauty of the cosmos.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack
 
-## Expanding the ESLint configuration
+- **Framework**: React 19 + Vite
+- **3D Graphics**: Three.js, React Three Fiber, React Three Drei
+- **Animations**: GSAP (`@gsap/react`)
+- **Icons**: Lucide React
+- **Astronomy Data**: SunCalc
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🚀 Getting Started
+
+### Prerequisites
+
+Ensure you have Node.js installed on your machine.
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/kavindu-rakn/Luna.git
+   cd Luna
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+### Running Locally
+
+Start the development server:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:5173` to view the app in your browser.
+
+<br/>
+
+```text
+════════════════════════════════════════════════════════════ ◆ ════════════════════════════════════════════════════════════
+   
+             ██╗  ██╗ █████╗ ██╗   ██╗██╗███╗   ██╗██████╗ ██╗   ██╗        ██████╗  █████╗ ██╗  ██╗███╗   ██╗
+             ██║ ██╔╝██╔══██╗██║   ██║██║████╗  ██║██╔══██╗██║   ██║        ██╔══██╗██╔══██╗██║ ██╔╝████╗  ██║
+             █████╔╝ ███████║██║   ██║██║██╔██╗ ██║██║  ██║██║   ██║ █████╗ ██████╔╝███████║█████╔╝ ██╔██╗ ██║
+             ██╔═██╗ ██╔══██║╚██╗ ██╔╝██║██║╚██╗██║██║  ██║██║   ██║ ╚════╝ ██╔══██╗██╔══██║██╔═██╗ ██║╚██╗██║
+             ██║  ██╗██║  ██║ ╚████╔╝ ██║██║ ╚████║██████╔╝╚██████╔╝        ██║  ██║██║  ██║██║  ██╗██║ ╚████║
+             ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝         ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝
+   
+════════════════════════════════════════════════════════════ ◆ ════════════════════════════════════════════════════════════
+```
