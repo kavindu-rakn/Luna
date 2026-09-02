@@ -11,21 +11,22 @@ const MOON_TEXTURE = `${BASE_URL}/assets/textures/moon_1024.jpg`;
 // Rotating by -PI/2 aligns Prime Meridian with +Z facing camera.
 const PRIME_MERIDIAN_Y = -Math.PI / 2;
 
-const MoonMesh = ({ phase, scale = 1, isCustomRotation, setIsCustomRotation, resetCount }) => {
+const MoonMesh = ({ phase, scale = 1, setIsCustomRotation, resetTrigger }) => {
   const moonRef = useRef();
   const isDragging = useRef(false);
+  const isResetting = useRef(false);
   const previousPointer = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
 
   const colorMap = useTexture(MOON_TEXTURE);
 
-  // Sunlight position illuminating from Earth observer's perspective
+  // Directional sunlight illuminating from Earth observer's perspective
   const sunPosition = useMemo(() => {
     const theta = phase * Math.PI * 2;
     const distance = 16;
     return [
       Math.sin(theta) * distance,
-      0, // Equator aligned to prevent polar lighting artifacts
+      0,
       -Math.cos(theta) * distance
     ];
   }, [phase]);
@@ -39,42 +40,90 @@ const MoonMesh = ({ phase, scale = 1, isCustomRotation, setIsCustomRotation, res
     }
   }, []);
 
-  // Smooth reset to Prime Meridian on reset trigger
+  // When reset button is clicked, start the one-time reset animation
   useEffect(() => {
-    if (resetCount > 0 && moonRef.current) {
+    if (resetTrigger > 0) {
+      isResetting.current = true;
       velocity.current = { x: 0, y: 0 };
     }
-  }, [resetCount]);
+  }, [resetTrigger]);
 
   useFrame(() => {
     if (!moonRef.current) return;
 
-    if (resetCount > 0 && !isDragging.current && isCustomRotation) {
-      // Smoothly animate back to Prime Meridian
-      moonRef.current.rotation.y = THREE.MathUtils.lerp(moonRef.current.rotation.y, PRIME_MERIDIAN_Y, 0.1);
-      moonRef.current.rotation.x = THREE.MathUtils.lerp(moonRef.current.rotation.x, 0, 0.1);
+    if (isResetting.current) {
+      // Smoothly animate back to Prime Meridian (Earth View)
+      moonRef.current.rotation.y = THREE.MathUtils.lerp(moonRef.current.rotation.y, PRIME_MERIDIAN_Y, 0.08);
+      moonRef.current.rotation.x = THREE.MathUtils.lerp(moonRef.current.rotation.x, 0, 0.08);
 
-      if (Math.abs(moonRef.current.rotation.y - PRIME_MERIDIAN_Y) < 0.005 && Math.abs(moonRef.current.rotation.x) < 0.005) {
+      if (
+        Math.abs(moonRef.current.rotation.y - PRIME_MERIDIAN_Y) < 0.003 &&
+        Math.abs(moonRef.current.rotation.x) < 0.003
+      ) {
         moonRef.current.rotation.y = PRIME_MERIDIAN_Y;
         moonRef.current.rotation.x = 0;
+        isResetting.current = false;
         setIsCustomRotation(false);
       }
     } else if (!isDragging.current) {
-      // Apply momentum decay
+      // Apply smooth rotational inertia and decay
       moonRef.current.rotation.y += velocity.current.x;
       moonRef.current.rotation.x += velocity.current.y;
-      velocity.current.x *= 0.93;
-      velocity.current.y *= 0.93;
+      velocity.current.x *= 0.94;
+      velocity.current.y *= 0.94;
 
-      // Lock vertical tilt within natural lunar libration range (+/- 14 deg)
-      // This prevents the poles from tipping directly into camera view
-      moonRef.current.rotation.x = Math.max(-0.25, Math.min(0.25, moonRef.current.rotation.x));
+      // Soft clamp on vertical tilt to allow looking at North/South poles (+/- 86 degrees)
+      moonRef.current.rotation.x = Math.max(-1.5, Math.min(1.5, moonRef.current.rotation.x));
     }
   });
 
+  // Custom shader hook to eliminate polar pinching/starburst artifacts on the poles
+  const customMaterial = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      map: colorMap,
+      bumpMap: colorMap,
+      bumpScale: 0.02,
+      roughness: 0.92,
+      metalness: 0.04
+    });
+
+    mat.onBeforeCompile = (shader) => {
+      shader.vertexShader = `
+        varying vec3 vWorldNormal;
+        ${shader.vertexShader}
+      `.replace(
+        '#include <worldpos_vertex>',
+        `
+        #include <worldpos_vertex>
+        vWorldNormal = normalize(normal);
+        `
+      );
+
+      shader.fragmentShader = `
+        varying vec3 vWorldNormal;
+        ${shader.fragmentShader}
+      `.replace(
+        '#include <map_fragment>',
+        `
+        #include <map_fragment>
+        // Smooth polar antialiasing to eliminate triangle fan pinching
+        float poleDist = abs(vWorldNormal.y);
+        if (poleDist > 0.82) {
+          float poleFactor = smoothstep(0.82, 0.98, poleDist);
+          vec2 poleSampleUV = vec2(vMapUv.x, vWorldNormal.y > 0.0 ? 0.03 : 0.97);
+          vec4 poleColor = texture2D(map, poleSampleUV);
+          diffuseColor.rgb = mix(diffuseColor.rgb, poleColor.rgb, poleFactor * 0.7);
+        }
+        `
+      );
+    };
+
+    return mat;
+  }, [colorMap]);
+
   return (
     <group scale={scale}>
-      {/* Earthshine subtle illumination */}
+      {/* Subtle Earthshine illumination */}
       <ambientLight intensity={0.09} color="#7880ab" />
 
       {/* Direct Sunlight */}
@@ -84,26 +133,19 @@ const MoonMesh = ({ phase, scale = 1, isCustomRotation, setIsCustomRotation, res
         color="#ffffff"
       />
 
-      {/* 3D Moon Sphere (128x128 high-density mesh) */}
+      {/* 3D Moon Sphere with custom seamless polar shader */}
       <group ref={moonRef}>
-        <Sphere args={[1.85, 128, 128]}>
-          <meshStandardMaterial
-            map={colorMap}
-            bumpMap={colorMap}
-            bumpScale={0.02}
-            roughness={0.92}
-            metalness={0.04}
-          />
-        </Sphere>
+        <Sphere args={[1.85, 128, 128]} material={customMaterial} />
       </group>
 
-      {/* Direct 360 Drag Interaction Hit Sphere */}
+      {/* Interactive Raycast Hit Sphere for 360 Full Orbit Drag */}
       <Sphere
-        args={[1.92, 32, 32]}
+        args={[1.95, 32, 32]}
         visible={false}
         onPointerDown={(e) => {
           e.stopPropagation();
           isDragging.current = true;
+          isResetting.current = false;
           previousPointer.current = { x: e.clientX, y: e.clientY };
           setIsCustomRotation(true);
         }}
@@ -113,10 +155,10 @@ const MoonMesh = ({ phase, scale = 1, isCustomRotation, setIsCustomRotation, res
           const deltaY = e.clientY - previousPointer.current.y;
 
           velocity.current.x = deltaX * 0.005;
-          velocity.current.y = deltaY * 0.003;
+          velocity.current.y = deltaY * 0.005;
 
           moonRef.current.rotation.y += velocity.current.x;
-          moonRef.current.rotation.x = Math.max(-0.25, Math.min(0.25, moonRef.current.rotation.x + velocity.current.y));
+          moonRef.current.rotation.x = Math.max(-1.5, Math.min(1.5, moonRef.current.rotation.x + velocity.current.y));
 
           previousPointer.current = { x: e.clientX, y: e.clientY };
         }}
@@ -143,7 +185,7 @@ const MoonVisualization = ({ lunarDetails }) => {
   const { phase, fraction } = lunarDetails;
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches);
   const [isCustomRotation, setIsCustomRotation] = useState(false);
-  const [resetCount, setResetCount] = useState(0);
+  const [resetTrigger, setResetTrigger] = useState(0);
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 768px)');
@@ -176,11 +218,11 @@ const MoonVisualization = ({ lunarDetails }) => {
         }}
       />
 
-      {/* Floating "Reset to Earth View" Badge when rotated */}
+      {/* Floating "Reset View" Badge when rotated */}
       {isCustomRotation && (
         <button
           className="glass-button"
-          onClick={() => setResetCount(c => c + 1)}
+          onClick={() => setResetTrigger(c => c + 1)}
           style={{
             position: 'absolute',
             top: '0.4rem',
@@ -214,7 +256,7 @@ const MoonVisualization = ({ lunarDetails }) => {
               scale={moonScale}
               isCustomRotation={isCustomRotation}
               setIsCustomRotation={setIsCustomRotation}
-              resetCount={resetCount}
+              resetTrigger={resetTrigger}
             />
           </React.Suspense>
         </Canvas>
