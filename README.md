@@ -1,10 +1,10 @@
 ![Luna Landing Page](./screenshot.png)
 
-# 🌑 Luna
+# Luna
 
 A stunning, interactive 3D web application that explores the lunar cycle and the cosmos. Built with modern web technologies, Luna offers an immersive deep dive into the phases of the moon, blending beautiful UI with realistic 3D renderings and fluid animations.
 
-## ✨ Features
+## Features
 
 - **Interactive 3D Moon**: Realistic 3D moon visualization using Three.js and `@react-three/fiber`.
 - **Lunar Cycle Timeline**: Drag and explore the different phases of the moon interactively.
@@ -12,7 +12,7 @@ A stunning, interactive 3D web application that explores the lunar cycle and the
 - **Cinematic Animations**: Seamless transitions and fluid micro-animations crafted with GSAP.
 - **Immersive Dark UI**: A premium, space-themed aesthetic that highlights the beauty of the cosmos.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Framework**: React 19 + Vite
 - **3D Graphics**: Three.js, React Three Fiber, React Three Drei
@@ -20,7 +20,7 @@ A stunning, interactive 3D web application that explores the lunar cycle and the
 - **Icons**: Lucide React
 - **Astronomy Data**: SunCalc
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -52,14 +52,14 @@ Open `http://localhost:5173` to view the app in your browser.
 <br/>
 
 ```text
-════════════════════════════════════════════════════════════ ◆ ════════════════════════════════════════════════════════════
+══════════════════════════════════════════════════════ ◆ ══════════════════════════════════════════════════════
    
-             ██╗  ██╗ █████╗ ██╗   ██╗██╗███╗   ██╗██████╗ ██╗   ██╗        ██████╗  █████╗ ██╗  ██╗███╗   ██╗
-             ██║ ██╔╝██╔══██╗██║   ██║██║████╗  ██║██╔══██╗██║   ██║        ██╔══██╗██╔══██╗██║ ██╔╝████╗  ██║
-             █████╔╝ ███████║██║   ██║██║██╔██╗ ██║██║  ██║██║   ██║ █████╗ ██████╔╝███████║█████╔╝ ██╔██╗ ██║
-             ██╔═██╗ ██╔══██║╚██╗ ██╔╝██║██║╚██╗██║██║  ██║██║   ██║ ╚════╝ ██╔══██╗██╔══██║██╔═██╗ ██║╚██╗██║
-             ██║  ██╗██║  ██║ ╚████╔╝ ██║██║ ╚████║██████╔╝╚██████╔╝        ██║  ██║██║  ██║██║  ██╗██║ ╚████║
-             ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝         ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝
+      ██╗  ██╗ █████╗ ██╗   ██╗██╗███╗   ██╗██████╗ ██╗   ██╗        ██████╗  █████╗ ██╗  ██╗███╗   ██╗
+      ██║ ██╔╝██╔══██╗██║   ██║██║████╗  ██║██╔══██╗██║   ██║        ██╔══██╗██╔══██╗██║ ██╔╝████╗  ██║
+      █████╔╝ ███████║██║   ██║██║██╔██╗ ██║██║  ██║██║   ██║ █████╗ ██████╔╝███████║█████╔╝ ██╔██╗ ██║
+      ██╔═██╗ ██╔══██║╚██╗ ██╔╝██║██║╚██╗██║██║  ██║██║   ██║ ╚════╝ ██╔══██╗██╔══██║██╔═██╗ ██║╚██╗██║
+      ██║  ██╗██║  ██║ ╚████╔╝ ██║██║ ╚████║██████╔╝╚██████╔╝        ██║  ██║██║  ██║██║  ██╗██║ ╚████║
+      ╚═╝  ╚═╝╚═╝  ╚═╝  ╚═══╝  ╚═╝╚═╝  ╚═══╝╚═════╝  ╚═════╝         ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝
    
-════════════════════════════════════════════════════════════ ◆ ════════════════════════════════════════════════════════════
+══════════════════════════════════════════════════════ ◆ ═══════════════════════════════════════════════════════
 ```
