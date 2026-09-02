@@ -7,6 +7,7 @@ import LunarTimeline from './components/LunarTimeline';
 import CustomCursor from './components/CustomCursor';
 import SkyPosition from './components/SkyPosition';
 import OrbitalView from './components/OrbitalView';
+import LoadingScreen from './components/LoadingScreen';
 import { getLunarDetails, getSkyData, reverseGeocodeCached, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { X, BarChart3 } from 'lucide-react';
 
@@ -89,6 +90,9 @@ function App() {
       {/* Atmospheric Space Gradients */}
       <div className="nebula" />
       <div className="vignette" />
+
+      {/* Cinematic Asset Loading Screen */}
+      <LoadingScreen />
 
       {/* Custom Particle Comet Cursor */}
       <CustomCursor />
