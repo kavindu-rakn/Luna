@@ -1,111 +1,112 @@
-import React, { useRef, useMemo, useEffect, useState } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useTexture, Sphere } from '@react-three/drei';
+import * as THREE from 'three';
+import { Compass, RotateCw, Eye } from 'lucide-react';
 
-const Moon = ({ phase, scale = 1 }) => {
+const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+const MOON_TEXTURE = `${BASE_URL}/assets/textures/moon_1024.jpg`;
+
+const MoonMesh = ({ phase, scale = 1, isFreeMode = false, resetTrigger = 0 }) => {
   const moonRef = useRef();
-  const isHovered = useRef(false);
   const isDragging = useRef(false);
-  const previousX = useRef(0);
-  
-  // Load high-res NASA texture from three.js examples
-  const colorMap = useTexture('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg');
-  
-  // Calculate sun (light) position based on lunar phase
-  // phase ranges from 0 to 1
+  const previousPointer = useRef({ x: 0, y: 0 });
+  const velocity = useRef({ x: 0, y: 0 });
+
+  // Load local texture using resolved base URL
+  const colorMap = useTexture(MOON_TEXTURE);
+
+  // Calculate sun directional light position based on lunar phase
   const sunPosition = useMemo(() => {
-    // phase 0 is New Moon, 0.5 is Full Moon
     const theta = phase * Math.PI * 2;
-    const distance = 15;
+    const distance = 16;
     return [
-      Math.sin(theta) * distance,
-      0, // Keeping the sun level with the moon
+      -Math.sin(theta) * distance,
+      0.5,
       -Math.cos(theta) * distance
     ];
   }, [phase]);
 
+  // Reset to tidally-locked Earth view when resetTrigger changes or freeMode is toggled off
   useEffect(() => {
-    const handleMove = (e) => {
-      if (isDragging.current && moonRef.current) {
-        const deltaX = e.clientX - previousX.current;
-        // Spin horizontally based on mouse movement
-        moonRef.current.rotation.y += deltaX * 0.005; 
-        previousX.current = e.clientX;
-      }
-    };
-    const handleUp = () => {
-      isDragging.current = false;
-    };
+    if (!isFreeMode && moonRef.current) {
+      moonRef.current.rotation.x = 0;
+      moonRef.current.rotation.y = 0;
+      moonRef.current.rotation.z = 0;
+      velocity.current = { x: 0, y: 0 };
+    }
+  }, [isFreeMode, resetTrigger]);
 
-    window.addEventListener('pointermove', handleMove);
-    window.addEventListener('pointerup', handleUp);
-    return () => {
-      window.removeEventListener('pointermove', handleMove);
-      window.removeEventListener('pointerup', handleUp);
-    };
-  }, []);
-
+  // Inertia and damping for free exploration mode
   useFrame(() => {
     if (!moonRef.current) return;
-    
-    // Subtle idle rotation when not being actively dragged
-    if (!isDragging.current) {
-      moonRef.current.rotation.y += 0.001;
+
+    if (isFreeMode) {
+      if (!isDragging.current) {
+        moonRef.current.rotation.y += velocity.current.x;
+        moonRef.current.rotation.x += velocity.current.y;
+        velocity.current.x *= 0.94;
+        velocity.current.y *= 0.94;
+      }
+    } else {
+      moonRef.current.rotation.y = THREE.MathUtils.lerp(moonRef.current.rotation.y, 0, 0.1);
+      moonRef.current.rotation.x = THREE.MathUtils.lerp(moonRef.current.rotation.x, 0, 0.1);
     }
   });
 
   return (
     <group scale={scale}>
-      {/* Earthshine: Faint ambient light illuminating the dark side of the moon */}
-      <ambientLight intensity={0.05} color="#8a8db5" />
-      
-      {/* The Sun: Directional light causing the primary illumination and terminator line */}
-      <directionalLight 
-        position={sunPosition} 
-        intensity={2.5} 
-        color="#ffffff" 
+      {/* Earthshine: Subtle da Vinci glow on the dark side facing Earth */}
+      <ambientLight intensity={0.09} color="#7880ab" />
+
+      {/* The Sun: Directional light causing exact phase illumination and terminator line */}
+      <directionalLight
+        position={sunPosition}
+        intensity={3.2}
+        color="#ffffff"
       />
-      
+
+      {/* 3D Moon Sphere */}
       <group ref={moonRef}>
         <Sphere args={[2, 64, 64]}>
-          <meshStandardMaterial 
-            map={colorMap} 
-            bumpMap={colorMap} 
-            bumpScale={0.015}
-            roughness={0.9} 
-            metalness={0.1}
+          <meshStandardMaterial
+            map={colorMap}
+            bumpMap={colorMap}
+            bumpScale={0.02}
+            roughness={0.92}
+            metalness={0.05}
           />
         </Sphere>
       </group>
 
-      {/* Invisible stationary hit box for raycasting and interaction */}
-      <Sphere 
-        args={[2.05, 32, 32]}
+      {/* Interactive Raycast Hit Area */}
+      <Sphere
+        args={[2.08, 32, 32]}
         visible={false}
         onPointerDown={(e) => {
+          if (!isFreeMode) return;
           e.stopPropagation();
           isDragging.current = true;
-          previousX.current = e.clientX;
+          previousPointer.current = { x: e.clientX, y: e.clientY };
         }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          isHovered.current = true;
-          const dot = document.getElementById('custom-cursor-dot');
-          if (dot) {
-            dot.style.transform = 'translate(-50%, -50%) scale(3.75)';
-          }
-          const trails = document.querySelectorAll('.custom-cursor-trail');
-          trails.forEach(t => t.style.opacity = '0');
+        onPointerMove={(e) => {
+          if (!isFreeMode || !isDragging.current || !moonRef.current) return;
+          const deltaX = e.clientX - previousPointer.current.x;
+          const deltaY = e.clientY - previousPointer.current.y;
+          
+          velocity.current.x = deltaX * 0.005;
+          velocity.current.y = deltaY * 0.005;
+
+          moonRef.current.rotation.y += velocity.current.x;
+          moonRef.current.rotation.x += velocity.current.y;
+
+          previousPointer.current = { x: e.clientX, y: e.clientY };
         }}
-        onPointerOut={(e) => {
-          isHovered.current = false;
-          const dot = document.getElementById('custom-cursor-dot');
-          if (dot) {
-            dot.style.transform = 'translate(-50%, -50%) scale(1)';
-          }
-          const trails = document.querySelectorAll('.custom-cursor-trail');
-          const numTrails = 38; // Must match CustomCursor.jsx
-          trails.forEach((t, i) => t.style.opacity = `${1 - (i / numTrails)}`);
+        onPointerUp={() => {
+          isDragging.current = false;
+        }}
+        onPointerLeave={() => {
+          isDragging.current = false;
         }}
       >
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -114,14 +115,21 @@ const Moon = ({ phase, scale = 1 }) => {
   );
 };
 
+const FallbackSphere = ({ scale = 1 }) => (
+  <Sphere args={[2 * scale, 32, 32]}>
+    <meshStandardMaterial color="#2d3047" roughness={0.9} />
+  </Sphere>
+);
+
 const MoonVisualization = ({ lunarDetails }) => {
   const { phase, fraction } = lunarDetails;
-  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches);
+  const [isFreeMode, setIsFreeMode] = useState(false);
+  const [resetCount, setResetCount] = useState(0);
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 768px)');
     const updateIsMobile = (e) => setIsMobile(e.matches);
-    setIsMobile(media.matches);
     if (media.addEventListener) {
       media.addEventListener('change', updateIsMobile);
       return () => media.removeEventListener('change', updateIsMobile);
@@ -131,31 +139,110 @@ const MoonVisualization = ({ lunarDetails }) => {
     }
   }, []);
 
-  const moonScale = isMobile ? 0.75 : 1;
-  const glowSize = isMobile ? '337.5px' : '450px';
+  const moonScale = isMobile ? 0.78 : 1.05;
+  const glowSize = isMobile ? '320px' : '460px';
 
   return (
-    <div className="moon-viz-wrapper">
-      {/* Background Glow based on illumination fraction */}
-      <div style={{
-        position: 'absolute',
-        width: glowSize,
-        height: glowSize,
-        background: `radial-gradient(circle, var(--color-accent-glow) 0%, transparent 60%)`,
-        opacity: (parseFloat(fraction) / 100) + 0.1,
-        transition: 'opacity 0.8s ease',
-        zIndex: 0,
-        pointerEvents: 'none',
-      }} />
+    <div className="moon-viz-wrapper" style={{ position: 'relative' }}>
+      {/* Background Radial Glow proportional to phase illumination */}
+      <div
+        style={{
+          position: 'absolute',
+          width: glowSize,
+          height: glowSize,
+          background: `radial-gradient(circle, var(--accent-glow) 0%, transparent 65%)`,
+          opacity: Math.max(0.15, parseFloat(fraction) / 100),
+          transition: 'opacity 0.6s ease',
+          zIndex: 0,
+          pointerEvents: 'none'
+        }}
+      />
 
-      {/* R3F Canvas Container */}
+      {/* View Mode Switcher Pill */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '0.75rem',
+          zIndex: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          background: 'var(--bg-surface-1)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '24px',
+          padding: '0.3rem 0.5rem'
+        }}
+      >
+        <button
+          className={`mode-toggle-btn ${!isFreeMode ? 'active' : ''}`}
+          onClick={() => {
+            setIsFreeMode(false);
+            setResetCount(c => c + 1);
+          }}
+          title="Tidally locked: View Moon as seen from Earth"
+          aria-label="Earth Observation View"
+        >
+          <Eye size={13} />
+          <span>Earth View</span>
+        </button>
+
+        <button
+          className={`mode-toggle-btn ${isFreeMode ? 'active' : ''}`}
+          onClick={() => setIsFreeMode(true)}
+          title="Freely rotate 360° to inspect craters and far side"
+          aria-label="Free 3D Globe Mode"
+        >
+          <Compass size={13} />
+          <span>3D Globe</span>
+        </button>
+
+        {isFreeMode && (
+          <button
+            className="mode-reset-btn"
+            onClick={() => setResetCount(c => c + 1)}
+            title="Reset to Prime Meridian"
+            aria-label="Reset Rotation"
+          >
+            <RotateCw size={12} />
+          </button>
+        )}
+      </div>
+
+      {/* Three.js R3F Canvas Container */}
       <div style={{ width: '100%', height: '100%', zIndex: 1 }}>
-        <Canvas camera={{ position: [0, 0, 5.5], fov: 45 }}>
-          <React.Suspense fallback={null}>
-            <Moon phase={phase} scale={moonScale} />
+        <Canvas
+          camera={{ position: [0, 0, 5.5], fov: 42 }}
+          dpr={[1, 2]}
+          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        >
+          <React.Suspense fallback={<FallbackSphere scale={moonScale} />}>
+            <MoonMesh
+              phase={phase}
+              scale={moonScale}
+              isFreeMode={isFreeMode}
+              resetTrigger={resetCount}
+            />
           </React.Suspense>
         </Canvas>
       </div>
+
+      {/* Free Mode Hint */}
+      {isFreeMode && (
+        <div
+          className="utility-label"
+          style={{
+            position: 'absolute',
+            bottom: '0.5rem',
+            color: 'var(--text-muted)',
+            pointerEvents: 'none',
+            zIndex: 10,
+            animation: 'fadeIn 0.3s ease'
+          }}
+        >
+          Drag to explore surface
+        </div>
+      )}
     </div>
   );
 };
