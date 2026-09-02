@@ -7,7 +7,7 @@ import LunarTimeline from './components/LunarTimeline';
 import CustomCursor from './components/CustomCursor';
 import SkyPosition from './components/SkyPosition';
 import OrbitalView from './components/OrbitalView';
-import { getLunarDetails, getSkyData, reverseGeocodeCached } from './utils/lunarCalc';
+import { getLunarDetails, getSkyData, reverseGeocodeCached, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { Layers, X, BarChart3 } from 'lucide-react';
 
 function App() {
@@ -45,11 +45,17 @@ function App() {
       if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
 
       if (e.key === 'ArrowLeft') {
-        const step = e.shiftKey ? 30 : 1;
-        setCurrentDate(d => new Date(d.getTime() - step * 24 * 60 * 60 * 1000));
+        if (e.shiftKey) {
+          setCurrentDate(d => getAdjacentQuarterPhase(d, -1));
+        } else {
+          setCurrentDate(d => new Date(d.getTime() - 24 * 60 * 60 * 1000));
+        }
       } else if (e.key === 'ArrowRight') {
-        const step = e.shiftKey ? 30 : 1;
-        setCurrentDate(d => new Date(d.getTime() + step * 24 * 60 * 60 * 1000));
+        if (e.shiftKey) {
+          setCurrentDate(d => getAdjacentQuarterPhase(d, 1));
+        } else {
+          setCurrentDate(d => new Date(d.getTime() + 24 * 60 * 60 * 1000));
+        }
       } else if (e.key.toLowerCase() === 't') {
         setCurrentDate(new Date());
       } else if (e.key.toLowerCase() === 'd') {
@@ -134,12 +140,12 @@ function App() {
                 zIndex: 40,
                 cursor: 'pointer'
               }}
-              aria-label={isDrawerOpen ? 'Close telemetry details' : 'Open telemetry details (D)'}
+              aria-label={isDrawerOpen ? 'Close telemetry details' : 'Open telemetry details'}
               aria-expanded={isDrawerOpen}
             >
               <Layers size={15} color="var(--accent-light)" />
               <span className="utility-label" style={{ color: 'var(--text-primary)', margin: 0, fontWeight: 700 }}>
-                {isDrawerOpen ? 'Close Details' : 'Deep Dive (D)'}
+                {isDrawerOpen ? 'Close Details' : 'Deep Dive'}
               </span>
             </button>
           </div>

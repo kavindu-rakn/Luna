@@ -209,21 +209,26 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
                 left: `${(idx / (cyclePhases.length - 1)) * 100}%`,
                 top: '50%',
                 transform: 'translate(-50%, -50%)',
+                width: '32px',
+                height: '32px',
                 display: 'flex',
-                flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'center',
                 zIndex: isActive ? 5 : isHovered ? 4 : 2
               }}
             >
               {showIcon ? (
                 <div
                   style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     transition: 'transform 0.2s ease',
-                    transform: isActive ? 'scale(1.3)' : isHovered ? 'scale(1.2)' : 'scale(0.95)',
-                    filter: isActive ? 'drop-shadow(0 0 8px var(--accent-light))' : 'none'
+                    transform: isHovered && !isActive ? 'scale(1.15)' : 'scale(1)',
+                    filter: isActive ? 'drop-shadow(0 0 10px var(--accent-light))' : 'none'
                   }}
                 >
-                  <MoonIcon phase={day.phase} size={isActive ? 22 : 16} />
+                  <MoonIcon phase={day.phase} size={isActive ? 24 : 16} />
                 </div>
               ) : (
                 <div
@@ -238,16 +243,15 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
                 />
               )}
 
-              {/* Active Pulse Ring */}
+              {/* Active Pulse Ring - Locked to identical 32px box */}
               {isActive && (
                 <div
                   style={{
                     position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    margin: '-16px 0 0 -16px',
-                    width: '32px',
-                    height: '32px',
+                    top: '-3px',
+                    left: '-3px',
+                    right: '-3px',
+                    bottom: '-3px',
                     borderRadius: '50%',
                     border: '1.5px solid var(--accent-light)',
                     opacity: 0.6,

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Calendar as CalendarIcon, X } from 'lucide-react';
+import { getAdjacentQuarterPhase } from '../utils/lunarCalc';
 
 const DateControls = ({ currentDate, setCurrentDate }) => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -12,10 +13,9 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
     setCurrentDate(newDate);
   };
 
-  const changeMonth = (months) => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() + months);
-    setCurrentDate(newDate);
+  const jumpQuarterPhase = (direction) => {
+    const targetDate = getAdjacentQuarterPhase(currentDate, direction);
+    setCurrentDate(targetDate);
   };
 
   const formatDateDesktop = (date) => {
@@ -282,12 +282,12 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
 
       {/* Control Navigation Bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-        {/* -1 Month */}
+        {/* Previous Major Phase (New, 1st Q, Full, Last Q) */}
         <button
           className="ghost-control-btn"
-          title="Previous Month (Shift+←)"
-          onClick={() => changeMonth(-1)}
-          aria-label="Previous Month"
+          title="Previous Major Phase (Shift+←)"
+          onClick={() => jumpQuarterPhase(-1)}
+          aria-label="Previous Major Phase"
         >
           <ChevronsLeft size={16} />
         </button>
@@ -329,12 +329,12 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
           <ChevronRight size={16} />
         </button>
 
-        {/* +1 Month */}
+        {/* Next Major Phase (New, 1st Q, Full, Last Q) */}
         <button
           className="ghost-control-btn"
-          title="Next Month (Shift+→)"
-          onClick={() => changeMonth(1)}
-          aria-label="Next Month"
+          title="Next Major Phase (Shift+→)"
+          onClick={() => jumpQuarterPhase(1)}
+          aria-label="Next Major Phase"
         >
           <ChevronsRight size={16} />
         </button>

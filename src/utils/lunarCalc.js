@@ -164,6 +164,62 @@ export const getNextMajorPhases = (date = new Date()) => {
   };
 };
 
+// Jump directly to the exact minute of the next (+1) or previous (-1) major quarter phase
+export const getAdjacentQuarterPhase = (currentDate = new Date(), direction = 1) => {
+  const validDate = currentDate instanceof Date && !isNaN(currentDate.getTime()) ? currentDate : new Date();
+  const currentIllum = SunCalc.getMoonIllumination(validDate);
+  const currentPhase = currentIllum.phase; // 0.0 to 1.0
+
+  const quarterTargets = [0.0, 0.25, 0.5, 0.75];
+  const MIN_DELTA_DAYS = 0.25; // Skip if already within ~6 hours of exact phase to guarantee jump
+
+  let bestTarget = null;
+  let minDaysDiff = Infinity;
+
+  for (const target of quarterTargets) {
+    let phaseDiff;
+    if (direction > 0) {
+      phaseDiff = target - currentPhase;
+      if (phaseDiff <= 0.01) phaseDiff += 1.0;
+    } else {
+      phaseDiff = currentPhase - target;
+      if (phaseDiff <= 0.01) phaseDiff += 1.0;
+    }
+
+    const approxDays = phaseDiff * SYNODIC_MONTH;
+    if (approxDays > MIN_DELTA_DAYS && approxDays < minDaysDiff) {
+      minDaysDiff = approxDays;
+      bestTarget = target;
+    }
+  }
+
+  if (bestTarget === null) return validDate;
+
+  // Approximate center of target window
+  const approxTime = validDate.getTime() + (direction > 0 ? 1 : -1) * minDaysDiff * 86400000;
+
+  // Refine exact minute via binary search on monotonic phase progression
+  let low = approxTime - 18 * 3600000;
+  let high = approxTime + 18 * 3600000;
+
+  for (let step = 0; step < 16; step++) {
+    const mid = (low + high) / 2;
+    const midPhase = SunCalc.getMoonIllumination(new Date(mid)).phase;
+
+    let err = midPhase - bestTarget;
+    if (err > 0.5) err -= 1.0;
+    if (err < -0.5) err += 1.0;
+
+    if (err < 0) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  return new Date((low + high) / 2);
+};
+
 // Get the 30-day timeline centered around the selected date
 export const getCyclePhases = (centerDate = new Date(), daysCount = 30) => {
   const halfCycle = Math.floor(daysCount / 2);
