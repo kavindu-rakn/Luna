@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Calendar as CalendarIcon, X } from 'lucide-react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X } from 'lucide-react';
 import { getAdjacentQuarterPhase } from '../utils/lunarCalc';
 
 const DateControls = ({ currentDate, setCurrentDate }) => {
@@ -29,34 +29,30 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
 
   const formatDateMobile = (date) => {
     return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
-  // Close calendar on outside click or Escape
+  // Close calendar on Outside Click
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isCalendarOpen) {
-        setIsCalendarOpen(false);
-      }
-    };
     const handleClickOutside = (e) => {
-      if (calendarModalRef.current && !calendarModalRef.current.contains(e.target) && !e.target.closest('.date-display-btn')) {
+      if (calendarModalRef.current && !calendarModalRef.current.contains(e.target)) {
+        // Only close if click was not on the toggle button itself
+        const dateBtn = document.querySelector('.date-display-btn');
+        if (dateBtn && dateBtn.contains(e.target)) return;
         setIsCalendarOpen(false);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+
+    if (isCalendarOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isCalendarOpen]);
 
-  // Calendar calculations
+  // Monthly Calendar Math
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
@@ -108,7 +104,7 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
           background: isCalendarOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
           border: isCalendarOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)',
           borderRadius: '24px',
-          padding: '0.35rem 0.9rem',
+          padding: '0.35rem 1rem',
           cursor: 'pointer',
           whiteSpace: 'nowrap',
           minHeight: '34px'
@@ -117,11 +113,10 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
         aria-label="Current Date. Click to open calendar."
         aria-expanded={isCalendarOpen}
       >
-        <CalendarIcon size={14} color="var(--accent-light)" />
-        <span className="font-serif date-text-desktop" style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.01em' }}>
+        <span className="font-serif date-text-desktop" style={{ fontSize: '1.15rem', fontWeight: 400, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
           {formatDateDesktop(currentDate)}
         </span>
-        <span className="font-serif date-text-mobile" style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)', letterSpacing: '0.01em' }}>
+        <span className="font-serif date-text-mobile" style={{ fontSize: '1.05rem', fontWeight: 400, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
           {formatDateMobile(currentDate)}
         </span>
       </button>
@@ -255,28 +250,6 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
               );
             })}
           </div>
-
-          {/* Bottom Action: Jump to Today */}
-          <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'center' }}>
-            <button
-              className="glass-button"
-              onClick={() => {
-                const now = new Date();
-                setCurrentDate(now);
-                setViewDate(now);
-                setIsCalendarOpen(false);
-              }}
-              style={{
-                width: '100%',
-                padding: '0.4rem 0.75rem',
-                fontSize: '0.8rem',
-                minHeight: '32px',
-                borderRadius: '12px'
-              }}
-            >
-              Jump to Today
-            </button>
-          </div>
         </div>
       )}
 
@@ -309,11 +282,16 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
           onClick={() => setCurrentDate(new Date())}
           aria-label="Reset to Today"
           style={{
-            padding: '0.25rem 0.75rem',
-            minHeight: '28px',
-            borderRadius: '14px',
-            fontSize: '0.75rem',
-            fontWeight: 600
+            padding: '0.22rem 0.75rem',
+            minHeight: '26px',
+            borderRadius: '13px',
+            fontSize: '0.68rem',
+            fontFamily: 'var(--font-sans)',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: 'var(--text-secondary)',
+            lineHeight: 1
           }}
         >
           Today

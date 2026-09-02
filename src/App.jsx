@@ -111,7 +111,7 @@ function App() {
         <header className="app-header">
           {/* Left: Brand / Title */}
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <h1 className="font-serif" style={{ fontSize: '1.9rem', fontWeight: 600, letterSpacing: '0.04em', margin: 0, color: 'var(--text-primary)' }}>
+            <h1 className="text-gradient hero-title" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', margin: 0, lineHeight: 1 }}>
               Luna
             </h1>
           </div>

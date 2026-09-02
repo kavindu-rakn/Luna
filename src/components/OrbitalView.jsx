@@ -193,38 +193,39 @@ const OrbitalView = ({ lunarDetails }) => {
         </div>
       </div>
 
-      {/* Telemetry Stats Grid (Moved OUTSIDE & BELOW Canvas) */}
+      {/* Telemetry Stats Grid (Constant Height, Zero Wrapping Layout Shifts) */}
       <div
         style={{
           marginTop: '0.75rem',
           background: 'var(--bg-surface-1)',
           border: '1px solid var(--border-subtle)',
           borderRadius: '12px',
-          padding: '0.75rem 1rem',
+          padding: '0.65rem 0.95rem',
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          gap: '0.5rem',
-          alignItems: 'center'
+          gridTemplateColumns: '1.35fr 0.8fr 0.85fr',
+          gap: '0.4rem',
+          alignItems: 'center',
+          minHeight: '56px'
         }}
       >
-        <div>
-          <div className="utility-label" style={{ fontSize: '0.65rem', opacity: 0.7, margin: 0 }}>Phase Name</div>
-          <div className="font-serif" style={{ fontSize: '1.05rem', color: 'var(--text-primary)', lineHeight: 1.2, marginTop: '0.2rem' }}>
+        <div style={{ minWidth: 0 }}>
+          <div className="utility-label" style={{ fontSize: '0.62rem', opacity: 0.7, margin: 0, whiteSpace: 'nowrap' }}>Phase Name</div>
+          <div className="font-serif" style={{ fontSize: '0.98rem', color: 'var(--text-primary)', lineHeight: 1.2, marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {name}
           </div>
         </div>
 
-        <div style={{ textAlign: 'center' }}>
-          <div className="utility-label" style={{ fontSize: '0.65rem', opacity: 0.7, margin: 0 }}>Illumination</div>
-          <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--accent-light)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>
+        <div style={{ textAlign: 'center', minWidth: 0 }}>
+          <div className="utility-label" style={{ fontSize: '0.62rem', opacity: 0.7, margin: 0, whiteSpace: 'nowrap' }}>Illumination</div>
+          <div style={{ fontSize: '1.02rem', fontWeight: 600, color: 'var(--accent-light)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
             {fraction}%
           </div>
         </div>
 
-        <div style={{ textAlign: 'right' }}>
-          <div className="utility-label" style={{ fontSize: '0.65rem', opacity: 0.7, margin: 0 }}>Distance</div>
-          <div style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem' }}>
-            {distanceKm ? distanceKm.toLocaleString() : '384,400'} <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>km</span>
+        <div style={{ textAlign: 'right', minWidth: 0 }}>
+          <div className="utility-label" style={{ fontSize: '0.62rem', opacity: 0.7, margin: 0, whiteSpace: 'nowrap' }}>Distance</div>
+          <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
+            {distanceKm ? distanceKm.toLocaleString() : '384,400'} <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>km</span>
           </div>
         </div>
       </div>
