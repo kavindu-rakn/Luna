@@ -1,27 +1,27 @@
-import React, { useRef, useEffect } from 'react';
-import { Sunrise, Sunset, ArrowUp, ArrowDown, MapPin } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Sunrise, Sunset, ArrowUp, ArrowDown, MapPin, Moon } from 'lucide-react';
 
-// SVG arc showing the moon's altitude path across the night sky
 const AltitudeArc = ({ altitudePoints, isMoonUp }) => {
   const width = 500;
-  const height = 160;
-  const padding = { top: 30, bottom: 40, left: 30, right: 30 };
-  
+  const height = 180;
+  const padding = { top: 30, bottom: 40, left: 35, right: 35 };
+
   const innerW = width - padding.left - padding.right;
   const innerH = height - padding.top - padding.bottom;
 
-  // Normalize altitudes to SVG coordinates
-  const maxAlt = Math.max(...altitudePoints.map(p => p.altitude), 10); // min 10 to avoid flat line
-  const minAlt = Math.min(...altitudePoints.map(p => p.altitude), 0);
+  // Find min and max altitudes across the 24 hours
+  const minAlt = Math.min(-60, ...altitudePoints.map(p => p.altitude));
+  const maxAlt = Math.max(70, ...altitudePoints.map(p => p.altitude));
   const range = maxAlt - minAlt || 1;
 
+  // Map 48 data points to SVG coordinates
   const points = altitudePoints.map((p, i) => {
     const x = padding.left + (i / (altitudePoints.length - 1)) * innerW;
     const y = padding.top + innerH - ((p.altitude - minAlt) / range) * innerH;
     return { x, y, ...p };
   });
 
-  // Create smooth curve path
+  // Smooth Bezier Curve Path
   const pathD = points.reduce((acc, p, i) => {
     if (i === 0) return `M ${p.x},${p.y}`;
     const prev = points[i - 1];
@@ -29,82 +29,105 @@ const AltitudeArc = ({ altitudePoints, isMoonUp }) => {
     return acc + ` C ${cpx},${prev.y} ${cpx},${p.y} ${p.x},${p.y}`;
   }, '');
 
-  // Horizon line Y position (altitude = 0)
+  // Horizon line Y (altitude = 0)
   const horizonY = padding.top + innerH - ((0 - minAlt) / range) * innerH;
 
-  // Find current time position on the arc
+  // Find current time point on the 24-hour arc
   const now = new Date();
   const currentHour = now.getHours() + now.getMinutes() / 60;
-  // Map current hour to the 6PM-6AM range (18-30)
-  let normalizedHour = currentHour;
-  if (currentHour < 6) normalizedHour += 24; // wrap past midnight
-  const arcStart = 18;
-  const arcEnd = 30;
-  const fraction = Math.max(0, Math.min(1, (normalizedHour - arcStart) / (arcEnd - arcStart)));
-  const currentPointIdx = Math.round(fraction * (points.length - 1));
+  const currentFraction = Math.max(0, Math.min(1, currentHour / 24));
+  const currentPointIdx = Math.round(currentFraction * (points.length - 1));
   const currentPoint = points[Math.min(currentPointIdx, points.length - 1)];
 
-  // Area under the curve (above horizon)
-  const areaPath = pathD + ` L ${points[points.length - 1].x},${horizonY} L ${points[0].x},${horizonY} Z`;
+  // Area under curve above horizon
+  const areaPath = `${pathD} L ${points[points.length - 1].x},${horizonY} L ${points[0].x},${horizonY} Z`;
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
       <defs>
-        <linearGradient id="arcGradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0" />
+        {/* Day/Night Zone Gradients */}
+        <linearGradient id="lunaArcGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--accent-light)" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="var(--accent-primary)" stopOpacity="0.0" />
         </linearGradient>
-        <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="var(--color-accent)" stopOpacity="0.2" />
-          <stop offset="30%" stopColor="var(--color-accent)" stopOpacity="1" />
-          <stop offset="70%" stopColor="var(--color-accent)" stopOpacity="1" />
-          <stop offset="100%" stopColor="var(--color-accent)" stopOpacity="0.2" />
+
+        <linearGradient id="lunaCurveGradient" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="var(--accent-light)" stopOpacity="0.4" />
+          <stop offset="50%" stopColor="var(--accent-light)" stopOpacity="1" />
+          <stop offset="100%" stopColor="var(--accent-light)" stopOpacity="0.4" />
         </linearGradient>
       </defs>
 
-      {/* Filled area under curve */}
-      <path d={areaPath} fill="url(#arcGradient)" />
+      {/* Filled Area above horizon */}
+      <path d={areaPath} fill="url(#lunaArcGradient)" />
 
-      {/* Horizon line */}
+      {/* Horizon line (0° Altitude) */}
       <line
-        x1={padding.left} y1={horizonY}
-        x2={width - padding.right} y2={horizonY}
-        stroke="rgba(255,255,255,0.1)" strokeWidth="1" strokeDasharray="4,4"
+        x1={padding.left}
+        y1={horizonY}
+        x2={width - padding.right}
+        y2={horizonY}
+        stroke="rgba(255,255,255,0.22)"
+        strokeWidth="1.25"
+        strokeDasharray="4,4"
       />
-      <text x={width - padding.right + 5} y={horizonY + 4} fill="rgba(255,255,255,0.3)" fontSize="9" fontFamily="Inter, sans-serif">
-        horizon
+      <text
+        x={width - padding.right + 6}
+        y={horizonY + 3}
+        fill="var(--text-muted)"
+        fontSize="10"
+        fontFamily="var(--font-sans)"
+        fontWeight="600"
+      >
+        0° Horizon
       </text>
 
-      {/* The altitude curve */}
-      <path d={pathD} fill="none" stroke="url(#lineGradient)" strokeWidth="2" />
+      {/* Curve Path */}
+      <path d={pathD} fill="none" stroke="url(#lunaCurveGradient)" strokeWidth="2.5" />
 
-      {/* Time labels on the X axis */}
-      {points.filter((_, i) => i % 3 === 0).map((p, i) => (
-        <text key={i} x={p.x} y={height - 8} textAnchor="middle"
-          fill="rgba(255,255,255,0.35)" fontSize="9" fontFamily="Inter, sans-serif">
-          {p.label}
-        </text>
+      {/* 4-Hour Time Ticks on X-Axis */}
+      {points.filter((_, i) => i % 8 === 0).map((p, i) => (
+        <g key={i}>
+          <line x1={p.x} y1={height - 22} x2={p.x} y2={height - 18} stroke="rgba(255,255,255,0.2)" />
+          <text
+            x={p.x}
+            y={height - 6}
+            textAnchor="middle"
+            fill="var(--text-muted)"
+            fontSize="10"
+            fontFamily="var(--font-mono)"
+          >
+            {p.label}
+          </text>
+        </g>
       ))}
 
-      {/* Dots at each hour */}
-      {points.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={1.5}
-          fill={p.altitude > 0 ? 'var(--color-accent)' : 'rgba(255,255,255,0.15)'}
-        />
-      ))}
-
-      {/* Current time indicator */}
-      {normalizedHour >= arcStart && normalizedHour <= arcEnd && (
+      {/* Live Current Time Marker */}
+      {currentPoint && (
         <g>
-          <circle cx={currentPoint.x} cy={currentPoint.y} r="5"
-            fill="var(--color-accent)" opacity="0.3">
-            <animate attributeName="r" values="5;9;5" dur="2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.3;0.1;0.3" dur="2s" repeatCount="indefinite" />
+          {/* Pulsing Aura */}
+          <circle cx={currentPoint.x} cy={currentPoint.y} r="7" fill="var(--accent-light)" opacity="0.3">
+            <animate attributeName="r" values="7;13;7" dur="2.2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.35;0.1;0.35" dur="2.2s" repeatCount="indefinite" />
           </circle>
-          <circle cx={currentPoint.x} cy={currentPoint.y} r="3"
-            fill={isMoonUp ? '#ffffff' : 'var(--color-accent)'}
-            stroke="var(--color-accent)" strokeWidth="1"
+
+          {/* Solid Point */}
+          <circle
+            cx={currentPoint.x}
+            cy={currentPoint.y}
+            r="4"
+            fill={isMoonUp ? '#ffffff' : 'var(--accent-light)'}
+            stroke="var(--accent-primary)"
+            strokeWidth="1.5"
           />
+
+          {/* Tooltip Badge */}
+          <g transform={`translate(${Math.min(width - 70, Math.max(50, currentPoint.x))}, ${currentPoint.y > horizonY ? currentPoint.y + 16 : currentPoint.y - 12})`}>
+            <rect x="-35" y="-10" width="70" height="18" rx="4" fill="rgba(12,16,34,0.9)" stroke="var(--border-subtle)" />
+            <text x="0" y="3" textAnchor="middle" fill="var(--text-primary)" fontSize="9" fontFamily="var(--font-mono)" fontWeight="600">
+              {currentPoint.altitude > 0 ? `+${currentPoint.altitude}°` : `${currentPoint.altitude}°`} ({isMoonUp ? 'Visible' : 'Set'})
+            </text>
+          </g>
         </g>
       )}
     </svg>
@@ -112,18 +135,18 @@ const AltitudeArc = ({ altitudePoints, isMoonUp }) => {
 };
 
 const StatItem = ({ icon, label, value, subValue, highlight = false }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center', textAlign: 'center' }}>
-    <div style={{ color: highlight ? 'var(--color-accent)' : 'var(--color-text-secondary)', marginBottom: '0.15rem' }}>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', alignItems: 'center', textAlign: 'center' }}>
+    <div style={{ color: highlight ? 'var(--text-accent)' : 'var(--text-muted)', marginBottom: '0.1rem' }}>
       {icon}
     </div>
-    <div className="utility-label" style={{ marginBottom: '0.25rem' }}>
+    <div className="utility-label" style={{ marginBottom: '0.15rem' }}>
       {label}
     </div>
-    <div className="font-serif" style={{ fontSize: '1.75rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+    <div className="font-mono" style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.1 }}>
       {value}
     </div>
     {subValue && (
-      <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', opacity: 0.7 }}>
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
         {subValue}
       </div>
     )}
@@ -133,63 +156,72 @@ const StatItem = ({ icon, label, value, subValue, highlight = false }) => (
 const SkyPosition = ({ skyData, locationName }) => {
   const cardRef = useRef();
 
-
   if (!skyData) return null;
 
   return (
-    <div ref={cardRef} className="glass-panel" style={{ width: '100%', transformStyle: 'preserve-3d' }}>
-      <div style={{ transform: 'translateZ(20px)' }}>
+    <div ref={cardRef} className="glass-panel" style={{ width: '100%', padding: '1.5rem' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-        <span className="utility-label">
-          Sky Position
-        </span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Moon size={16} color="var(--accent-light)" />
+          <span className="utility-label" style={{ margin: 0 }}>
+            24-Hour Sky Transit & Ephemeris
+          </span>
+        </div>
+
         {locationName && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--color-accent)', opacity: 0.8 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-accent)' }}>
             <MapPin size={12} /> {locationName}
           </span>
         )}
       </div>
 
-      {/* Altitude Arc */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <AltitudeArc altitudePoints={skyData.altitudePoints} isMoonUp={skyData.isMoonUp} />
+      {/* Altitude Horizon Curve */}
+      <div style={{ marginBottom: '1.25rem' }}>
+        <AltitudeArc
+          altitudePoints={skyData.altitudePoints}
+          isMoonUp={skyData.isMoonUp}
+          isSunUp={skyData.isSunUp}
+        />
       </div>
 
-      {/* Stats Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-        gap: '1.25rem'
-      }}>
+      {/* Observational Ephemeris Grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+          gap: '1rem',
+          paddingTop: '0.75rem',
+          borderTop: '1px solid var(--border-subtle)'
+        }}
+      >
         <StatItem
-          icon={<ArrowUp size={16} />}
+          icon={<ArrowUp size={15} />}
           label="Moonrise"
           value={skyData.moonrise}
         />
         <StatItem
-          icon={<ArrowDown size={16} />}
+          icon={<ArrowDown size={15} />}
           label="Moonset"
           value={skyData.moonset}
         />
         <StatItem
-          icon={<Sunrise size={16} />}
+          icon={<ArrowUp size={15} />}
+          label="Peak Altitude"
+          value={`${skyData.peakAltitude}°`}
+          subValue={`${skyData.peakTime} (${skyData.peakCompass})`}
+          highlight={true}
+        />
+        <StatItem
+          icon={<Sunrise size={15} />}
           label="Sunrise"
           value={skyData.sunrise}
         />
         <StatItem
-          icon={<Sunset size={16} />}
+          icon={<Sunset size={15} />}
           label="Sunset"
           value={skyData.sunset}
         />
-        <StatItem
-          icon={<ArrowUp size={16} />}
-          label="Peak Alt."
-          value={`${skyData.peakAltitude}°`}
-          subValue={skyData.peakTime}
-          highlight={true}
-        />
-      </div>
       </div>
     </div>
   );

@@ -1,12 +1,17 @@
 import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { useTexture, Sphere, Line, Html } from '@react-three/drei';
+import { useTexture, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
+import { HelpCircle } from 'lucide-react';
 
-// Textured Earth with day/night terminator
+const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+const EARTH_TEXTURE = `${BASE_URL}/assets/textures/earth_atmos_2048.jpg`;
+const MOON_TEXTURE = `${BASE_URL}/assets/textures/moon_1024.jpg`;
+
+// Earth radius & rotation
 const Earth = () => {
   const earthRef = useRef();
-  const colorMap = useTexture('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg');
+  const earthTexture = useTexture(EARTH_TEXTURE);
 
   useFrame(() => {
     if (earthRef.current) {
@@ -15,68 +20,61 @@ const Earth = () => {
   });
 
   return (
-    <Sphere ref={earthRef} args={[1.5, 64, 64]} position={[0, 0, 0]}>
+    <Sphere ref={earthRef} args={[0.95, 48, 48]} position={[0, 0, 0]}>
       <meshStandardMaterial
-        map={colorMap}
-        roughness={0.8}
-        metalness={0.1}
+        map={earthTexture}
+        roughness={0.7}
+        metalness={0.08}
       />
     </Sphere>
   );
 };
 
-// Small orbiting Moon
+// Orbiting Moon with exact synodic position along fitted orbit
+const ORBIT_RADIUS = 3.3;
+
 const OrbitalMoon = ({ phase }) => {
   const moonRef = useRef();
-  const groupRef = useRef();
-  const colorMap = useTexture('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1024.jpg');
+  const moonTexture = useTexture(MOON_TEXTURE);
 
-  // Moon orbital position based on phase
   const orbitalAngle = phase * Math.PI * 2;
-  const orbitRadius = 5;
+
   const moonPos = useMemo(() => [
-    Math.sin(orbitalAngle) * orbitRadius,
+    Math.cos(orbitalAngle) * ORBIT_RADIUS,
     0,
-    -Math.cos(orbitalAngle) * orbitRadius
+    Math.sin(orbitalAngle) * ORBIT_RADIUS
   ], [orbitalAngle]);
 
-  useFrame(() => {
-    if (moonRef.current) {
-      moonRef.current.rotation.y += 0.003;
-    }
-  });
-
   return (
-    <group ref={groupRef}>
-      <Sphere ref={moonRef} args={[0.4, 32, 32]} position={moonPos}>
+    <group position={moonPos}>
+      <Sphere ref={moonRef} args={[0.3, 32, 32]}>
         <meshStandardMaterial
-          map={colorMap}
-          bumpMap={colorMap}
-          bumpScale={0.01}
+          map={moonTexture}
           roughness={0.9}
-          metalness={0.1}
+          metalness={0.04}
         />
       </Sphere>
-      {/* Small glow behind the moon */}
-      <mesh position={moonPos}>
-        <sphereGeometry args={[0.55, 16, 16]} />
-        <meshBasicMaterial color="#6b77e8" transparent opacity={0.06} />
+
+      {/* Subtle position halo */}
+      <mesh position={[0, 0, 0]}>
+        <sphereGeometry args={[0.38, 16, 16]} />
+        <meshBasicMaterial color="#a5b4fc" transparent opacity={0.12} />
       </mesh>
     </group>
   );
 };
 
-// Orbital path ring
+// Orbital path ring fully contained in viewport
 const OrbitPath = () => {
   const points = useMemo(() => {
     const pts = [];
-    const segments = 128;
+    const segments = 96;
     for (let i = 0; i <= segments; i++) {
       const angle = (i / segments) * Math.PI * 2;
       pts.push(new THREE.Vector3(
-        Math.sin(angle) * 5,
+        Math.cos(angle) * ORBIT_RADIUS,
         0,
-        -Math.cos(angle) * 5
+        Math.sin(angle) * ORBIT_RADIUS
       ));
     }
     return pts;
@@ -85,145 +83,149 @@ const OrbitPath = () => {
   return (
     <Line
       points={points}
-      color="rgba(107, 119, 232, 0.15)"
-      lineWidth={0.5}
+      color="#818cf8"
+      lineWidth={1.2}
       transparent
-      opacity={0.2}
+      opacity={0.45}
     />
   );
 };
 
-// Sun direction indicator (small bright dot far away)
-const SunIndicator = ({ phase }) => {
-  const theta = phase * Math.PI * 2;
-  const distance = 12;
-  const sunPos = [
-    Math.sin(theta) * distance,
-    2,
-    -Math.cos(theta) * distance
-  ];
-
+// Fixed Parallel Sunlight from +X (Right)
+const SunLighting = () => {
   return (
     <>
-      <pointLight position={sunPos} intensity={60} color="#ffffff" distance={50} />
-      <ambientLight intensity={0.08} color="#8a8db5" />
+      <directionalLight position={[15, 0, 0]} intensity={3.5} color="#ffffff" />
+      <ambientLight intensity={0.08} color="#474f7a" />
     </>
   );
 };
 
-// Labels for the orbital view
-const OrbitalLabels = ({ phase }) => {
-  const orbitalAngle = phase * Math.PI * 2;
-  const moonPos = [
-    Math.sin(orbitalAngle) * 5,
-    0,
-    -Math.cos(orbitalAngle) * 5
-  ];
-
-  return (
-    <>
-      <Html position={[0, -2.2, 0]} center>
-        <div style={{
-          color: 'var(--color-text-secondary)',
-          fontSize: '0.7rem',
-          fontFamily: 'Inter, sans-serif',
-          textTransform: 'uppercase',
-          letterSpacing: '0.12em',
-          whiteSpace: 'nowrap',
-          textAlign: 'center',
-          pointerEvents: 'none',
-          userSelect: 'none'
-        }}>
-          Earth
-        </div>
-      </Html>
-      <Html position={[moonPos[0], moonPos[1] - 0.8, moonPos[2]]} center>
-        <div style={{
-          color: 'var(--color-accent)',
-          fontSize: '0.65rem',
-          fontFamily: 'Inter, sans-serif',
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          whiteSpace: 'nowrap',
-          textAlign: 'center',
-          pointerEvents: 'none',
-          userSelect: 'none'
-        }}>
-          Moon
-        </div>
-      </Html>
-    </>
-  );
-};
-
-// Camera controller that slowly orbits
-const CameraOrbit = () => {
+// Cinematic angle looking at orbital plane
+const CameraRig = () => {
   useFrame(({ camera, clock }) => {
-    const t = clock.getElapsedTime() * 0.1;
-    const radius = 12;
-    camera.position.x = Math.sin(t) * radius * 0.3;
-    camera.position.y = 4 + Math.sin(t * 0.5) * 1;
-    camera.position.z = Math.cos(t) * radius * 0.3 + radius * 0.7;
+    const t = clock.getElapsedTime() * 0.03;
+    camera.position.x = Math.sin(t) * 0.8;
+    camera.position.y = 7.8 + Math.cos(t * 0.5) * 0.3;
+    camera.position.z = 6.2 + Math.cos(t) * 0.6;
     camera.lookAt(0, 0, 0);
   });
   return null;
 };
 
 const OrbitalView = ({ lunarDetails }) => {
-  const { phase, name, fraction } = lunarDetails;
+  const { phase, name, fraction, distanceKm } = lunarDetails;
+  const [showExplanation, setShowExplanation] = useState(false);
 
   return (
-    <div className="glass-panel" style={{ width: '100%', padding: '1.5rem' }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1rem'
-      }}>
-        <span className="utility-label">
-          Earth–Moon Orbit
+    <div className="glass-panel orbital-card" style={{ width: '100%', padding: '1.25rem' }}>
+      {/* Card Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+        <span className="utility-label" style={{ margin: 0, fontSize: '0.78rem' }}>
+          Earth–Moon Orbital Geometry
         </span>
+        <button
+          onClick={() => setShowExplanation(!showExplanation)}
+          className="ghost-control-btn"
+          style={{ padding: '4px', minWidth: '26px', minHeight: '26px' }}
+          title="Explain orbital view"
+          aria-label="Toggle Orbital View Explanation"
+        >
+          <HelpCircle size={14} />
+        </button>
       </div>
 
-      {/* 3D Orbital Canvas */}
-      <div style={{
-        width: '100%',
-        height: '450px',
-        overflow: 'hidden',
-        borderRadius: '16px',
-        position: 'relative'
-      }}>
-        <Canvas camera={{ position: [0, 5, 10], fov: 40 }}>
+      {showExplanation && (
+        <div
+          style={{
+            background: 'var(--bg-surface-2)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '10px',
+            padding: '0.75rem',
+            marginBottom: '0.75rem',
+            fontSize: '0.75rem',
+            color: 'var(--text-secondary)',
+            lineHeight: 1.5
+          }}
+        >
+          <strong style={{ color: 'var(--text-primary)' }}>Astronomical Context:</strong> Sunlight arrives from the right side (+X). As the Moon revolves around Earth, the illuminated portion visible from Earth produces the lunar phase cycle.
+        </div>
+      )}
+
+      {/* 3D Orbit View Canvas (100% Unobstructed) */}
+      <div
+        style={{
+          width: '100%',
+          height: '240px',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          background: 'radial-gradient(circle at center, rgba(17, 21, 48, 0.7) 0%, rgba(4, 6, 13, 0.95) 100%)',
+          position: 'relative'
+        }}
+      >
+        <Canvas camera={{ position: [0, 8, 6.5], fov: 42 }} dpr={[1, 2]}>
           <React.Suspense fallback={null}>
-            <SunIndicator phase={phase} />
-            <Earth sunDirection={phase} />
+            <SunLighting />
+            <Earth />
             <OrbitalMoon phase={phase} />
             <OrbitPath />
-            <OrbitalLabels phase={phase} />
-            <CameraOrbit />
+            <CameraRig />
           </React.Suspense>
         </Canvas>
 
-        {/* Overlay info */}
-        <div style={{
-          position: 'absolute',
-          bottom: '1.5rem',
-          left: '1.5rem',
-          display: 'flex',
-          gap: '2rem',
-          pointerEvents: 'none'
-        }}>
-          <div>
-            <div className="font-serif" style={{ fontSize: '1.75rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>{name}</div>
+        {/* Sunlight Direction Indicator Badge */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '0.5rem',
+            right: '0.5rem',
+            background: 'rgba(5, 7, 14, 0.8)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '6px',
+            padding: '0.3rem 0.55rem',
+            fontSize: '0.7rem',
+            color: 'var(--text-accent)',
+            pointerEvents: 'none'
+          }}
+        >
+          ☀ Sunlight from Right
+        </div>
+      </div>
+
+      {/* Telemetry Stats Grid (Constant Height, Zero Wrapping Layout Shifts) */}
+      <div
+        style={{
+          marginTop: '0.75rem',
+          background: 'var(--bg-surface-1)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '12px',
+          padding: '0.65rem 0.95rem',
+          display: 'grid',
+          gridTemplateColumns: '1.35fr 0.8fr 0.85fr',
+          gap: '0.4rem',
+          alignItems: 'center',
+          minHeight: '56px'
+        }}
+      >
+        <div style={{ minWidth: 0 }}>
+          <div className="utility-label" style={{ fontSize: '0.62rem', opacity: 0.7, margin: 0, whiteSpace: 'nowrap' }}>Phase Name</div>
+          <div className="font-serif" style={{ fontSize: '0.98rem', color: 'var(--text-primary)', lineHeight: 1.2, marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {name}
           </div>
-          <div>
-            <div className="utility-label" style={{ opacity: 0.6, marginBottom: '0.25rem' }}>Phase</div>
-            <div className="font-serif" style={{ fontSize: '1.5rem', color: 'var(--color-accent)', lineHeight: 1 }}>{(phase * 100).toFixed(1)}%</div>
+        </div>
+
+        <div style={{ textAlign: 'center', minWidth: 0 }}>
+          <div className="utility-label" style={{ fontSize: '0.62rem', opacity: 0.7, margin: 0, whiteSpace: 'nowrap' }}>Illumination</div>
+          <div style={{ fontSize: '1.02rem', fontWeight: 600, color: 'var(--accent-light)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
+            {fraction}%
           </div>
-          <div>
-            <div className="utility-label" style={{ opacity: 0.6, marginBottom: '0.25rem' }}>Illumination</div>
-            <div className="font-serif" style={{ fontSize: '1.5rem', color: 'var(--color-text-primary)', lineHeight: 1 }}>{fraction}%</div>
+        </div>
+
+        <div style={{ textAlign: 'right', minWidth: 0 }}>
+          <div className="utility-label" style={{ fontSize: '0.62rem', opacity: 0.7, margin: 0, whiteSpace: 'nowrap' }}>Distance</div>
+          <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
+            {distanceKm ? distanceKm.toLocaleString() : '384,400'} <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>km</span>
           </div>
         </div>
       </div>

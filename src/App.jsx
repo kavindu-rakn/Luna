@@ -7,211 +7,248 @@ import LunarTimeline from './components/LunarTimeline';
 import CustomCursor from './components/CustomCursor';
 import SkyPosition from './components/SkyPosition';
 import OrbitalView from './components/OrbitalView';
-import { getLunarDetails, getSkyData } from './utils/lunarCalc';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
-
-gsap.registerPlugin(useGSAP);
+import { getLunarDetails, getSkyData, reverseGeocodeCached, getAdjacentQuarterPhase } from './utils/lunarCalc';
+import { X, BarChart3 } from 'lucide-react';
 
 function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  // Default location: Greenwich Observatory
-  const DEFAULT_LOCATION = { lat: 51.4769, lon: -0.0005, name: 'Greenwich, UK (default)' };
+  const DEFAULT_LOCATION = { lat: 51.4769, lon: -0.0005, name: 'Greenwich, UK' };
   const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  
+
   const containerRef = useRef();
   const mainViewRef = useRef();
   const drawerRef = useRef();
 
-  // Request geolocation on mount
+  // Safe geolocation on mount with cached reverse geocoding
   useEffect(() => {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLocation({
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-            name: null // will be reverse-geocoded below
-          });
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const geoResult = await reverseGeocodeCached(lat, lon);
+          setLocation(geoResult);
         },
         () => {
-          // Permission denied: keep the default
+          // Default to Greenwich on permission denial
         },
-        { timeout: 5000 }
+        { timeout: 6000 }
       );
     }
   }, []);
 
-  // Reverse geocode the location name
+  // Global Keyboard Shortcuts
   useEffect(() => {
-    if (location && location.name === null) {
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${location.lat}&lon=${location.lon}&format=json&zoom=10`)
-        .then(res => res.json())
-        .then(data => {
-          const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || '';
-          const country = data.address?.country || '';
-          setLocation(prev => ({ ...prev, name: city ? `${city}, ${country}` : country }));
-        })
-        .catch(() => {
-          setLocation(prev => ({ ...prev, name: `${prev.lat.toFixed(2)}°, ${prev.lon.toFixed(2)}°` }));
-        });
-    }
-  }, [location]);
+    const handleKeyDown = (e) => {
+      // Ignore keystrokes inside input fields
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
 
-  // Derive lunar details and sky data
-  const lunarDetails = useMemo(() => getLunarDetails(currentDate), [currentDate]);
+      if (e.key === 'ArrowLeft') {
+        if (e.shiftKey) {
+          setCurrentDate(d => getAdjacentQuarterPhase(d, -1));
+        } else {
+          setCurrentDate(d => new Date(d.getTime() - 24 * 60 * 60 * 1000));
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (e.shiftKey) {
+          setCurrentDate(d => getAdjacentQuarterPhase(d, 1));
+        } else {
+          setCurrentDate(d => new Date(d.getTime() + 24 * 60 * 60 * 1000));
+        }
+      } else if (e.key.toLowerCase() === 't') {
+        setCurrentDate(new Date());
+      } else if (e.key.toLowerCase() === 'd') {
+        setIsDrawerOpen(prev => !prev);
+      } else if (e.key === 'Escape') {
+        setIsDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Derive lunar details and 24-hour sky transit data
+  const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon), [currentDate, location]);
   const computedSkyData = useMemo(() => {
     if (location) return getSkyData(currentDate, location.lat, location.lon);
     return null;
   }, [currentDate, location]);
 
-  // Initial Entrance Animation
-  useGSAP(() => {
-    const tl = gsap.timeline();
-    gsap.set('.gsap-reveal', { autoAlpha: 0, y: 40 });
-    
-    tl.to('.hero-title', { autoAlpha: 1, y: 0, duration: 1.8, ease: 'expo.out' })
-      .to('.moon-container', { autoAlpha: 1, y: 0, duration: 2, ease: 'power2.out' }, '-=1.4')
-      .to('.hero-phase-name', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.5')
-      .to('.timeline-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.2')
-      .to('.controls-panel', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.3')
-      .to('.toggle-btn', { autoAlpha: 1, y: 0, duration: 1.5, ease: 'expo.out' }, '-=1.2');
-  }, { scope: containerRef });
-
-  // Drawer Toggle Animation
-  useGSAP(() => {
-    const isDesktop = window.innerWidth >= 900;
-    
-    if (isDrawerOpen) {
-      // Open Drawer
-      gsap.to(drawerRef.current, {
-        x: 0,
-        y: 0,
-        autoAlpha: 1,
-        duration: 0.8,
-        ease: 'power3.out'
-      });
-      // Shift Main View
-      gsap.to(mainViewRef.current, {
-        x: isDesktop ? '-225px' : 0,
-        y: isDesktop ? 0 : '-10vh',
-        duration: 0.8,
-        ease: 'power3.out'
-      });
-    } else {
-      // Close Drawer
-      gsap.to(drawerRef.current, {
-        x: isDesktop ? '100%' : 0,
-        y: isDesktop ? 0 : '100%',
-        autoAlpha: 0,
-        duration: 0.6,
-        ease: 'power3.inOut'
-      });
-      // Reset Main View
-      gsap.to(mainViewRef.current, {
-        x: 0,
-        y: 0,
-        duration: 0.6,
-        ease: 'power3.inOut'
-      });
-    }
-  }, { dependencies: [isDrawerOpen], scope: containerRef });
-
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
-      <CustomCursor />
+      {/* Screen Reader Live Region */}
+      <div className="sr-only" aria-live="polite">
+        Current Moon Phase: {lunarDetails.name}, Illumination: {lunarDetails.fraction} percent
+      </div>
+
+      {/* Background Starfield Canvas with Mouse Parallax */}
       <Starfield />
-      <div className="nebula"></div>
-      <div className="noise"></div>
 
-      {/* ═══ MAIN IMMERSIVE VIEW ═══ */}
-      <div ref={mainViewRef} style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        
-        {/* Absolute Top Left: Logo */}
-        <div style={{ position: 'absolute', top: '1.5rem', left: '2rem', zIndex: 30 }}>
-          <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', margin: 0, lineHeight: 1 }}>Luna</h1>
-        </div>
+      {/* Atmospheric Space Gradients */}
+      <div className="nebula" />
+      <div className="vignette" />
 
-        {/* Absolute Top Right: Toggle Button */}
-        <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 30 }}>
-          <button 
-            className="gsap-reveal toggle-btn glass-button"
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
-            style={{ padding: '0 1.25rem', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', borderRadius: '20px' }}
-          >
-            <span className="utility-label" style={{ margin: 0 }}>
-              {isDrawerOpen ? 'Close Details' : 'Deep Dive'}
-            </span>
-          </button>
-        </div>
+      {/* Custom Particle Comet Cursor */}
+      <CustomCursor />
 
-        {/* Top Center: DateControls */}
-        <div className="controls-container">
-          <div className="gsap-reveal controls-panel">
+      {/* ═══ MAIN APPLICATION VIEWPORT ═══ */}
+      <main
+        ref={mainViewRef}
+        className={`main-view-container ${isDrawerOpen ? 'drawer-open' : ''}`}
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          position: 'relative',
+          zIndex: 10
+        }}
+      >
+        {/* Header Bar */}
+        <header className="app-header">
+          {/* Left: Brand / Title */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <h1 className="text-gradient hero-title" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', margin: 0, lineHeight: 1 }}>
+              Luna
+            </h1>
+          </div>
+
+          {/* Center: DateControls */}
+          <div className="controls-panel">
             <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </div>
-        </div>
 
-        {/* Center: 3D Moon & Phase Name */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="gsap-reveal moon-container" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+          {/* Right: Deep Dive Action Button */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+            <button
+              className="glass-button"
+              onClick={() => setIsDrawerOpen(prev => !prev)}
+              style={{
+                padding: '0.35rem 1.05rem',
+                minHeight: '32px',
+                borderRadius: '16px',
+                background: isDrawerOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
+                border: isDrawerOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)',
+                boxShadow: isDrawerOpen ? '0 0 16px var(--accent-glow)' : 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              aria-label="Toggle telemetry details"
+              aria-expanded={isDrawerOpen}
+            >
+              <span
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.05rem',
+                  fontWeight: 500,
+                  fontStyle: 'italic',
+                  letterSpacing: '0.04em',
+                  color: 'var(--text-primary)',
+                  lineHeight: 1
+                }}
+              >
+                Deep Dive
+              </span>
+            </button>
+          </div>
+        </header>
+
+        {/* Center Canvas Area: 3D Moon & Hero Phase Name */}
+        <div className="main-canvas-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '2.5rem' }}>
+          <div className="moon-container" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
             <MoonVisualization lunarDetails={lunarDetails} />
           </div>
-          
-          <div className="gsap-reveal hero-phase-name">
+
+          <div className="hero-phase-name">
             <span className="font-serif">
               {lunarDetails.name}
             </span>
           </div>
         </div>
 
-        {/* Bottom: Timeline */}
+        {/* Bottom Bar: Timeline */}
         <div style={{ width: '100%', zIndex: 20 }}>
-          <div className="gsap-reveal timeline-panel" style={{ width: '100%' }}>
+          <div className="timeline-panel" style={{ width: '100%' }}>
             <LunarTimeline currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </div>
         </div>
-      </div>
+      </main>
 
-      {/* ═══ DATA DRAWER ═══ */}
-      <div ref={drawerRef} className="data-drawer" style={{ visibility: 'hidden' }}>
-        {/* Drawer Close Button */}
-        <button 
-          onClick={() => setIsDrawerOpen(false)}
-          className="glass-button drawer-close-btn"
-          style={{ position: 'absolute', top: '1.5rem', right: '1.5rem' }}
-          aria-label="Close details"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+      {/* ═══ TELEMETRY DATA DRAWER / BOTTOM SHEET ═══ */}
+      <aside
+        ref={drawerRef}
+        className={`data-drawer ${isDrawerOpen ? 'is-open' : ''}`}
+        aria-label="Lunar Telemetry Inspector"
+      >
+        {/* Mobile Drag Indicator Handle */}
+        <div
+          style={{
+            width: '40px',
+            height: '4px',
+            background: 'rgba(255, 255, 255, 0.25)',
+            borderRadius: '2px',
+            margin: '0 auto 1rem auto',
+            display: 'block'
+          }}
+        />
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', marginTop: '2.5rem' }}>
-          <div>
-            <LunarData lunarDetails={lunarDetails} />
+        {/* Drawer Header & Close Button */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <BarChart3 size={16} color="var(--accent-light)" />
+            <span className="utility-label" style={{ color: 'var(--text-accent)', fontSize: '0.8rem', margin: 0 }}>
+              ASTRONOMICAL TELEMETRY
+            </span>
           </div>
-          
+          <button
+            onClick={() => setIsDrawerOpen(false)}
+            className="ghost-control-btn"
+            style={{
+              background: 'var(--bg-surface-2)',
+              border: '1px solid var(--border-medium)',
+              borderRadius: '50%',
+              minWidth: '36px',
+              minHeight: '36px',
+              padding: 0
+            }}
+            aria-label="Close details (Esc)"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Telemetry Cards Stack */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <LunarData lunarDetails={lunarDetails} />
+
           {computedSkyData && (
-            <div>
-              <SkyPosition skyData={computedSkyData} locationName={location?.name} />
-            </div>
+            <SkyPosition skyData={computedSkyData} locationName={location?.name} />
           )}
-          
-          <div>
-            <OrbitalView lunarDetails={lunarDetails} />
-          </div>
 
-          <footer style={{ marginTop: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>
-            Data calculated astronomically. Moon texture represented stylistically.
+          <OrbitalView lunarDetails={lunarDetails} />
+
+          <footer
+            style={{
+              marginTop: '1.5rem',
+              marginBottom: '1rem',
+              textAlign: 'center',
+              color: 'var(--text-muted)',
+              fontSize: '0.75rem',
+              lineHeight: 1.5
+            }}
+          >
+            Astronomical calculations powered by SunCalc ephemeris algorithms.
           </footer>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
 
 export default App;
-
