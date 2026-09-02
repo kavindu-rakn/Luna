@@ -274,7 +274,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
       >
         <span>{formatShortDate(cyclePhases[0].date)}</span>
         <span style={{ color: 'var(--text-accent)', fontWeight: 700 }}>
-          {formatShortDate(currentDate)} (Selected)
+          {formatShortDate(currentDate)}
         </span>
         <span>{formatShortDate(cyclePhases[cyclePhases.length - 1].date)}</span>
       </div>

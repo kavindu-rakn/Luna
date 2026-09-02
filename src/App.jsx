@@ -8,11 +8,7 @@ import CustomCursor from './components/CustomCursor';
 import SkyPosition from './components/SkyPosition';
 import OrbitalView from './components/OrbitalView';
 import { getLunarDetails, getSkyData, reverseGeocodeCached } from './utils/lunarCalc';
-import { Layers, X } from 'lucide-react';
-import gsap from 'gsap';
-import { useGSAP } from '@gsap/react';
-
-gsap.registerPlugin(useGSAP);
+import { Layers, X, BarChart3 } from 'lucide-react';
 
 function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -74,59 +70,6 @@ function App() {
     return null;
   }, [currentDate, location]);
 
-  // Initial Entrance Animation
-  useGSAP(() => {
-    const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
-
-    tl.from('.hero-title', { autoAlpha: 0, y: 20, duration: 1.0 })
-      .from('.moon-container', { autoAlpha: 0, scale: 0.9, duration: 1.2, ease: 'power2.out' }, '-=0.7')
-      .from('.hero-phase-name', { autoAlpha: 0, y: 15, duration: 1.0 }, '-=0.8')
-      .from('.timeline-panel', { autoAlpha: 0, y: 20, duration: 1.0 }, '-=0.7')
-      .from('.controls-panel', { autoAlpha: 0, y: -15, duration: 1.0 }, '-=0.8')
-      .from('.toggle-btn', { autoAlpha: 0, y: -15, duration: 1.0 }, '-=0.7');
-  }, { scope: containerRef });
-
-  // Drawer Toggle Animation with Responsive Layout Management
-  useGSAP(() => {
-    const isDesktop = window.innerWidth >= 960;
-
-    if (isDrawerOpen) {
-      // Open Drawer
-      gsap.to(drawerRef.current, {
-        x: 0,
-        y: 0,
-        autoAlpha: 1,
-        duration: 0.6,
-        ease: 'power3.out'
-      });
-      // Desktop: shift main view slightly left to balance composition
-      gsap.to(mainViewRef.current, {
-        x: isDesktop ? '-180px' : 0,
-        y: isDesktop ? 0 : '-5vh',
-        scale: isDesktop ? 0.96 : 1,
-        duration: 0.6,
-        ease: 'power3.out'
-      });
-    } else {
-      // Close Drawer
-      gsap.to(drawerRef.current, {
-        x: isDesktop ? '100%' : 0,
-        y: isDesktop ? 0 : '100%',
-        autoAlpha: 0,
-        duration: 0.5,
-        ease: 'power3.inOut'
-      });
-      // Reset Main View
-      gsap.to(mainViewRef.current, {
-        x: 0,
-        y: 0,
-        scale: 1,
-        duration: 0.5,
-        ease: 'power3.inOut'
-      });
-    }
-  }, { dependencies: [isDrawerOpen], scope: containerRef });
-
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       {/* Screen Reader Live Region */}
@@ -155,6 +98,7 @@ function App() {
       {/* ═══ MAIN IMMERSIVE VIEW ═══ */}
       <main
         ref={mainViewRef}
+        className={`main-view-container ${isDrawerOpen ? 'drawer-open' : ''}`}
         style={{
           width: '100%',
           height: '100%',
@@ -165,54 +109,49 @@ function App() {
         }}
       >
         {/* Top Header: Logo + Date Controls + Deep Dive Toggle */}
-        <header
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            left: 0,
-            right: 0,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0 1.5rem',
-            zIndex: 30
-          }}
-        >
-          {/* Logo */}
-          <div>
-            <h1 className="text-gradient gsap-reveal hero-title" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', margin: 0, lineHeight: 1 }}>
+        <header className="app-header">
+          {/* Left: Logo */}
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <h1 className="text-gradient hero-title" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', margin: 0, lineHeight: 1 }}>
               Luna
             </h1>
           </div>
 
           {/* Center: DateControls */}
-          <div className="gsap-reveal controls-panel" style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+          <div className="controls-panel">
             <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </div>
 
-          {/* Deep Dive Action Button */}
-          <div>
+          {/* Right: Deep Dive Action Button */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <button
-              className="gsap-reveal toggle-btn glass-button"
+              className="toggle-btn glass-button"
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              style={{
+                background: isDrawerOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-2)',
+                border: isDrawerOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-medium)',
+                boxShadow: '0 4px 16px var(--accent-glow)',
+                zIndex: 40,
+                cursor: 'pointer'
+              }}
               aria-label={isDrawerOpen ? 'Close telemetry details' : 'Open telemetry details (D)'}
               aria-expanded={isDrawerOpen}
             >
               <Layers size={15} color="var(--accent-light)" />
-              <span className="utility-label" style={{ color: 'var(--text-primary)', margin: 0 }}>
-                {isDrawerOpen ? 'Close Telemetry' : 'Deep Dive (D)'}
+              <span className="utility-label" style={{ color: 'var(--text-primary)', margin: 0, fontWeight: 700 }}>
+                {isDrawerOpen ? 'Close Details' : 'Deep Dive (D)'}
               </span>
             </button>
           </div>
         </header>
 
         {/* Center Canvas Area: 3D Moon & Hero Phase Name */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '3.5rem' }}>
-          <div className="gsap-reveal moon-container" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div className="main-canvas-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '2.5rem' }}>
+          <div className="moon-container" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
             <MoonVisualization lunarDetails={lunarDetails} />
           </div>
 
-          <div className="gsap-reveal hero-phase-name">
+          <div className="hero-phase-name">
             <span className="font-serif">
               {lunarDetails.name}
             </span>
@@ -221,7 +160,7 @@ function App() {
 
         {/* Bottom Bar: Timeline */}
         <div style={{ width: '100%', zIndex: 20 }}>
-          <div className="gsap-reveal timeline-panel" style={{ width: '100%' }}>
+          <div className="timeline-panel" style={{ width: '100%' }}>
             <LunarTimeline currentDate={currentDate} setCurrentDate={setCurrentDate} />
           </div>
         </div>
@@ -230,8 +169,7 @@ function App() {
       {/* ═══ TELEMETRY DATA DRAWER / BOTTOM SHEET ═══ */}
       <aside
         ref={drawerRef}
-        className="data-drawer"
-        style={{ visibility: 'hidden' }}
+        className={`data-drawer ${isDrawerOpen ? 'is-open' : ''}`}
         aria-label="Lunar Telemetry Inspector"
       >
         {/* Mobile Drag Indicator Handle */}
@@ -246,17 +184,20 @@ function App() {
           }}
         />
 
-        {/* Drawer Close Button */}
+        {/* Drawer Header & Close Button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <span className="utility-label" style={{ color: 'var(--text-accent)', fontSize: '0.8rem' }}>
-            ASTRONOMICAL TELEMETRY
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <BarChart3 size={16} color="var(--accent-light)" />
+            <span className="utility-label" style={{ color: 'var(--text-accent)', fontSize: '0.8rem', margin: 0 }}>
+              ASTRONOMICAL TELEMETRY
+            </span>
+          </div>
           <button
             onClick={() => setIsDrawerOpen(false)}
             className="ghost-control-btn"
             style={{
               background: 'var(--bg-surface-2)',
-              border: '1px solid var(--border-subtle)',
+              border: '1px solid var(--border-medium)',
               borderRadius: '50%',
               minWidth: '36px',
               minHeight: '36px',
