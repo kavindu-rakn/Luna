@@ -8,7 +8,7 @@ import CustomCursor from './components/CustomCursor';
 import SkyPosition from './components/SkyPosition';
 import OrbitalView from './components/OrbitalView';
 import { getLunarDetails, getSkyData, reverseGeocodeCached, getAdjacentQuarterPhase } from './utils/lunarCalc';
-import { Layers, X, BarChart3 } from 'lucide-react';
+import { X, BarChart3 } from 'lucide-react';
 
 function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -79,29 +79,21 @@ function App() {
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       {/* Screen Reader Live Region */}
-      <div
-        aria-live="polite"
-        style={{
-          position: 'absolute',
-          width: '1px',
-          height: '1px',
-          padding: 0,
-          margin: '-1px',
-          overflow: 'hidden',
-          clip: 'rect(0, 0, 0, 0)',
-          whiteSpace: 'nowrap',
-          border: 0
-        }}
-      >
-        Selected date: {currentDate.toDateString()}. Moon Phase: {lunarDetails.name}, {lunarDetails.fraction} percent illuminated.
+      <div className="sr-only" aria-live="polite">
+        Current Moon Phase: {lunarDetails.name}, Illumination: {lunarDetails.fraction} percent
       </div>
 
-      <CustomCursor />
+      {/* Background Starfield Canvas with Mouse Parallax */}
       <Starfield />
-      <div className="nebula" />
-      <div className="noise" />
 
-      {/* ═══ MAIN IMMERSIVE VIEW ═══ */}
+      {/* Atmospheric Space Gradients */}
+      <div className="nebula" />
+      <div className="vignette" />
+
+      {/* Custom Particle Comet Cursor */}
+      <CustomCursor />
+
+      {/* ═══ MAIN APPLICATION VIEWPORT ═══ */}
       <main
         ref={mainViewRef}
         className={`main-view-container ${isDrawerOpen ? 'drawer-open' : ''}`}
@@ -110,15 +102,16 @@ function App() {
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
+          justifyContent: 'space-between',
           position: 'relative',
-          transformOrigin: 'center center'
+          zIndex: 10
         }}
       >
-        {/* Top Header: Logo + Date Controls + Deep Dive Toggle */}
+        {/* Header Bar */}
         <header className="app-header">
-          {/* Left: Logo */}
+          {/* Left: Brand / Title */}
           <div style={{ display: 'flex', alignItems: 'center' }}>
-            <h1 className="text-gradient hero-title" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', margin: 0, lineHeight: 1 }}>
+            <h1 className="font-serif" style={{ fontSize: '1.9rem', fontWeight: 600, letterSpacing: '0.04em', margin: 0, color: 'var(--text-primary)' }}>
               Luna
             </h1>
           </div>
@@ -131,21 +124,36 @@ function App() {
           {/* Right: Deep Dive Action Button */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
             <button
-              className="toggle-btn glass-button"
-              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              className="glass-button"
+              onClick={() => setIsDrawerOpen(prev => !prev)}
               style={{
-                background: isDrawerOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-2)',
-                border: isDrawerOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-medium)',
-                boxShadow: '0 4px 16px var(--accent-glow)',
-                zIndex: 40,
-                cursor: 'pointer'
+                padding: '0.35rem 1.05rem',
+                minHeight: '32px',
+                borderRadius: '16px',
+                background: isDrawerOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
+                border: isDrawerOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)',
+                boxShadow: isDrawerOpen ? '0 0 16px var(--accent-glow)' : 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
-              aria-label={isDrawerOpen ? 'Close telemetry details' : 'Open telemetry details'}
+              aria-label="Toggle telemetry details"
               aria-expanded={isDrawerOpen}
             >
-              <Layers size={15} color="var(--accent-light)" />
-              <span className="utility-label" style={{ color: 'var(--text-primary)', margin: 0, fontWeight: 700 }}>
-                {isDrawerOpen ? 'Close Details' : 'Deep Dive'}
+              <span
+                style={{
+                  fontFamily: 'var(--font-serif)',
+                  fontSize: '1.05rem',
+                  fontWeight: 500,
+                  fontStyle: 'italic',
+                  letterSpacing: '0.04em',
+                  color: 'var(--text-primary)',
+                  lineHeight: 1
+                }}
+              >
+                Deep Dive
               </span>
             </button>
           </div>

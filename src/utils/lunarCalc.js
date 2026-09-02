@@ -164,60 +164,89 @@ export const getNextMajorPhases = (date = new Date()) => {
   };
 };
 
-// Jump directly to the exact minute of the next (+1) or previous (-1) major quarter phase
+// Continuous angular distance metric between two phase values (0.0 to 1.0)
+// Returns 0.0 when phase exactly matches targetPhase, with smooth convex gradient everywhere.
+const getPhaseAngularDistance = (phase, targetPhase) => {
+  const diff = (phase - targetPhase) * 2 * Math.PI;
+  return 1 - Math.cos(diff);
+};
+
+// Jump directly to the exact astronomical date & minute of the next (+1) or previous (-1) major quarter phase
 export const getAdjacentQuarterPhase = (currentDate = new Date(), direction = 1) => {
   const validDate = currentDate instanceof Date && !isNaN(currentDate.getTime()) ? currentDate : new Date();
   const currentIllum = SunCalc.getMoonIllumination(validDate);
-  const currentPhase = currentIllum.phase; // 0.0 to 1.0
+  const p = currentIllum.phase; // 0.0 to 1.0
 
-  const quarterTargets = [0.0, 0.25, 0.5, 0.75];
-  const MIN_DELTA_DAYS = 0.25; // Skip if already within ~6 hours of exact phase to guarantee jump
+  // 1. Determine current position in quarter cycle: [0..4)
+  // 0 = New Moon (0.0), 1 = First Quarter (0.25), 2 = Full Moon (0.50), 3 = Last Quarter (0.75)
+  const quarterFloat = p * 4;
+  const nearestQuarterInt = Math.round(quarterFloat);
+  const distToNearestQuarter = Math.abs(quarterFloat - nearestQuarterInt);
 
-  let bestTarget = null;
-  let minDaysDiff = Infinity;
+  let targetQuarterIndex;
+  let phaseDelta;
 
-  for (const target of quarterTargets) {
-    let phaseDiff;
-    if (direction > 0) {
-      phaseDiff = target - currentPhase;
-      if (phaseDiff <= 0.01) phaseDiff += 1.0;
+  if (direction > 0) {
+    // If already sitting on an exact quarter phase (within ~14 hours), force step to next (+1)
+    if (distToNearestQuarter < 0.08) {
+      targetQuarterIndex = (nearestQuarterInt + 1) % 4;
+      phaseDelta = 0.25;
     } else {
-      phaseDiff = currentPhase - target;
-      if (phaseDiff <= 0.01) phaseDiff += 1.0;
+      targetQuarterIndex = Math.ceil(quarterFloat) % 4;
+      const targetP = targetQuarterIndex * 0.25;
+      phaseDelta = targetP - p;
+      if (phaseDelta <= 0.02) phaseDelta += 1.0;
     }
-
-    const approxDays = phaseDiff * SYNODIC_MONTH;
-    if (approxDays > MIN_DELTA_DAYS && approxDays < minDaysDiff) {
-      minDaysDiff = approxDays;
-      bestTarget = target;
+  } else {
+    // If moving backward:
+    if (distToNearestQuarter < 0.08) {
+      targetQuarterIndex = (nearestQuarterInt - 1 + 4) % 4;
+      phaseDelta = 0.25;
+    } else {
+      targetQuarterIndex = (Math.floor(quarterFloat) + 4) % 4;
+      const targetP = targetQuarterIndex * 0.25;
+      phaseDelta = p - targetP;
+      if (phaseDelta <= 0.02) phaseDelta += 1.0;
     }
   }
 
-  if (bestTarget === null) return validDate;
+  const targetPhase = targetQuarterIndex * 0.25;
 
-  // Approximate center of target window
-  const approxTime = validDate.getTime() + (direction > 0 ? 1 : -1) * minDaysDiff * 86400000;
+  // 2. Compute initial time estimate
+  const approxDays = phaseDelta * SYNODIC_MONTH;
+  const approxTargetTime = validDate.getTime() + (direction > 0 ? 1 : -1) * approxDays * 86400000;
 
-  // Refine exact minute via binary search on monotonic phase progression
-  let low = approxTime - 18 * 3600000;
-  let high = approxTime + 18 * 3600000;
+  // 3. Golden-section optimization over [approx - 36h, approx + 36h]
+  // Because angular distance is smooth and convex, it converges to sub-second precision with zero seam bugs.
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const resphi = 2 - phi;
 
-  for (let step = 0; step < 16; step++) {
-    const mid = (low + high) / 2;
-    const midPhase = SunCalc.getMoonIllumination(new Date(mid)).phase;
+  let a = approxTargetTime - 36 * 3600000;
+  let b = approxTargetTime + 36 * 3600000;
+  let x1 = a + resphi * (b - a);
+  let x2 = b - resphi * (b - a);
 
-    let err = midPhase - bestTarget;
-    if (err > 0.5) err -= 1.0;
-    if (err < -0.5) err += 1.0;
+  let f1 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x1)).phase, targetPhase);
+  let f2 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x2)).phase, targetPhase);
 
-    if (err < 0) {
-      low = mid;
+  for (let iter = 0; iter < 28; iter++) {
+    if (f1 < f2) {
+      b = x2;
+      x2 = x1;
+      f2 = f1;
+      x1 = a + resphi * (b - a);
+      f1 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x1)).phase, targetPhase);
     } else {
-      high = mid;
+      a = x1;
+      x1 = x2;
+      f1 = f2;
+      x2 = b - resphi * (b - a);
+      f2 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x2)).phase, targetPhase);
     }
   }
 
-  return new Date((low + high) / 2);
+  const exactTime = Math.round((a + b) / 2);
+  return new Date(exactTime);
 };
 
 // Get the 30-day timeline centered around the selected date
