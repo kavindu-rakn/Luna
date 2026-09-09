@@ -1,14 +1,26 @@
 import React, { useRef, useEffect } from 'react';
 import { Moon, Sparkles, Orbit, Compass, ArrowUpRight, Calendar } from 'lucide-react';
 import gsap from 'gsap';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 const AnimatedNumber = ({ value, suffix = '', decimals = 1 }) => {
   const numRef = useRef();
   const valRef = useRef({ val: 0 });
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     const targetValue = parseFloat(value) || 0;
-    gsap.to(valRef.current, {
+
+    // Reduced motion: show the figure, skip the count-up
+    if (prefersReducedMotion) {
+      valRef.current.val = targetValue;
+      if (numRef.current) {
+        numRef.current.innerText = targetValue.toFixed(decimals) + suffix;
+      }
+      return undefined;
+    }
+
+    const tween = gsap.to(valRef.current, {
       val: targetValue,
       duration: 0.8,
       ease: 'power2.out',
@@ -18,7 +30,11 @@ const AnimatedNumber = ({ value, suffix = '', decimals = 1 }) => {
         }
       }
     });
-  }, [value, suffix, decimals]);
+
+    // Without this, StrictMode's double-invoked effect leaves two tweens
+    // fighting over the same object
+    return () => tween.kill();
+  }, [value, suffix, decimals, prefersReducedMotion]);
 
   return <span ref={numRef} className="font-mono">0.0{suffix}</span>;
 };
@@ -38,12 +54,19 @@ const LunarData = ({ lunarDetails }) => {
   const cardRef = useRef();
   const nameRef = useRef();
 
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   useEffect(() => {
-    gsap.fromTo(nameRef.current,
+    if (prefersReducedMotion) {
+      gsap.set(nameRef.current, { opacity: 1, y: 0 });
+      return undefined;
+    }
+    const tween = gsap.fromTo(nameRef.current,
       { opacity: 0, y: -6 },
       { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
     );
-  }, [name]);
+    return () => tween.kill();
+  }, [name, prefersReducedMotion]);
 
   // Identify the closest upcoming primary phase
   const nextPhaseList = [
@@ -51,8 +74,8 @@ const LunarData = ({ lunarDetails }) => {
     { label: 'Next New Moon', ...nextPhases?.nextNewMoon },
     { label: 'Next 1st Quarter', ...nextPhases?.nextFirstQuarter },
     { label: 'Next Last Quarter', ...nextPhases?.nextLastQuarter }
-  ].filter(p => p.daysRemaining !== undefined)
-   .sort((a, b) => parseFloat(a.daysRemaining) - parseFloat(b.daysRemaining));
+  ].filter(p => p.msRemaining !== undefined)
+   .sort((a, b) => a.msRemaining - b.msRemaining);
 
   const upcomingPhase = nextPhaseList[0];
 
@@ -146,15 +169,20 @@ const LunarData = ({ lunarDetails }) => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
               <Compass size={14} color="var(--accent-light)" />
-              <span className="utility-label">Constellation</span>
+              <span className="utility-label">Zodiac Sign</span>
             </div>
             <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>{zodiac?.symbol}</span>
+              <span className="zodiac-glyph" aria-hidden="true">{zodiac?.symbol}</span>
               <span>{zodiac?.name}</span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              {zodiac?.degreeInSign} in sign
+              {zodiac?.degreeInSign} tropical
             </div>
+            {zodiac?.sidereal && (
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem', opacity: 0.8 }}>
+                {zodiac.sidereal.name} {zodiac.sidereal.degreeInSign} sidereal
+              </div>
+            )}
           </div>
 
           {/* Next Key Phase Countdown */}
@@ -165,7 +193,7 @@ const LunarData = ({ lunarDetails }) => {
                 <span className="utility-label">{upcomingPhase.label}</span>
               </div>
               <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-accent)' }}>
-                in {upcomingPhase.daysRemaining} days
+                {upcomingPhase.countdown}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                 {upcomingPhase.formatted}

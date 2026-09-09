@@ -1,7 +1,9 @@
 import React, { useRef } from 'react';
 import { Sunrise, Sunset, ArrowUp, ArrowDown, MapPin, Moon } from 'lucide-react';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
-const AltitudeArc = ({ altitudePoints, isMoonUp }) => {
+const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const width = 500;
   const height = 180;
   const padding = { top: 30, bottom: 40, left: 35, right: 35 };
@@ -32,12 +34,18 @@ const AltitudeArc = ({ altitudePoints, isMoonUp }) => {
   // Horizon line Y (altitude = 0)
   const horizonY = padding.top + innerH - ((0 - minAlt) / range) * innerH;
 
-  // Find current time point on the 24-hour arc
-  const now = new Date();
-  const currentHour = now.getHours() + now.getMinutes() / 60;
-  const currentFraction = Math.max(0, Math.min(1, currentHour / 24));
-  const currentPointIdx = Math.round(currentFraction * (points.length - 1));
-  const currentPoint = points[Math.min(currentPointIdx, points.length - 1)];
+  // Marker for the SELECTED instant, placed within the location's own day.
+  // Position, altitude and label all derive from one value, so they cannot contradict
+  // each other the way a wall-clock marker on a time-travelled chart did.
+  const aboveHorizon = currentAltitude > 0;
+  const currentPoint = {
+    x: padding.left + currentFraction * innerW,
+    y: Math.max(
+      padding.top,
+      Math.min(padding.top + innerH, padding.top + innerH - ((currentAltitude - minAlt) / range) * innerH)
+    ),
+    altitude: parseFloat(currentAltitude.toFixed(1))
+  };
 
   // Area under curve above horizon
   const areaPath = `${pathD} L ${points[points.length - 1].x},${horizonY} L ${points[0].x},${horizonY} Z`;
@@ -107,8 +115,13 @@ const AltitudeArc = ({ altitudePoints, isMoonUp }) => {
         <g>
           {/* Pulsing Aura */}
           <circle cx={currentPoint.x} cy={currentPoint.y} r="7" fill="var(--accent-light)" opacity="0.3">
-            <animate attributeName="r" values="7;13;7" dur="2.2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.35;0.1;0.35" dur="2.2s" repeatCount="indefinite" />
+            {/* SMIL keeps running regardless of the CSS media block, so gate it here */}
+            {!prefersReducedMotion && (
+              <>
+                <animate attributeName="r" values="7;13;7" dur="2.2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.35;0.1;0.35" dur="2.2s" repeatCount="indefinite" />
+              </>
+            )}
           </circle>
 
           {/* Solid Point */}
@@ -116,16 +129,16 @@ const AltitudeArc = ({ altitudePoints, isMoonUp }) => {
             cx={currentPoint.x}
             cy={currentPoint.y}
             r="4"
-            fill={isMoonUp ? '#ffffff' : 'var(--accent-light)'}
+            fill={aboveHorizon ? '#ffffff' : 'var(--accent-light)'}
             stroke="var(--accent-primary)"
             strokeWidth="1.5"
           />
 
           {/* Tooltip Badge */}
-          <g transform={`translate(${Math.min(width - 70, Math.max(50, currentPoint.x))}, ${currentPoint.y > horizonY ? currentPoint.y + 16 : currentPoint.y - 12})`}>
-            <rect x="-35" y="-10" width="70" height="18" rx="4" fill="rgba(12,16,34,0.9)" stroke="var(--border-subtle)" />
+          <g transform={`translate(${Math.min(width - 58, Math.max(58, currentPoint.x))}, ${currentPoint.y > horizonY ? currentPoint.y + 16 : currentPoint.y - 12})`}>
+            <rect x="-56" y="-10" width="112" height="18" rx="4" fill="rgba(12,16,34,0.9)" stroke="var(--border-subtle)" />
             <text x="0" y="3" textAnchor="middle" fill="var(--text-primary)" fontSize="9" fontFamily="var(--font-mono)" fontWeight="600">
-              {currentPoint.altitude > 0 ? `+${currentPoint.altitude}°` : `${currentPoint.altitude}°`} ({isMoonUp ? 'Visible' : 'Set'})
+              {currentPoint.altitude > 0 ? `+${currentPoint.altitude}°` : `${currentPoint.altitude}°`} ({aboveHorizon ? 'Visible' : 'Below horizon'})
             </text>
           </g>
         </g>
@@ -169,19 +182,20 @@ const SkyPosition = ({ skyData, locationName }) => {
           </span>
         </div>
 
-        {locationName && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-accent)' }}>
-            <MapPin size={12} /> {locationName}
-          </span>
-        )}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-accent)' }}>
+          <MapPin size={12} /> {locationName || 'Location'}
+          {skyData.timeZoneLabel && (
+            <span style={{ color: 'var(--text-muted)' }}>· {skyData.timeZoneLabel}</span>
+          )}
+        </span>
       </div>
 
       {/* Altitude Horizon Curve */}
       <div style={{ marginBottom: '1.25rem' }}>
         <AltitudeArc
           altitudePoints={skyData.altitudePoints}
-          isMoonUp={skyData.isMoonUp}
-          isSunUp={skyData.isSunUp}
+          currentFraction={skyData.currentFraction}
+          currentAltitude={skyData.currentMoonAltitudeValue}
         />
       </div>
 
@@ -223,6 +237,13 @@ const SkyPosition = ({ skyData, locationName }) => {
           value={skyData.sunset}
         />
       </div>
+
+      {/* Times belong to the observing location, not to the viewer's device */}
+      {skyData.timeZone && (
+        <div style={{ marginTop: '0.85rem', fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+          All times shown in {skyData.timeZone} ({skyData.timeZoneLabel})
+        </div>
+      )}
     </div>
   );
 };

@@ -1,11 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;600;700;800&display=swap');
-
 :root {
   /* Typography Tokens */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: 'Outfit', 'Inter', sans-serif;
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Outfit Variable', 'Outfit', 'Inter Variable', sans-serif;
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   
   /* Color Palette - Deep Space & Accessible High Contrast */
   --bg-deep-space: #04060d;
@@ -111,6 +109,17 @@ h1, h2, h3, h4 {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
+}
+
+/* Zodiac glyphs must render as monochrome symbol text. Without the variation
+   selector and this font stack the OS resolves them through the colour emoji
+   font, which drops a saturated cartoon tile into the telemetry panel. */
+.zodiac-glyph {
+  font-family: 'Segoe UI Symbol', 'Apple Symbols', 'Noto Sans Symbols 2', 'DejaVu Sans', serif;
+  font-variant-emoji: text;
+  color: var(--text-accent);
+  line-height: 1;
+  font-weight: 400;
 }
 
 .text-gradient {
@@ -449,6 +458,36 @@ h1, h2, h3, h4 {
 
   .main-canvas-area {
     margin-top: 5.5rem !important;
+  }
+}
+
+/* ═══ REDUCED MOTION ═══
+   Luna runs six indefinite animations by default: a looping title gradient,
+   pulse rings on the timeline and loading screen, an SVG aura on the transit
+   chart, a drifting orbital camera and a spinning Earth. Anyone who has asked
+   their OS for less motion gets none of it. JavaScript-driven motion is handled
+   separately by usePrefersReducedMotion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* The title keeps its gradient, it simply stops travelling */
+  .text-gradient {
+    animation: none !important;
+    background-position: 50% 50% !important;
+  }
+
+  /* Hover lifts and scale nudges are motion too */
+  .glass-button:hover,
+  .ghost-control-btn:hover,
+  .ghost-control-btn:active {
+    transform: none !important;
   }
 }
 

@@ -1,5 +1,19 @@
 import React, { StrictMode, Component } from 'react';
 import { createRoot } from 'react-dom/client';
+
+// Self-hosted fonts. Loading these from Google's CDN sent every visitor's IP to a
+// third party and put a four-hop request chain (HTML -> CSS -> Google CSS -> font
+// files) in front of first paint.
+import '@fontsource-variable/inter';
+import '@fontsource-variable/outfit';
+import '@fontsource-variable/jetbrains-mono';
+// Latin subsets only: the UI is English, and the full set ships 20 extra
+// subset files (cyrillic, greek, vietnamese) that no visitor here will request.
+import '@fontsource/cormorant-garamond/latin-400.css';
+import '@fontsource/cormorant-garamond/latin-600.css';
+import '@fontsource/cormorant-garamond/latin-700.css';
+import '@fontsource/cormorant-garamond/latin-400-italic.css';
+
 import './index.css';
 import App from './App.jsx';
 

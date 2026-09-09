@@ -1,9 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 const CustomCursor = () => {
   const dotRef = useRef(null);
   const trailRefs = useRef([]);
   const numTrails = 38;
+
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const [isTouchDevice] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -11,7 +14,7 @@ const CustomCursor = () => {
   });
 
   useEffect(() => {
-    if (isTouchDevice || !dotRef.current) return;
+    if (isTouchDevice || prefersReducedMotion || !dotRef.current) return;
 
     const dot = dotRef.current;
     const trails = trailRefs.current;
@@ -131,9 +134,10 @@ const CustomCursor = () => {
       document.removeEventListener('pointerover', handlePointerOver);
       document.removeEventListener('pointerout', handlePointerOut);
     };
-  }, [isTouchDevice]);
+  }, [isTouchDevice, prefersReducedMotion]);
 
-  if (isTouchDevice) return null;
+  // A 38-particle comet chasing the pointer is exactly what reduced motion means
+  if (isTouchDevice || prefersReducedMotion) return null;
 
   return (
     <>

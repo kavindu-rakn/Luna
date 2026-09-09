@@ -74,15 +74,13 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
 
   // Keyboard navigation on track focus
   const handleKeyDown = (e) => {
-    if (e.key === 'ArrowLeft') {
-      const newD = new Date(currentDate);
-      newD.setDate(newD.getDate() - 1);
-      setCurrentDate(newD);
-    } else if (e.key === 'ArrowRight') {
-      const newD = new Date(currentDate);
-      newD.setDate(newD.getDate() + 1);
-      setCurrentDate(newD);
-    }
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    // Claim the key so the global shortcut handler does not apply it a second time
+    e.preventDefault();
+    e.stopPropagation();
+    const newD = new Date(currentDate);
+    newD.setDate(newD.getDate() + (e.key === 'ArrowLeft' ? -1 : 1));
+    setCurrentDate(newD);
   };
 
   const currentIdx = cyclePhases.findIndex(p => p.isCurrent);

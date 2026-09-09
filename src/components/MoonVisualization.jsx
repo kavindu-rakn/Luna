@@ -156,10 +156,12 @@ const MoonMesh = ({ phase, scale = 1 }) => {
       {/* 3D Moon Sphere */}
       <group ref={moonRef}>
         <Sphere args={[1.85, 128, 128]}>
+          {/* No bumpMap: the only texture we ship is an albedo map, and feeding
+              brightness in as height inverts the terrain — bright crater rays such
+              as Tycho's rise as ridges while the dark maria sink into pits. Relief
+              comes from the terminator and the directional sun vector instead. */}
           <meshStandardMaterial
             map={colorMap}
-            bumpMap={colorMap}
-            bumpScale={0.02}
             roughness={0.92}
             metalness={0.04}
           />

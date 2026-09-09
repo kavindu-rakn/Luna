@@ -1,0 +1,75 @@
+# Gate on pull requests and on any branch push.
+#
+# Before this existed the only workflow was the deploy, so nothing checked a change
+# until it was already on master and on its way to production.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: ["master"] # master is covered by the deploy workflow
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Lint, test and build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # The suite runs under TZ=Asia/Colombo by design. A UTC runner would let a
+      # timezone regression pass unnoticed, which is exactly how the original bug
+      # survived: every displayed time was rendered on the viewer's clock.
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Always print the full picture, including dev dependencies, so a reviewer
+      # can see what changed even when the gate passes.
+      - name: Report all advisories
+        run: npm audit || true
+
+      # Only anything reachable by a visitor fails the build. Dev-tree advisories
+      # are reported above but do not block: they cannot reach production, and
+      # blocking on them trains people to ignore the gate.
+      - name: Fail on production advisories
+        run: npm audit --omit=dev --audit-level=moderate
