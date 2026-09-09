@@ -1,55 +1,71 @@
-# Simple workflow for deploying static content to GitHub Pages
+# Verify, then deploy to GitHub Pages.
+#
+# Actions are pinned to commit SHAs rather than moving tags. A tag like @v4 can be
+# repointed at any commit by whoever controls the action, and this workflow holds
+# pages:write and id-token:write, so a repointed tag would be a direct supply-chain
+# route into a production deploy. The trailing comment keeps the version readable
+# and lets Dependabot bump both together.
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the default branch
   push:
     branches: ["master"]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+# Least privilege at the top; the deploy job widens it for itself only.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-      
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '20'
-      
+          node-version: '22'
+          cache: 'npm'
+
+      # npm ci installs exactly what package-lock.json pins and fails if the two
+      # have drifted. npm install would silently resolve new transitive versions
+      # straight into a production deploy.
       - name: Install dependencies
-        run: npm install
-      
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
       - name: Build
         run: npm run build
-      
+
       - name: Setup Pages
-        uses: actions/configure-pages@v5
-      
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: './dist'
-      
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

@@ -8,6 +8,7 @@
 
 ### [**▶  LAUNCH LUNA**](https://kavindu-rakn.github.io/Luna/)
 
+[![CI](https://img.shields.io/github/actions/workflow/status/kavindu-rakn/Luna/ci.yml?branch=master&style=for-the-badge&label=CI)](https://github.com/kavindu-rakn/Luna/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-6366f1?style=for-the-badge)](./LICENSE)
 
 ![React](https://img.shields.io/badge/React-000000?style=for-the-badge)
