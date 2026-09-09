@@ -57,6 +57,100 @@ export const getMoonZodiac = (date = new Date()) => {
   };
 };
 
+// ═══ EARTH-MOON DISTANCE (Meeus, Astronomical Algorithms, ch. 47) ═══
+// SunCalc models the distance with a single term, 385001 - 20905*cos(M'), which spans
+// only 364,096-405,906 km. The Moon's true range is roughly 356,500-406,700 km, so
+// readings near perigee were short by up to ~7,600 km and the lower fifth of the
+// perigee/apogee gauge could never be reached. These are the principal periodic terms.
+
+// Fundamental arguments in degrees, plus the eccentricity correction E,
+// for an instant expressed in Julian centuries since J2000.
+const getLunarArguments = (date) => {
+  const jd = date.getTime() / 86400000 + 2440587.5;
+  const T = (jd - 2451545) / 36525;
+  const T2 = T * T;
+  const T3 = T2 * T;
+  const T4 = T3 * T;
+
+  return {
+    T,
+    // Mean elongation of the Moon from the Sun
+    D: 297.8501921 + 445267.1114034 * T - 0.0018819 * T2 + T3 / 545868 - T4 / 113065000,
+    // Sun's mean anomaly
+    M: 357.5291092 + 35999.0502909 * T - 0.0001536 * T2 + T3 / 24490000,
+    // Moon's mean anomaly
+    Mp: 134.9633964 + 477198.8675055 * T + 0.0087414 * T2 + T3 / 69699 - T4 / 14712000,
+    // Moon's argument of latitude
+    F: 93.272095 + 483202.0175233 * T - 0.0036539 * T2 - T3 / 3526000 + T4 / 863310000,
+    // Correction for the varying eccentricity of Earth's orbit
+    E: 1 - 0.002516 * T - 0.0000074 * T2
+  };
+};
+
+// [D, M, M', F, coefficient] — coefficient in units of 0.001 km
+const DISTANCE_TERMS = [
+  [0, 0, 1, 0, -20905355],
+  [2, 0, -1, 0, -3699111],
+  [2, 0, 0, 0, -2955968],
+  [0, 0, 2, 0, -569925],
+  [0, 1, 0, 0, 48888],
+  [0, 0, 0, 2, -3149],
+  [2, 0, -2, 0, 246158],
+  [2, -1, -1, 0, -152138],
+  [2, 0, 1, 0, -170733],
+  [2, -1, 0, 0, -204586],
+  [0, 1, -1, 0, -129620],
+  [1, 0, 0, 0, 108743],
+  [0, 1, 1, 0, 104755],
+  [2, 0, 0, -2, 10321],
+  [0, 0, 1, -2, 79661],
+  [4, 0, -1, 0, -34782],
+  [0, 0, 3, 0, -23210],
+  [4, 0, -2, 0, -21636],
+  [2, 1, -1, 0, 24208],
+  [2, 1, 0, 0, 30824],
+  [1, 0, -1, 0, -8379],
+  [1, 1, 0, 0, -16675],
+  [2, -1, 1, 0, -12831],
+  [2, 0, 2, 0, -10445],
+  [4, 0, 0, 0, -11650],
+  [2, 0, -3, 0, 14403],
+  [0, 1, -2, 0, -7003],
+  [2, -1, -2, 0, 10056],
+  [1, 0, 1, 0, 6322],
+  [2, -2, 0, 0, -9884],
+  [0, 1, 2, 0, 5751],
+  [2, -2, -1, 0, -4950],
+  [2, 0, 1, -2, 4130],
+  [4, -1, -1, 0, -3958],
+  [3, 0, -1, 0, 3258],
+  [2, 1, 1, 0, 2616],
+  [4, -1, -2, 0, -1897],
+  [0, 2, -1, 0, -2117],
+  [2, 2, -1, 0, 2354],
+  [4, 0, 1, 0, -1423],
+  [0, 0, 4, 0, -1117],
+  [4, -1, 0, 0, -1571],
+  [1, 0, -2, 0, -1739]
+];
+
+// Earth-Moon centre-to-centre distance in kilometres
+export const getMoonDistanceKm = (date = new Date()) => {
+  const { D, M, Mp, F, E } = getLunarArguments(date);
+  const rad = Math.PI / 180;
+
+  let sumR = 0;
+  for (const [cD, cM, cMp, cF, coeff] of DISTANCE_TERMS) {
+    if (coeff === 0) continue;
+    const arg = (cD * D + cM * M + cMp * Mp + cF * F) * rad;
+    // Terms involving the Sun's anomaly are scaled by E (or E squared)
+    const eScale = cM === 0 ? 1 : Math.pow(E, Math.abs(cM));
+    sumR += coeff * Math.cos(arg) * eScale;
+  }
+
+  return 385000.56 + sumR / 1000;
+};
+
 // Classify a 0..1 phase value into its name. Shared by the full detail record and
 // the lightweight timeline summary so the two can never drift apart.
 const PRIMARY_THRESHOLD = 0.015; // ~10.6 hour window around each exact quarter
@@ -168,7 +262,7 @@ export const getLunarDetails = (date = new Date(), lat = 0, lon = 0, timeZone = 
   const angle = moonIllumination.angle; // crescent tilt angle in radians
 
   const age = phase * SYNODIC_MONTH;
-  const distanceKm = moonPosition.distance ? Math.round(moonPosition.distance) : MEAN_MOON_DISTANCE;
+  const distanceKm = Math.round(getMoonDistanceKm(validDate));
   const distancePercent = Math.max(0, Math.min(100, ((distanceKm - MIN_MOON_DISTANCE) / (MAX_MOON_DISTANCE - MIN_MOON_DISTANCE)) * 100));
 
   const { name, phaseKey, isExactPrimary } = classifyPhase(phase);
