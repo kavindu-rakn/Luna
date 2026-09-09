@@ -275,31 +275,146 @@ export const getCyclePhases = (centerDate = new Date(), daysCount = 30) => {
   return phases;
 };
 
-// Format a Date object nicely
-export const formatTimeString = (d) => {
-  if (!d || isNaN(d.getTime())) return '--:--';
-  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+// ═══ TIMEZONE HELPERS ═══
+// Astronomy is computed for a LOCATION, so every time we display must be rendered
+// in that location's timezone, not in whatever timezone the viewer's browser sits in.
+
+export const getBrowserTimeZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
 };
 
-// 24-Hour Continuous Sky Ephemeris
-export const getSkyData = (date = new Date(), lat = 0, lon = 0) => {
-  const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
+// Wall-clock calendar/clock fields of an instant, as read in a given timezone
+const getZonedParts = (date, timeZone) => {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
 
-  const moonTimes = SunCalc.getMoonTimes(validDate, lat, lon);
+  const parts = {};
+  for (const { type, value } of formatter.formatToParts(date)) {
+    parts[type] = value;
+  }
+
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    hour: Number(parts.hour) % 24, // some locales emit '24' for midnight
+    minute: Number(parts.minute),
+    second: Number(parts.second)
+  };
+};
+
+// UTC offset of a timezone, in milliseconds, at a specific instant
+const getZoneOffsetMs = (date, timeZone) => {
+  const p = getZonedParts(date, timeZone);
+  const asIfUTC = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  return asIfUTC - Math.floor(date.getTime() / 1000) * 1000;
+};
+
+// The instant at which the given timezone's clock reads 00:00 on the day containing `date`
+export const getStartOfDayInZone = (date, timeZone) => {
+  const p = getZonedParts(date, timeZone);
+  const naiveMidnight = Date.UTC(p.year, p.month - 1, p.day);
+
+  // Two passes: the second re-reads the offset at the guessed instant so that
+  // days containing a DST transition still resolve to true local midnight.
+  let instant = naiveMidnight - getZoneOffsetMs(date, timeZone);
+  instant = naiveMidnight - getZoneOffsetMs(new Date(instant), timeZone);
+  return instant;
+};
+
+// Short timezone abbreviation for display, e.g. "GMT+1", "BST", "EDT"
+export const getTimeZoneLabel = (date, timeZone) => {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone, timeZoneName: 'short' })
+      .formatToParts(date);
+    const match = parts.find((p) => p.type === 'timeZoneName');
+    return match ? match.value : timeZone;
+  } catch {
+    return timeZone;
+  }
+};
+
+// Format an instant as a clock time in the given timezone
+export const formatTimeString = (d, timeZone) => {
+  if (!d || isNaN(d.getTime())) return '--:--';
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone
+    }).format(d);
+  } catch {
+    return '--:--';
+  }
+};
+
+// Locate moonrise / moonset by scanning the location's own 24-hour day for horizon
+// crossings, then bisecting to the second. Derived from the same altitude function
+// that draws the transit curve, so the chart and the numbers beneath it always agree.
+const findHorizonCrossings = (dayStartMs, lat, lon) => {
+  const altitudeAt = (ms) => SunCalc.getMoonPosition(new Date(ms), lat, lon).altitude;
+
+  const COARSE_STEP = 10 * 60 * 1000; // 10 minutes
+  const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000;
+
+  const bisect = (lo, hi) => {
+    const loSign = Math.sign(altitudeAt(lo));
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (Math.sign(altitudeAt(mid)) === loSign) lo = mid;
+      else hi = mid;
+    }
+    return new Date(Math.round((lo + hi) / 2));
+  };
+
+  let rise = null;
+  let set = null;
+  let prevAlt = altitudeAt(dayStartMs);
+
+  for (let t = dayStartMs + COARSE_STEP; t <= dayEndMs; t += COARSE_STEP) {
+    const alt = altitudeAt(t);
+    if (rise === null && prevAlt < 0 && alt >= 0) rise = bisect(t - COARSE_STEP, t);
+    if (set === null && prevAlt >= 0 && alt < 0) set = bisect(t - COARSE_STEP, t);
+    prevAlt = alt;
+  }
+
+  return { rise, set };
+};
+
+// 24-Hour Continuous Sky Ephemeris, anchored to the observing location's local day
+export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null) => {
+  const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
+  const zone = timeZone || getBrowserTimeZone();
+
+  // The day we chart runs from local midnight to local midnight AT THE LOCATION.
+  const dayStartMs = getStartOfDayInZone(validDate, zone);
+
+  // SunCalc.getTimes is longitude-based and therefore already timezone-independent.
   const sunTimes = SunCalc.getTimes(validDate, lat, lon);
+  const { rise: moonriseDate, set: moonsetDate } = findHorizonCrossings(dayStartMs, lat, lon);
 
   const currentMoonPos = SunCalc.getMoonPosition(validDate, lat, lon);
   const currentSunPos = SunCalc.getPosition(validDate, lat, lon);
 
-  // Sample the full 24-hour solar day (00:00 to 23:30 in 30-minute intervals = 48 points)
+  // Sample the local day in 30-minute intervals (48 points)
   const altitudePoints = [];
-  const startOfDay = new Date(validDate);
-  startOfDay.setHours(0, 0, 0, 0);
-
   let peakPoint = { altitude: -90, hour: 0, label: '12 AM', azimuth: 180, compass: 'S' };
 
   for (let step = 0; step < 48; step++) {
-    const pointDate = new Date(startOfDay.getTime() + step * 30 * 60 * 1000);
+    const pointDate = new Date(dayStartMs + step * 30 * 60 * 1000);
     const moonPos = SunCalc.getMoonPosition(pointDate, lat, lon);
     const sunPos = SunCalc.getPosition(pointDate, lat, lon);
 
@@ -307,18 +422,23 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0) => {
     const sunAltDeg = toDeg(sunPos.altitude);
     const azimuthDeg = toCompassBearing(moonPos.azimuth);
     const compassDir = toCompassDirection(azimuthDeg);
+    const zoned = getZonedParts(pointDate, zone);
 
     const point = {
       step,
       time: pointDate,
-      hour: pointDate.getHours() + pointDate.getMinutes() / 60,
+      hour: zoned.hour + zoned.minute / 60,
       altitude: parseFloat(altDeg.toFixed(1)),
       sunAltitude: parseFloat(sunAltDeg.toFixed(1)),
       azimuth: parseFloat(azimuthDeg.toFixed(1)),
       compass: compassDir,
       isDaylight: sunAltDeg > 0,
       isMoonUp: altDeg > 0,
-      label: pointDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: pointDate.getMinutes() === 0 ? undefined : '2-digit', hour12: true })
+      label: new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        hour12: true,
+        timeZone: zone
+      }).format(pointDate)
     };
 
     altitudePoints.push(point);
@@ -332,18 +452,26 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0) => {
   const currentSunAlt = toDeg(currentSunPos.altitude);
   const currentMoonBearing = toCompassBearing(currentMoonPos.azimuth);
 
+  // Where the selected instant falls within the charted day (0 = local midnight, 1 = next midnight)
+  const currentFraction = Math.max(0, Math.min(1, (validDate.getTime() - dayStartMs) / 86400000));
+
   return {
     date: validDate,
-    moonrise: formatTimeString(moonTimes.rise),
-    moonset: formatTimeString(moonTimes.set),
-    moonriseDate: moonTimes.rise,
-    moonsetDate: moonTimes.set,
-    sunrise: formatTimeString(sunTimes.sunrise),
-    sunset: formatTimeString(sunTimes.sunset),
-    solarNoon: formatTimeString(sunTimes.solarNoon),
-    dusk: formatTimeString(sunTimes.dusk),
-    dawn: formatTimeString(sunTimes.dawn),
+    timeZone: zone,
+    timeZoneLabel: getTimeZoneLabel(validDate, zone),
+    dayStartMs,
+    currentFraction,
+    moonrise: formatTimeString(moonriseDate, zone),
+    moonset: formatTimeString(moonsetDate, zone),
+    moonriseDate,
+    moonsetDate,
+    sunrise: formatTimeString(sunTimes.sunrise, zone),
+    sunset: formatTimeString(sunTimes.sunset, zone),
+    solarNoon: formatTimeString(sunTimes.solarNoon, zone),
+    dusk: formatTimeString(sunTimes.dusk, zone),
+    dawn: formatTimeString(sunTimes.dawn, zone),
     currentMoonAltitude: currentMoonAlt.toFixed(1),
+    currentMoonAltitudeValue: currentMoonAlt,
     currentMoonAzimuth: currentMoonBearing.toFixed(1),
     currentMoonCompass: toCompassDirection(currentMoonBearing),
     currentSunAltitude: currentSunAlt.toFixed(1),

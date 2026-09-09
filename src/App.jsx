@@ -8,12 +8,12 @@ import CustomCursor from './components/CustomCursor';
 import SkyPosition from './components/SkyPosition';
 import OrbitalView from './components/OrbitalView';
 import LoadingScreen from './components/LoadingScreen';
-import { getLunarDetails, getSkyData, reverseGeocodeCached, getAdjacentQuarterPhase } from './utils/lunarCalc';
+import { getLunarDetails, getSkyData, reverseGeocodeCached, getAdjacentQuarterPhase, getBrowserTimeZone } from './utils/lunarCalc';
 import { X, BarChart3 } from 'lucide-react';
 
 function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const DEFAULT_LOCATION = { lat: 51.4769, lon: -0.0005, name: 'Greenwich, UK' };
+  const DEFAULT_LOCATION = { lat: 51.4769, lon: -0.0005, name: 'Greenwich, UK', timeZone: 'Europe/London' };
   const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
@@ -29,7 +29,8 @@ function App() {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
           const geoResult = await reverseGeocodeCached(lat, lon);
-          setLocation(geoResult);
+          // When we geolocate the user, their browser timezone IS the location's timezone.
+          setLocation({ ...geoResult, timeZone: getBrowserTimeZone() });
         },
         () => {
           // Default to Greenwich on permission denial
@@ -73,7 +74,7 @@ function App() {
   // Derive lunar details and 24-hour sky transit data
   const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon), [currentDate, location]);
   const computedSkyData = useMemo(() => {
-    if (location) return getSkyData(currentDate, location.lat, location.lon);
+    if (location) return getSkyData(currentDate, location.lat, location.lon, location.timeZone);
     return null;
   }, [currentDate, location]);
 
