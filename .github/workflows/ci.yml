@@ -4,10 +4,12 @@
 # until it was already on master and on its way to production.
 name: CI
 
+# pull_request only. Adding a push trigger as well made every job run twice for
+# any PR raised from a branch in this repo: once for the branch push, once for the
+# PR. Direct pushes to master are still verified, by the lint and test steps in
+# the deploy workflow.
 on:
   pull_request:
-  push:
-    branches-ignore: ["master"] # master is covered by the deploy workflow
 
 permissions:
   contents: read
