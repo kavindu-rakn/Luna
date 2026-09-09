@@ -259,6 +259,25 @@ const DateControls = ({ currentDate, setCurrentDate, isCalendarOpen, setIsCalend
                 </button>
               );
             })}
+
+            {/* Trailing days, padding the matrix to a fixed six rows so the modal
+                keeps one height whether a month spans four rows or six */}
+            {Array.from({ length: Math.max(0, 42 - firstDayOfMonth - daysInMonth) }).map((_, i) => (
+              <div
+                key={`next-${i}`}
+                style={{
+                  height: '34px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.78rem',
+                  color: 'rgba(255, 255, 255, 0.15)',
+                  fontFamily: 'var(--font-mono)'
+                }}
+              >
+                {i + 1}
+              </div>
+            ))}
           </div>
         </div>
       )}
