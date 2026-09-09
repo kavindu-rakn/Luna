@@ -57,8 +57,108 @@ export const getMoonZodiac = (date = new Date()) => {
   };
 };
 
+// Classify a 0..1 phase value into its name. Shared by the full detail record and
+// the lightweight timeline summary so the two can never drift apart.
+const PRIMARY_THRESHOLD = 0.015; // ~10.6 hour window around each exact quarter
+
+export const classifyPhase = (phase) => {
+  if (phase <= PRIMARY_THRESHOLD || phase >= 1 - PRIMARY_THRESHOLD) {
+    return { name: 'New Moon', phaseKey: 'new_moon', isExactPrimary: true };
+  }
+  if (Math.abs(phase - 0.25) <= PRIMARY_THRESHOLD) {
+    return { name: 'First Quarter', phaseKey: 'first_quarter', isExactPrimary: true };
+  }
+  if (Math.abs(phase - 0.5) <= PRIMARY_THRESHOLD) {
+    return { name: 'Full Moon', phaseKey: 'full_moon', isExactPrimary: true };
+  }
+  if (Math.abs(phase - 0.75) <= PRIMARY_THRESHOLD) {
+    return { name: 'Last Quarter', phaseKey: 'last_quarter', isExactPrimary: true };
+  }
+  if (phase < 0.25) return { name: 'Waxing Crescent', phaseKey: 'waxing_crescent', isExactPrimary: false };
+  if (phase < 0.5) return { name: 'Waxing Gibbous', phaseKey: 'waxing_gibbous', isExactPrimary: false };
+  if (phase < 0.75) return { name: 'Waning Gibbous', phaseKey: 'waning_gibbous', isExactPrimary: false };
+  return { name: 'Waning Crescent', phaseKey: 'waning_crescent', isExactPrimary: false };
+};
+
+// Illumination-only phase record. Costs a single SunCalc call, with no observer
+// position, zodiac or phase projections — used for the 30-day timeline, which
+// renders 31 of these on every scrub frame.
+export const getPhaseSummary = (date = new Date()) => {
+  const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
+  const { phase, fraction } = SunCalc.getMoonIllumination(validDate);
+  return {
+    date: validDate,
+    phase,
+    fraction: (fraction * 100).toFixed(1),
+    ...classifyPhase(phase)
+  };
+};
+
+// Golden-section search for the instant at which the Moon reaches `targetPhase`.
+// The cosine distance metric is smooth and convex across the search window, so this
+// converges without the seam discontinuity a raw phase difference would suffer at
+// the New Moon boundary.
+const solvePhaseInstant = (targetPhase, approxTimeMs, windowHours = 36) => {
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const resphi = 2 - phi;
+
+  let a = approxTimeMs - windowHours * 3600000;
+  let b = approxTimeMs + windowHours * 3600000;
+  let x1 = a + resphi * (b - a);
+  let x2 = b - resphi * (b - a);
+
+  let f1 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x1)).phase, targetPhase);
+  let f2 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x2)).phase, targetPhase);
+
+  for (let iter = 0; iter < 28; iter++) {
+    if (f1 < f2) {
+      b = x2;
+      x2 = x1;
+      f2 = f1;
+      x1 = a + resphi * (b - a);
+      f1 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x1)).phase, targetPhase);
+    } else {
+      a = x1;
+      x1 = x2;
+      f1 = f2;
+      x2 = b - resphi * (b - a);
+      f2 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x2)).phase, targetPhase);
+    }
+  }
+
+  return new Date(Math.round((a + b) / 2));
+};
+
+// "in 4d 6h" / "in 3h 12m" / "in 8 min" / "happening now"
+const formatCountdown = (ms) => {
+  if (ms <= 60000) return 'happening now';
+  const totalMinutes = Math.round(ms / 60000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `in ${days}d ${hours}h`;
+  if (hours > 0) return `in ${hours}h ${minutes}m`;
+  return `in ${minutes} min`;
+};
+
+// Date and time of a phase event, in the observing location's timezone
+const formatPhaseStamp = (d, timeZone) => {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone
+    }).format(d);
+  } catch {
+    return '--';
+  }
+};
+
 // Get comprehensive lunar details
-export const getLunarDetails = (date = new Date(), lat = 0, lon = 0) => {
+export const getLunarDetails = (date = new Date(), lat = 0, lon = 0, timeZone = null) => {
   const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
   const moonIllumination = SunCalc.getMoonIllumination(validDate);
   const moonPosition = SunCalc.getMoonPosition(validDate, lat, lon);
@@ -71,43 +171,9 @@ export const getLunarDetails = (date = new Date(), lat = 0, lon = 0) => {
   const distanceKm = moonPosition.distance ? Math.round(moonPosition.distance) : MEAN_MOON_DISTANCE;
   const distancePercent = Math.max(0, Math.min(100, ((distanceKm - MIN_MOON_DISTANCE) / (MAX_MOON_DISTANCE - MIN_MOON_DISTANCE)) * 100));
 
-  // Determine major vs intermediate phase names with refined astronomical threshold
-  const PRIMARY_THRESHOLD = 0.015; // ~10.6 hours window
-  let name = '';
-  let isExactPrimary = false;
-  let phaseKey = '';
+  const { name, phaseKey, isExactPrimary } = classifyPhase(phase);
 
-  if (phase <= PRIMARY_THRESHOLD || phase >= 1 - PRIMARY_THRESHOLD) {
-    name = 'New Moon';
-    phaseKey = 'new_moon';
-    isExactPrimary = true;
-  } else if (Math.abs(phase - 0.25) <= PRIMARY_THRESHOLD) {
-    name = 'First Quarter';
-    phaseKey = 'first_quarter';
-    isExactPrimary = true;
-  } else if (Math.abs(phase - 0.5) <= PRIMARY_THRESHOLD) {
-    name = 'Full Moon';
-    phaseKey = 'full_moon';
-    isExactPrimary = true;
-  } else if (Math.abs(phase - 0.75) <= PRIMARY_THRESHOLD) {
-    name = 'Last Quarter';
-    phaseKey = 'last_quarter';
-    isExactPrimary = true;
-  } else if (phase < 0.25) {
-    name = 'Waxing Crescent';
-    phaseKey = 'waxing_crescent';
-  } else if (phase < 0.5) {
-    name = 'Waxing Gibbous';
-    phaseKey = 'waxing_gibbous';
-  } else if (phase < 0.75) {
-    name = 'Waning Gibbous';
-    phaseKey = 'waning_gibbous';
-  } else {
-    name = 'Waning Crescent';
-    phaseKey = 'waning_crescent';
-  }
-
-  const nextPhases = getNextMajorPhases(validDate);
+  const nextPhases = getNextMajorPhases(validDate, timeZone);
   const zodiac = getMoonZodiac(validDate);
 
   return {
@@ -131,36 +197,43 @@ export const getLunarDetails = (date = new Date(), lat = 0, lon = 0) => {
   };
 };
 
-// Calculate exact upcoming dates for the 4 primary quarter phases
-export const getNextMajorPhases = (date = new Date()) => {
-  const current = SunCalc.getMoonIllumination(date);
-  const phase = current.phase;
+// Exact instants of the four upcoming primary quarter phases.
+// Solved with the same golden-section search that drives Shift+Arrow navigation, so
+// the countdown in the drawer and the keyboard jump can never name different dates.
+export const getNextMajorPhases = (date = new Date(), timeZone = null) => {
+  const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
+  const zone = timeZone || getBrowserTimeZone();
+  const nowMs = validDate.getTime();
+  const currentPhase = SunCalc.getMoonIllumination(validDate).phase;
 
-  const getDaysUntil = (targetPhase) => {
-    let diff = targetPhase - phase;
+  const resolve = (targetPhase) => {
+    let diff = targetPhase - currentPhase;
     if (diff <= 0) diff += 1;
-    return diff * SYNODIC_MONTH;
-  };
 
-  const daysToNew = getDaysUntil(0);
-  const daysToFirstQ = getDaysUntil(0.25);
-  const daysToFull = getDaysUntil(0.5);
-  const daysToLastQ = getDaysUntil(0.75);
+    let exact = solvePhaseInstant(targetPhase, nowMs + diff * SYNODIC_MONTH * 86400000);
 
-  const addDays = (days) => {
-    const d = new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+    // The refined instant can land marginally in the past when we are sitting on the
+    // event itself; advance a whole synodic month and re-solve if that happens.
+    if (exact.getTime() < nowMs) {
+      exact = solvePhaseInstant(targetPhase, exact.getTime() + SYNODIC_MONTH * 86400000);
+    }
+
+    const msRemaining = Math.max(0, exact.getTime() - nowMs);
+
     return {
-      date: d,
-      daysRemaining: days.toFixed(1),
-      formatted: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      date: exact,
+      msRemaining,
+      daysRemaining: (msRemaining / 86400000).toFixed(1),
+      countdown: formatCountdown(msRemaining),
+      formatted: formatPhaseStamp(exact, zone)
     };
   };
 
   return {
-    nextNewMoon: addDays(daysToNew),
-    nextFirstQuarter: addDays(daysToFirstQ),
-    nextFullMoon: addDays(daysToFull),
-    nextLastQuarter: addDays(daysToLastQ)
+    nextNewMoon: resolve(0),
+    nextFirstQuarter: resolve(0.25),
+    nextFullMoon: resolve(0.5),
+    nextLastQuarter: resolve(0.75)
   };
 };
 
@@ -216,37 +289,8 @@ export const getAdjacentQuarterPhase = (currentDate = new Date(), direction = 1)
   const approxDays = phaseDelta * SYNODIC_MONTH;
   const approxTargetTime = validDate.getTime() + (direction > 0 ? 1 : -1) * approxDays * 86400000;
 
-  // 3. Golden-section optimization over [approx - 36h, approx + 36h]
-  // Because angular distance is smooth and convex, it converges to sub-second precision with zero seam bugs.
-  const phi = (1 + Math.sqrt(5)) / 2;
-  const resphi = 2 - phi;
-
-  let a = approxTargetTime - 36 * 3600000;
-  let b = approxTargetTime + 36 * 3600000;
-  let x1 = a + resphi * (b - a);
-  let x2 = b - resphi * (b - a);
-
-  let f1 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x1)).phase, targetPhase);
-  let f2 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x2)).phase, targetPhase);
-
-  for (let iter = 0; iter < 28; iter++) {
-    if (f1 < f2) {
-      b = x2;
-      x2 = x1;
-      f2 = f1;
-      x1 = a + resphi * (b - a);
-      f1 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x1)).phase, targetPhase);
-    } else {
-      a = x1;
-      x1 = x2;
-      f1 = f2;
-      x2 = b - resphi * (b - a);
-      f2 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x2)).phase, targetPhase);
-    }
-  }
-
-  const exactTime = Math.round((a + b) / 2);
-  return new Date(exactTime);
+  // 3. Golden-section refinement around that estimate
+  return solvePhaseInstant(targetPhase, approxTargetTime);
 };
 
 // Get the 30-day timeline centered around the selected date
@@ -257,7 +301,7 @@ export const getCyclePhases = (centerDate = new Date(), daysCount = 30) => {
   for (let i = -halfCycle; i <= halfCycle; i++) {
     const d = new Date(centerDate);
     d.setDate(d.getDate() + i);
-    const details = getLunarDetails(d);
+    const details = getPhaseSummary(d);
     
     phases.push({
       date: d,

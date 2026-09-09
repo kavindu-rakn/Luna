@@ -72,7 +72,7 @@ function App() {
   }, []);
 
   // Derive lunar details and 24-hour sky transit data
-  const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon), [currentDate, location]);
+  const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone), [currentDate, location]);
   const computedSkyData = useMemo(() => {
     if (location) return getSkyData(currentDate, location.lat, location.lon, location.timeZone);
     return null;

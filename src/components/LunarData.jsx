@@ -51,8 +51,8 @@ const LunarData = ({ lunarDetails }) => {
     { label: 'Next New Moon', ...nextPhases?.nextNewMoon },
     { label: 'Next 1st Quarter', ...nextPhases?.nextFirstQuarter },
     { label: 'Next Last Quarter', ...nextPhases?.nextLastQuarter }
-  ].filter(p => p.daysRemaining !== undefined)
-   .sort((a, b) => parseFloat(a.daysRemaining) - parseFloat(b.daysRemaining));
+  ].filter(p => p.msRemaining !== undefined)
+   .sort((a, b) => a.msRemaining - b.msRemaining);
 
   const upcomingPhase = nextPhaseList[0];
 
@@ -165,7 +165,7 @@ const LunarData = ({ lunarDetails }) => {
                 <span className="utility-label">{upcomingPhase.label}</span>
               </div>
               <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-accent)' }}>
-                in {upcomingPhase.daysRemaining} days
+                {upcomingPhase.countdown}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
                 {upcomingPhase.formatted}
