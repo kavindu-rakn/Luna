@@ -16,6 +16,7 @@ function App() {
   const DEFAULT_LOCATION = { lat: 51.4769, lon: -0.0005, name: 'Greenwich, UK', timeZone: 'Europe/London' };
   const [location, setLocation] = useState(DEFAULT_LOCATION);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const containerRef = useRef();
   const mainViewRef = useRef();
@@ -43,33 +44,44 @@ function App() {
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ignore keystrokes inside input fields
-      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      // Never hijack a keystroke aimed at a text field, or at a control that
+      // already handles arrow keys itself. The timeline slider does, so each
+      // press used to move the date twice.
+      if (e.target instanceof Element &&
+        e.target.closest('input, select, textarea, [contenteditable="true"], [role="slider"]')) {
+        return;
+      }
+
+      // Leave browser and OS chords alone: Ctrl/Cmd+T, Ctrl/Cmd+D, Alt+Arrow.
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (e.key === 'Escape') {
+        // Dismiss the innermost surface first, then the drawer behind it.
+        if (isCalendarOpen) setIsCalendarOpen(false);
+        else setIsDrawerOpen(false);
+        return;
+      }
 
       if (e.key === 'ArrowLeft') {
-        if (e.shiftKey) {
-          setCurrentDate(d => getAdjacentQuarterPhase(d, -1));
-        } else {
-          setCurrentDate(d => new Date(d.getTime() - 24 * 60 * 60 * 1000));
-        }
+        e.preventDefault();
+        setCurrentDate(d => e.shiftKey
+          ? getAdjacentQuarterPhase(d, -1)
+          : new Date(d.getTime() - 24 * 60 * 60 * 1000));
       } else if (e.key === 'ArrowRight') {
-        if (e.shiftKey) {
-          setCurrentDate(d => getAdjacentQuarterPhase(d, 1));
-        } else {
-          setCurrentDate(d => new Date(d.getTime() + 24 * 60 * 60 * 1000));
-        }
+        e.preventDefault();
+        setCurrentDate(d => e.shiftKey
+          ? getAdjacentQuarterPhase(d, 1)
+          : new Date(d.getTime() + 24 * 60 * 60 * 1000));
       } else if (e.key.toLowerCase() === 't') {
         setCurrentDate(new Date());
       } else if (e.key.toLowerCase() === 'd') {
         setIsDrawerOpen(prev => !prev);
-      } else if (e.key === 'Escape') {
-        setIsDrawerOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isCalendarOpen]);
 
   // Derive lunar details and 24-hour sky transit data
   const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone), [currentDate, location]);
@@ -123,7 +135,12 @@ function App() {
 
           {/* Center: DateControls */}
           <div className="controls-panel">
-            <DateControls currentDate={currentDate} setCurrentDate={setCurrentDate} />
+            <DateControls
+              currentDate={currentDate}
+              setCurrentDate={setCurrentDate}
+              isCalendarOpen={isCalendarOpen}
+              setIsCalendarOpen={setIsCalendarOpen}
+            />
           </div>
 
           {/* Right: Deep Dive Action Button */}

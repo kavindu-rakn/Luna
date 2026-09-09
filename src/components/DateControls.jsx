@@ -2,10 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X } from 'lucide-react';
 import { getAdjacentQuarterPhase } from '../utils/lunarCalc';
 
-const DateControls = ({ currentDate, setCurrentDate }) => {
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+const DateControls = ({ currentDate, setCurrentDate, isCalendarOpen, setIsCalendarOpen }) => {
   const [viewDate, setViewDate] = useState(() => new Date(currentDate));
   const calendarModalRef = useRef(null);
+  const toggleButtonRef = useRef(null);
+  const wasCalendarOpen = useRef(false);
+
+  // Send focus back to the toggle when the calendar closes, so a keyboard user
+  // pressing Escape is not dropped at the top of the document.
+  useEffect(() => {
+    if (wasCalendarOpen.current && !isCalendarOpen) {
+      toggleButtonRef.current?.focus();
+    }
+    wasCalendarOpen.current = isCalendarOpen;
+  }, [isCalendarOpen]);
 
   const changeDate = (days) => {
     const newDate = new Date(currentDate);
@@ -39,9 +49,8 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (calendarModalRef.current && !calendarModalRef.current.contains(e.target)) {
-        // Only close if click was not on the toggle button itself
-        const dateBtn = document.querySelector('.date-display-btn');
-        if (dateBtn && dateBtn.contains(e.target)) return;
+        // Only close if the click was not on the toggle button itself
+        if (toggleButtonRef.current?.contains(e.target)) return;
         setIsCalendarOpen(false);
       }
     };
@@ -50,7 +59,7 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isCalendarOpen]);
+  }, [isCalendarOpen, setIsCalendarOpen]);
 
   // Monthly Calendar Math
   const year = viewDate.getFullYear();
@@ -93,6 +102,7 @@ const DateControls = ({ currentDate, setCurrentDate }) => {
       
       {/* Date Display Pill (Clickable to open custom dark calendar) */}
       <button
+        ref={toggleButtonRef}
         onClick={() => {
           if (!isCalendarOpen) {
             setViewDate(new Date(currentDate));
