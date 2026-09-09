@@ -6,6 +6,10 @@
 
 ### *An Immersive Celestial Lunar Ephemeris & 3D Orbital Explorer*
 
+### [**▶  LAUNCH LUNA**](https://kavindu-rakn.github.io/Luna/)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-6366f1?style=for-the-badge)](./LICENSE)
+
 ![React](https://img.shields.io/badge/React-000000?style=for-the-badge)
 ![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge)
 ![React Three Fiber](https://img.shields.io/badge/React_Three_Fiber-000000?style=for-the-badge)
@@ -22,7 +26,8 @@
   <a href="#logic">LOGIC</a> &nbsp;|&nbsp;
   <a href="#keybindings">KEYBINDINGS</a> &nbsp;|&nbsp;
   <a href="#architecture">ARCHITECTURE</a> &nbsp;|&nbsp;
-  <a href="#cloning">CLONING</a>
+  <a href="#cloning">CLONING</a> &nbsp;|&nbsp;
+  <a href="#license">LICENSE</a>
 </p>
 
 ---
@@ -208,6 +213,13 @@ npm run build
 # Preview production build locally
 npm run preview
 ```
+
+---
+
+<a id="license"></a>
+## | | | L I C E N S E
+
+Released under the [MIT License](./LICENSE). © 2026 Kavindu Ranathunga.
 
 ---
 

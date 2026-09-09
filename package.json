@@ -1,7 +1,29 @@
 {
   "name": "luna",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "An interactive 3D lunar ephemeris explorer: moon phases, orbital mechanics, and 24-hour sky transit.",
+  "keywords": [
+    "moon",
+    "lunar",
+    "astronomy",
+    "ephemeris",
+    "moon-phase",
+    "threejs",
+    "react",
+    "webgl",
+    "visualization"
+  ],
+  "homepage": "https://kavindu-rakn.github.io/Luna/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kavindu-rakn/Luna.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kavindu-rakn/Luna/issues"
+  },
+  "author": "Kavindu Ranathunga <kavindu.rakn@gmail.com>",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
