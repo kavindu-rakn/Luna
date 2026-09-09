@@ -1,14 +1,26 @@
 import React, { useRef, useEffect } from 'react';
 import { Moon, Sparkles, Orbit, Compass, ArrowUpRight, Calendar } from 'lucide-react';
 import gsap from 'gsap';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 const AnimatedNumber = ({ value, suffix = '', decimals = 1 }) => {
   const numRef = useRef();
   const valRef = useRef({ val: 0 });
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     const targetValue = parseFloat(value) || 0;
-    gsap.to(valRef.current, {
+
+    // Reduced motion: show the figure, skip the count-up
+    if (prefersReducedMotion) {
+      valRef.current.val = targetValue;
+      if (numRef.current) {
+        numRef.current.innerText = targetValue.toFixed(decimals) + suffix;
+      }
+      return undefined;
+    }
+
+    const tween = gsap.to(valRef.current, {
       val: targetValue,
       duration: 0.8,
       ease: 'power2.out',
@@ -18,7 +30,11 @@ const AnimatedNumber = ({ value, suffix = '', decimals = 1 }) => {
         }
       }
     });
-  }, [value, suffix, decimals]);
+
+    // Without this, StrictMode's double-invoked effect leaves two tweens
+    // fighting over the same object
+    return () => tween.kill();
+  }, [value, suffix, decimals, prefersReducedMotion]);
 
   return <span ref={numRef} className="font-mono">0.0{suffix}</span>;
 };
@@ -38,12 +54,19 @@ const LunarData = ({ lunarDetails }) => {
   const cardRef = useRef();
   const nameRef = useRef();
 
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   useEffect(() => {
-    gsap.fromTo(nameRef.current,
+    if (prefersReducedMotion) {
+      gsap.set(nameRef.current, { opacity: 1, y: 0 });
+      return undefined;
+    }
+    const tween = gsap.fromTo(nameRef.current,
       { opacity: 0, y: -6 },
       { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }
     );
-  }, [name]);
+    return () => tween.kill();
+  }, [name, prefersReducedMotion]);
 
   // Identify the closest upcoming primary phase
   const nextPhaseList = [

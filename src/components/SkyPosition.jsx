@@ -1,7 +1,9 @@
 import React, { useRef } from 'react';
 import { Sunrise, Sunset, ArrowUp, ArrowDown, MapPin, Moon } from 'lucide-react';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const width = 500;
   const height = 180;
   const padding = { top: 30, bottom: 40, left: 35, right: 35 };
@@ -113,8 +115,13 @@ const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
         <g>
           {/* Pulsing Aura */}
           <circle cx={currentPoint.x} cy={currentPoint.y} r="7" fill="var(--accent-light)" opacity="0.3">
-            <animate attributeName="r" values="7;13;7" dur="2.2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.35;0.1;0.35" dur="2.2s" repeatCount="indefinite" />
+            {/* SMIL keeps running regardless of the CSS media block, so gate it here */}
+            {!prefersReducedMotion && (
+              <>
+                <animate attributeName="r" values="7;13;7" dur="2.2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.35;0.1;0.35" dur="2.2s" repeatCount="indefinite" />
+              </>
+            )}
           </circle>
 
           {/* Solid Point */}

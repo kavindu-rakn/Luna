@@ -461,6 +461,36 @@ h1, h2, h3, h4 {
   }
 }
 
+/* ═══ REDUCED MOTION ═══
+   Luna runs six indefinite animations by default: a looping title gradient,
+   pulse rings on the timeline and loading screen, an SVG aura on the transit
+   chart, a drifting orbital camera and a spinning Earth. Anyone who has asked
+   their OS for less motion gets none of it. JavaScript-driven motion is handled
+   separately by usePrefersReducedMotion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* The title keeps its gradient, it simply stops travelling */
+  .text-gradient {
+    animation: none !important;
+    background-position: 50% 50% !important;
+  }
+
+  /* Hover lifts and scale nudges are motion too */
+  .glass-button:hover,
+  .ghost-control-btn:hover,
+  .ghost-control-btn:active {
+    transform: none !important;
+  }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }

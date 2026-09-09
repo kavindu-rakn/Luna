@@ -14,7 +14,8 @@
     <!-- Fonts are bundled from node_modules and served from this origin -->
 
     <!-- Viewport & Mobile Display -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <!-- No maximum-scale or user-scalable=no: blocking pinch-zoom fails WCAG 1.4.4 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Luna | An interactive lunar cycle explorer and astronomical ephemeris tracker. Real-time 3D moon phase visualization, 24-hour sky transit, and orbital mechanics." />
     <meta name="theme-color" content="#04060d" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

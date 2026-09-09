@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { useTexture, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { HelpCircle } from 'lucide-react';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 const EARTH_TEXTURE = `${BASE_URL}/assets/textures/earth_atmos_2048.jpg`;
@@ -12,8 +13,10 @@ const MOON_TEXTURE = `${BASE_URL}/assets/textures/moon_1024.jpg`;
 const Earth = () => {
   const earthRef = useRef();
   const earthTexture = useTexture(EARTH_TEXTURE);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useFrame(() => {
+    if (prefersReducedMotion) return;
     if (earthRef.current) {
       earthRef.current.rotation.y += 0.002;
     }
@@ -103,7 +106,15 @@ const SunLighting = () => {
 
 // Cinematic angle looking at orbital plane
 const CameraRig = () => {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   useFrame(({ camera, clock }) => {
+    if (prefersReducedMotion) {
+      // Hold one vantage point instead of drifting around the orbital plane
+      camera.position.set(0, 7.8, 6.2);
+      camera.lookAt(0, 0, 0);
+      return;
+    }
     const t = clock.getElapsedTime() * 0.03;
     camera.position.x = Math.sin(t) * 0.8;
     camera.position.y = 7.8 + Math.cos(t * 0.5) * 0.3;

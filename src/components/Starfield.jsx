@@ -1,7 +1,9 @@
 import React, { useRef, useEffect } from 'react';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 const Starfield = () => {
   const canvasRef = useRef(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -24,7 +26,6 @@ const Starfield = () => {
     };
 
     resize();
-    window.addEventListener('resize', resize, { passive: true });
 
     // Generate normalized stars (0 to 1) so resize never creates empty gaps
     const numStars = width < 768 ? 180 : 350;
@@ -51,14 +52,10 @@ const Starfield = () => {
       targetMouseY = e.clientY;
     };
 
-    window.addEventListener('mousemove', handleMouseMove, { passive: true });
-
     let isVisible = true;
     const handleVisibilityChange = () => {
       isVisible = !document.hidden;
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     const render = () => {
       if (!isVisible) {
         animationFrameId = requestAnimationFrame(render);
@@ -101,15 +98,39 @@ const Starfield = () => {
       animationFrameId = requestAnimationFrame(render);
     };
 
-    render();
+    // Reduced motion: paint the sky once, with no twinkle and no parallax drift.
+    // The stars stay, the movement goes.
+    const drawStatic = () => {
+      ctx.clearRect(0, 0, width, height);
+      stars.forEach((star) => {
+        ctx.beginPath();
+        ctx.arc(star.nx * width, star.ny * height, star.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(226, 232, 240, ${Math.abs(star.alpha)})`;
+        ctx.fill();
+      });
+    };
+
+    const onResize = () => {
+      resize();
+      if (prefersReducedMotion) drawStatic();
+    };
+    window.addEventListener('resize', onResize, { passive: true });
+
+    if (prefersReducedMotion) {
+      drawStatic();
+    } else {
+      window.addEventListener('mousemove', handleMouseMove, { passive: true });
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      render();
+    }
 
     return () => {
       cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', onResize);
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [prefersReducedMotion]);
 
   return (
     <canvas
