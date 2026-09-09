@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useProgress } from '@react-three/drei';
 
 const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
-const LOGO_SRC = `${BASE_URL}/logo-luna.png`;
+const LOGO_SRC = `${BASE_URL}/icon-192.png`; // 192px source for a 96px slot at 2x DPR
 
 const LoadingScreen = () => {
   const { progress } = useProgress();

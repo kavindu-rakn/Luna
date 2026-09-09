@@ -3,10 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     
-    <!-- Primary Favicons & Touch Icons (Chrome, Firefox, Safari, Edge) -->
-    <link rel="icon" type="image/png" href="./logo-luna.png" />
-    <link rel="shortcut icon" href="./logo-luna.png" />
-    <link rel="apple-touch-icon" href="./logo-luna.png" />
+    <!-- Favicons & touch icons, cropped to the mark and sized per target -->
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+
+    <!-- The loading screen paints this immediately; fetch it with the document -->
+    <link rel="preload" as="image" href="./icon-192.png" fetchpriority="high" />
     
     <!-- Fonts Preconnect & Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,13 +28,21 @@
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Luna | Astronomical Lunar Ephemeris Explorer" />
     <meta property="og:description" content="An interactive 3D lunar cycle explorer and astronomical ephemeris tracker. Real-time 3D moon phase visualization, 24-hour sky transit, and orbital mechanics." />
-    <meta property="og:image" content="./logo-luna.png" />
+    <meta property="og:url" content="https://kavindu-rakn.github.io/Luna/" />
+    <meta property="og:site_name" content="Luna" />
+    <!-- Open Graph requires an absolute URL; a relative one renders no card at all -->
+    <meta property="og:image" content="https://kavindu-rakn.github.io/Luna/og-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Luna, an interactive lunar ephemeris explorer" />
     
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Luna | Astronomical Lunar Ephemeris Explorer" />
     <meta name="twitter:description" content="An interactive 3D lunar cycle explorer and astronomical ephemeris tracker." />
-    <meta name="twitter:image" content="./logo-luna.png" />
+    <meta name="twitter:image" content="https://kavindu-rakn.github.io/Luna/og-card.png" />
+    <meta name="twitter:image:alt" content="Luna, an interactive lunar ephemeris explorer" />
     
     <title>Luna | Astronomical Lunar Ephemeris Explorer</title>
   </head>
