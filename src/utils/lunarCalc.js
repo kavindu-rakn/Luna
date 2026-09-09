@@ -7,18 +7,18 @@ export const MAX_MOON_DISTANCE = 406700;   // Apogee in km
 export const MEAN_MOON_DISTANCE = 384400;  // Average distance in km
 
 const ZODIAC_SIGNS = [
-  { name: 'Aries', symbol: '♈', startDeg: 0 },
-  { name: 'Taurus', symbol: '♉', startDeg: 30 },
-  { name: 'Gemini', symbol: '♊', startDeg: 60 },
-  { name: 'Cancer', symbol: '♋', startDeg: 90 },
-  { name: 'Leo', symbol: '♌', startDeg: 120 },
-  { name: 'Virgo', symbol: '♍', startDeg: 150 },
-  { name: 'Libra', symbol: '♎', startDeg: 180 },
-  { name: 'Scorpio', symbol: '♏', startDeg: 210 },
-  { name: 'Sagittarius', symbol: '♐', startDeg: 240 },
-  { name: 'Capricorn', symbol: '♑', startDeg: 270 },
-  { name: 'Aquarius', symbol: '♒', startDeg: 300 },
-  { name: 'Pisces', symbol: '♓', startDeg: 330 }
+  { name: 'Aries', symbol: '♈\uFE0E', startDeg: 0 },
+  { name: 'Taurus', symbol: '♉\uFE0E', startDeg: 30 },
+  { name: 'Gemini', symbol: '♊\uFE0E', startDeg: 60 },
+  { name: 'Cancer', symbol: '♋\uFE0E', startDeg: 90 },
+  { name: 'Leo', symbol: '♌\uFE0E', startDeg: 120 },
+  { name: 'Virgo', symbol: '♍\uFE0E', startDeg: 150 },
+  { name: 'Libra', symbol: '♎\uFE0E', startDeg: 180 },
+  { name: 'Scorpio', symbol: '♏\uFE0E', startDeg: 210 },
+  { name: 'Sagittarius', symbol: '♐\uFE0E', startDeg: 240 },
+  { name: 'Capricorn', symbol: '♑\uFE0E', startDeg: 270 },
+  { name: 'Aquarius', symbol: '♒\uFE0E', startDeg: 300 },
+  { name: 'Pisces', symbol: '♓\uFE0E', startDeg: 330 }
 ];
 
 // Convert radians to degrees
@@ -40,19 +40,18 @@ export const toCompassDirection = (bearingDeg) => {
   return directions[index];
 };
 
-// Estimate Zodiac Constellation of the Moon from approximate ecliptic longitude
+// The Moon's tropical zodiac SIGN — an even 30-degree division of the ecliptic
+// measured from the vernal equinox. Note this is not the same thing as the IAU
+// constellation the Moon lies in, whose boundaries are irregular.
 export const getMoonZodiac = (date = new Date()) => {
-  const d = (date.getTime() - Date.UTC(2000, 0, 1, 12, 0, 0)) / (1000 * 60 * 60 * 24);
-  let L = (218.316 + 13.176396 * d) % 360;
-  if (L < 0) L += 360;
-  
-  const signIndex = Math.floor(L / 30);
-  const sign = ZODIAC_SIGNS[signIndex % 12];
+  const L = getMoonEclipticLongitude(date);
+  const signIndex = Math.floor(L / 30) % 12;
+  const sign = ZODIAC_SIGNS[signIndex];
   const degreeInSign = (L % 30).toFixed(1);
-  
+
   return {
     ...sign,
-    eclipticLongitude: L.toFixed(1),
+    eclipticLongitude: L.toFixed(2),
     degreeInSign: `${degreeInSign}°`
   };
 };
@@ -87,68 +86,114 @@ const getLunarArguments = (date) => {
   };
 };
 
-// [D, M, M', F, coefficient] — coefficient in units of 0.001 km
-const DISTANCE_TERMS = [
-  [0, 0, 1, 0, -20905355],
-  [2, 0, -1, 0, -3699111],
-  [2, 0, 0, 0, -2955968],
-  [0, 0, 2, 0, -569925],
-  [0, 1, 0, 0, 48888],
-  [0, 0, 0, 2, -3149],
-  [2, 0, -2, 0, 246158],
-  [2, -1, -1, 0, -152138],
-  [2, 0, 1, 0, -170733],
-  [2, -1, 0, 0, -204586],
-  [0, 1, -1, 0, -129620],
-  [1, 0, 0, 0, 108743],
-  [0, 1, 1, 0, 104755],
-  [2, 0, 0, -2, 10321],
-  [0, 0, 1, -2, 79661],
-  [4, 0, -1, 0, -34782],
-  [0, 0, 3, 0, -23210],
-  [4, 0, -2, 0, -21636],
-  [2, 1, -1, 0, 24208],
-  [2, 1, 0, 0, 30824],
-  [1, 0, -1, 0, -8379],
-  [1, 1, 0, 0, -16675],
-  [2, -1, 1, 0, -12831],
-  [2, 0, 2, 0, -10445],
-  [4, 0, 0, 0, -11650],
-  [2, 0, -3, 0, 14403],
-  [0, 1, -2, 0, -7003],
-  [2, -1, -2, 0, 10056],
-  [1, 0, 1, 0, 6322],
-  [2, -2, 0, 0, -9884],
-  [0, 1, 2, 0, 5751],
-  [2, -2, -1, 0, -4950],
-  [2, 0, 1, -2, 4130],
-  [4, -1, -1, 0, -3958],
-  [3, 0, -1, 0, 3258],
-  [2, 1, 1, 0, 2616],
-  [4, -1, -2, 0, -1897],
-  [0, 2, -1, 0, -2117],
-  [2, 2, -1, 0, 2354],
-  [4, 0, 1, 0, -1423],
-  [0, 0, 4, 0, -1117],
-  [4, -1, 0, 0, -1571],
-  [1, 0, -2, 0, -1739]
+// Meeus table 47.A — [D, M, M', F, sumL, sumR]
+// sumL in units of 1e-6 degrees, sumR in units of 0.001 km
+const LUNAR_TERMS = [
+  [0, 0, 1, 0, 6288774, -20905355],
+  [2, 0, -1, 0, 1274027, -3699111],
+  [2, 0, 0, 0, 658314, -2955968],
+  [0, 0, 2, 0, 213618, -569925],
+  [0, 1, 0, 0, -185116, 48888],
+  [0, 0, 0, 2, -114332, -3149],
+  [2, 0, -2, 0, 58793, 246158],
+  [2, -1, -1, 0, 57066, -152138],
+  [2, 0, 1, 0, 53322, -170733],
+  [2, -1, 0, 0, 45758, -204586],
+  [0, 1, -1, 0, -40923, -129620],
+  [1, 0, 0, 0, -34720, 108743],
+  [0, 1, 1, 0, -30383, 104755],
+  [2, 0, 0, -2, 15327, 10321],
+  [0, 0, 1, 2, -12528, 0],
+  [0, 0, 1, -2, 10980, 79661],
+  [4, 0, -1, 0, 10675, -34782],
+  [0, 0, 3, 0, 10034, -23210],
+  [4, 0, -2, 0, 8548, -21636],
+  [2, 1, -1, 0, -7888, 24208],
+  [2, 1, 0, 0, -6766, 30824],
+  [1, 0, -1, 0, -5163, -8379],
+  [1, 1, 0, 0, 4987, -16675],
+  [2, -1, 1, 0, 4036, -12831],
+  [2, 0, 2, 0, 3994, -10445],
+  [4, 0, 0, 0, 3861, -11650],
+  [2, 0, -3, 0, 3665, 14403],
+  [0, 1, -2, 0, -2689, -7003],
+  [2, 0, -1, 2, -2602, 0],
+  [2, -1, -2, 0, 2390, 10056],
+  [1, 0, 1, 0, -2348, 6322],
+  [2, -2, 0, 0, 2236, -9884],
+  [0, 1, 2, 0, -2120, 5751],
+  [0, 2, 0, 0, -2069, 0],
+  [2, -2, -1, 0, 2048, -4950],
+  [2, 0, 1, -2, -1773, 4130],
+  [2, 0, 0, 2, -1595, 0],
+  [4, -1, -1, 0, 1215, -3958],
+  [0, 0, 2, 2, -1110, 0],
+  [3, 0, -1, 0, -892, 3258],
+  [2, 1, 1, 0, -810, 2616],
+  [4, -1, -2, 0, 759, -1897],
+  [0, 2, -1, 0, -713, -2117],
+  [2, 2, -1, 0, -700, 2354],
+  [2, 1, -2, 0, 691, 0],
+  [2, -1, 0, -2, 596, 0],
+  [4, 0, 1, 0, 549, -1423],
+  [0, 0, 4, 0, 537, -1117],
+  [4, -1, 0, 0, 520, -1571],
+  [1, 0, -2, 0, -487, -1739],
+  [2, 1, 0, -2, -399, 0],
+  [0, 0, 2, -2, -381, -4421],
+  [1, 1, 1, 0, 351, 0],
+  [3, 0, -2, 0, -340, 0],
+  [4, 0, -3, 0, 330, 0],
+  [2, -1, 2, 0, 327, 0],
+  [0, 2, 1, 0, -323, 1165],
+  [1, 1, -1, 0, 299, 0],
+  [2, 0, 3, 0, 294, 0],
+  [2, 0, -1, -2, 0, 8752]
 ];
 
-// Earth-Moon centre-to-centre distance in kilometres
-export const getMoonDistanceKm = (date = new Date()) => {
-  const { D, M, Mp, F, E } = getLunarArguments(date);
+// Sum the periodic series once; both distance and longitude fall out of it.
+const sumLunarSeries = (date) => {
+  const { T, D, M, Mp, F, E } = getLunarArguments(date);
   const rad = Math.PI / 180;
 
+  let sumL = 0;
   let sumR = 0;
-  for (const [cD, cM, cMp, cF, coeff] of DISTANCE_TERMS) {
-    if (coeff === 0) continue;
+
+  for (const [cD, cM, cMp, cF, coeffL, coeffR] of LUNAR_TERMS) {
     const arg = (cD * D + cM * M + cMp * Mp + cF * F) * rad;
     // Terms involving the Sun's anomaly are scaled by E (or E squared)
     const eScale = cM === 0 ? 1 : Math.pow(E, Math.abs(cM));
-    sumR += coeff * Math.cos(arg) * eScale;
+    if (coeffL !== 0) sumL += coeffL * Math.sin(arg) * eScale;
+    if (coeffR !== 0) sumR += coeffR * Math.cos(arg) * eScale;
   }
 
-  return 385000.56 + sumR / 1000;
+  // Moon's mean longitude
+  const Lp = 218.3164477 + 481267.88123421 * T - 0.0015786 * T * T
+    + Math.pow(T, 3) / 538841 - Math.pow(T, 4) / 65194000;
+
+  // Additive terms for the action of Venus (A1), Jupiter (A2) and Earth's flattening
+  const A1 = 119.75 + 131.849 * T;
+  const A2 = 53.09 + 479264.29 * T;
+  sumL += 3958 * Math.sin(A1 * rad)
+    + 1962 * Math.sin((Lp - F) * rad)
+    + 318 * Math.sin(A2 * rad);
+
+  return { Lp, sumL, sumR };
+};
+
+// Earth-Moon centre-to-centre distance in kilometres
+export const getMoonDistanceKm = (date = new Date()) => {
+  return 385000.56 + sumLunarSeries(date).sumR / 1000;
+};
+
+// Apparent ecliptic longitude of the Moon, 0-360 degrees.
+// The previous implementation used only the mean longitude, omitting the equation of
+// the centre (6.29 deg) and every other periodic term, which put the reported zodiac
+// sign in the wrong 30-degree bin roughly 13% of the time.
+export const getMoonEclipticLongitude = (date = new Date()) => {
+  const { Lp, sumL } = sumLunarSeries(date);
+  const lambda = Lp + sumL / 1000000;
+  return ((lambda % 360) + 360) % 360;
 };
 
 // Classify a 0..1 phase value into its name. Shared by the full detail record and

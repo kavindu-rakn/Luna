@@ -146,10 +146,10 @@ const LunarData = ({ lunarDetails }) => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
               <Compass size={14} color="var(--accent-light)" />
-              <span className="utility-label">Constellation</span>
+              <span className="utility-label">Zodiac Sign</span>
             </div>
             <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span>{zodiac?.symbol}</span>
+              <span className="zodiac-glyph" aria-hidden="true">{zodiac?.symbol}</span>
               <span>{zodiac?.name}</span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
