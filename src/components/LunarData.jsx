@@ -153,8 +153,13 @@ const LunarData = ({ lunarDetails }) => {
               <span>{zodiac?.name}</span>
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-              {zodiac?.degreeInSign} in sign
+              {zodiac?.degreeInSign} tropical
             </div>
+            {zodiac?.sidereal && (
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem', opacity: 0.8 }}>
+                {zodiac.sidereal.name} {zodiac.sidereal.degreeInSign} sidereal
+              </div>
+            )}
           </div>
 
           {/* Next Key Phase Countdown */}

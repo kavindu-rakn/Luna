@@ -44,15 +44,29 @@ export const toCompassDirection = (bearingDeg) => {
 // measured from the vernal equinox. Note this is not the same thing as the IAU
 // constellation the Moon lies in, whose boundaries are irregular.
 export const getMoonZodiac = (date = new Date()) => {
-  const L = getMoonEclipticLongitude(date);
-  const signIndex = Math.floor(L / 30) % 12;
-  const sign = ZODIAC_SIGNS[signIndex];
-  const degreeInSign = (L % 30).toFixed(1);
+  const tropicalLon = getMoonEclipticLongitude(date);
+  const ayanamsa = getAyanamsa(date);
+  const siderealLon = ((tropicalLon - ayanamsa) % 360 + 360) % 360;
 
+  const read = (longitude) => {
+    const sign = ZODIAC_SIGNS[Math.floor(longitude / 30) % 12];
+    return {
+      name: sign.name,
+      symbol: sign.symbol,
+      startDeg: sign.startDeg,
+      degreeInSign: `${(longitude % 30).toFixed(1)}°`
+    };
+  };
+
+  const tropical = read(tropicalLon);
+  const sidereal = read(siderealLon);
+
+  // Spread the tropical reading at the top level: it is what the UI shows by default
   return {
-    ...sign,
-    eclipticLongitude: L.toFixed(2),
-    degreeInSign: `${degreeInSign}°`
+    ...tropical,
+    eclipticLongitude: tropicalLon.toFixed(2),
+    tropical,
+    sidereal: { ...sidereal, ayanamsa: ayanamsa.toFixed(2) }
   };
 };
 
@@ -196,6 +210,53 @@ export const getMoonEclipticLongitude = (date = new Date()) => {
   return ((lambda % 360) + 360) % 360;
 };
 
+// Apparent ecliptic longitude of the Sun, 0-360 degrees (Meeus ch. 25, ~0.01 deg).
+export const getSunEclipticLongitude = (date = new Date()) => {
+  const rad = Math.PI / 180;
+  const T = (date.getTime() / 86400000 + 2440587.5 - 2451545) / 36525;
+
+  // Geometric mean longitude and mean anomaly
+  const L0 = 280.46646 + 36000.76983 * T + 0.0003032 * T * T;
+  const M = 357.52911 + 35999.05029 * T - 0.0001537 * T * T;
+
+  // Equation of the centre
+  const C = (1.914602 - 0.004817 * T - 0.000014 * T * T) * Math.sin(M * rad)
+    + (0.019993 - 0.000101 * T) * Math.sin(2 * M * rad)
+    + 0.000289 * Math.sin(3 * M * rad);
+
+  // Correction from true to apparent longitude
+  const omega = 125.04 - 1934.136 * T;
+  const apparent = L0 + C - 0.00569 - 0.00478 * Math.sin(omega * rad);
+
+  return ((apparent % 360) + 360) % 360;
+};
+
+// Angular distance of the Moon east of the Sun along the ecliptic, 0-360 degrees.
+// This is what actually defines the phases: 0 New, 90 First Quarter, 180 Full,
+// 270 Last Quarter. It advances monotonically at about 12.19 deg/day, so unlike
+// SunCalc's illumination-derived phase it is continuous through New Moon and
+// genuinely reaches every target value.
+export const getMoonElongation = (date = new Date()) => {
+  const d = getMoonEclipticLongitude(date) - getSunEclipticLongitude(date);
+  return ((d % 360) + 360) % 360;
+};
+
+// Phase as a 0..1 fraction of the synodic cycle
+export const getMoonPhaseFraction = (date = new Date()) => getMoonElongation(date) / 360;
+
+// Illuminated fraction of the lunar disc, 0..1, derived from the same elongation
+// so the phase name, the terminator and the percentage can never disagree.
+export const getIlluminatedFraction = (date = new Date()) => {
+  return (1 - Math.cos(getMoonElongation(date) * Math.PI / 180)) / 2;
+};
+
+// Lahiri (Chitrapaksha) ayanamsa: the offset between the tropical zodiac, measured
+// from the moving vernal equinox, and the sidereal zodiac, fixed against the stars.
+export const getAyanamsa = (date = new Date()) => {
+  const T = (date.getTime() / 86400000 + 2440587.5 - 2451545) / 36525;
+  return 23.85286 + 1.396971 * T + 0.0003086 * T * T;
+};
+
 // Classify a 0..1 phase value into its name. Shared by the full detail record and
 // the lightweight timeline summary so the two can never drift apart.
 const PRIMARY_THRESHOLD = 0.015; // ~10.6 hour window around each exact quarter
@@ -224,7 +285,8 @@ export const classifyPhase = (phase) => {
 // renders 31 of these on every scrub frame.
 export const getPhaseSummary = (date = new Date()) => {
   const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
-  const { phase, fraction } = SunCalc.getMoonIllumination(validDate);
+  const phase = getMoonPhaseFraction(validDate);
+  const fraction = getIlluminatedFraction(validDate);
   return {
     date: validDate,
     phase,
@@ -246,8 +308,8 @@ const solvePhaseInstant = (targetPhase, approxTimeMs, windowHours = 36) => {
   let x1 = a + resphi * (b - a);
   let x2 = b - resphi * (b - a);
 
-  let f1 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x1)).phase, targetPhase);
-  let f2 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x2)).phase, targetPhase);
+  let f1 = getPhaseAngularDistance(getMoonPhaseFraction(new Date(x1)), targetPhase);
+  let f2 = getPhaseAngularDistance(getMoonPhaseFraction(new Date(x2)), targetPhase);
 
   for (let iter = 0; iter < 28; iter++) {
     if (f1 < f2) {
@@ -255,13 +317,13 @@ const solvePhaseInstant = (targetPhase, approxTimeMs, windowHours = 36) => {
       x2 = x1;
       f2 = f1;
       x1 = a + resphi * (b - a);
-      f1 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x1)).phase, targetPhase);
+      f1 = getPhaseAngularDistance(getMoonPhaseFraction(new Date(x1)), targetPhase);
     } else {
       a = x1;
       x1 = x2;
       f1 = f2;
       x2 = b - resphi * (b - a);
-      f2 = getPhaseAngularDistance(SunCalc.getMoonIllumination(new Date(x2)).phase, targetPhase);
+      f2 = getPhaseAngularDistance(getMoonPhaseFraction(new Date(x2)), targetPhase);
     }
   }
 
@@ -299,12 +361,12 @@ const formatPhaseStamp = (d, timeZone) => {
 // Get comprehensive lunar details
 export const getLunarDetails = (date = new Date(), lat = 0, lon = 0, timeZone = null) => {
   const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
-  const moonIllumination = SunCalc.getMoonIllumination(validDate);
   const moonPosition = SunCalc.getMoonPosition(validDate, lat, lon);
 
-  const phase = moonIllumination.phase; // 0 to 1
-  const fraction = moonIllumination.fraction; // 0.0 to 1.0
-  const angle = moonIllumination.angle; // crescent tilt angle in radians
+  const phase = getMoonPhaseFraction(validDate); // 0 to 1, from true elongation
+  const fraction = getIlluminatedFraction(validDate); // 0.0 to 1.0
+  // Position angle of the bright limb is a separate quantity; SunCalc handles it well
+  const angle = SunCalc.getMoonIllumination(validDate).angle;
 
   const age = phase * SYNODIC_MONTH;
   const distanceKm = Math.round(getMoonDistanceKm(validDate));
@@ -343,7 +405,7 @@ export const getNextMajorPhases = (date = new Date(), timeZone = null) => {
   const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
   const zone = timeZone || getBrowserTimeZone();
   const nowMs = validDate.getTime();
-  const currentPhase = SunCalc.getMoonIllumination(validDate).phase;
+  const currentPhase = getMoonPhaseFraction(validDate);
 
   const resolve = (targetPhase) => {
     let diff = targetPhase - currentPhase;
@@ -386,8 +448,7 @@ const getPhaseAngularDistance = (phase, targetPhase) => {
 // Jump directly to the exact astronomical date & minute of the next (+1) or previous (-1) major quarter phase
 export const getAdjacentQuarterPhase = (currentDate = new Date(), direction = 1) => {
   const validDate = currentDate instanceof Date && !isNaN(currentDate.getTime()) ? currentDate : new Date();
-  const currentIllum = SunCalc.getMoonIllumination(validDate);
-  const p = currentIllum.phase; // 0.0 to 1.0
+  const p = getMoonPhaseFraction(validDate); // 0.0 to 1.0
 
   // 1. Determine current position in quarter cycle: [0..4)
   // 0 = New Moon (0.0), 1 = First Quarter (0.25), 2 = Full Moon (0.50), 3 = Last Quarter (0.75)
