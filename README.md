@@ -237,6 +237,23 @@ npm run build
 npm run preview
 ```
 
+### Tests
+
+```bash
+# Run the ephemeris test suite once
+npm test
+
+# Re-run on change
+npm run test:watch
+```
+
+The suite runs under `TZ=Asia/Colombo` on purpose. Astronomy is computed for a
+location, so no displayed value may depend on the machine clock; a bare
+`toLocaleTimeString()` would pass on a UTC CI runner but fails here.
+
+The assertions are checked by mutation testing: each fixed bug is reintroduced in
+turn and the suite must fail. All eight are caught.
+
 ---
 
 <a id="license"></a>
