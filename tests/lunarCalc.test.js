@@ -92,6 +92,47 @@ describe('the machine timezone must not leak into results', () => {
   });
 });
 
+describe('the viewer chooses the clock', () => {
+  const WHEN = new Date('2026-09-19T12:00:00Z');
+  const sky = (clock) => getSkyData(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz, clock);
+  const ticks = (data) => data.altitudePoints.filter((_, i) => i % 8 === 0).map((p) => p.label);
+
+  it('shows ephemeris times on a 24-hour clock when asked', () => {
+    expect(sky('24h').sunrise).toBe('06:42');
+    expect(sky('24h').sunset).toBe('19:08');
+    expect(sky('24h').moonrise).toBe('16:07');
+  });
+
+  it('labels the chart axis to match', () => {
+    expect(ticks(sky('12h'))).toEqual(['12 AM', '4 AM', '8 AM', '12 PM', '4 PM', '8 PM']);
+    expect(ticks(sky('24h'))).toEqual(['00:00', '04:00', '08:00', '12:00', '16:00', '20:00']);
+  });
+
+  it('reads midnight as 00:00, never 24:00', () => {
+    const midnight = new Date('2026-09-10T00:00:00Z');
+    expect(formatTimeString(midnight, 'UTC', '24h')).toBe('00:00');
+    expect(formatTimeString(midnight, 'UTC', '12h')).toBe('12:00 AM');
+  });
+
+  it('stamps the next phase on the chosen clock, through getLunarDetails as well', () => {
+    expect(getNextMajorPhases(WHEN, 'Europe/London', '24h').nextFullMoon.formatted).toBe('Sep 26, 17:50');
+    expect(getNextMajorPhases(WHEN, 'Asia/Tokyo', '24h').nextFullMoon.formatted).toBe('Sep 27, 01:50');
+    const details = getLunarDetails(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz, '24h');
+    expect(details.nextPhases.nextFullMoon.formatted).toBe('Sep 26, 17:50');
+  });
+
+  it('gives the peak its half hour instead of rounding it to the hour', () => {
+    // The Moon culminates between samples at 19:30; this used to read "7 PM"
+    expect(sky('12h').peakTime).toBe('7:30 PM');
+    expect(sky('24h').peakTime).toBe('19:30');
+  });
+
+  it('stays on 12-hour when no clock is given', () => {
+    expect(getSkyData(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz).sunrise).toBe('06:42 AM');
+    expect(getNextMajorPhases(WHEN, 'Europe/London').nextFullMoon.formatted).toBe('Sep 26, 5:50 PM');
+  });
+});
+
 describe('phase is driven by true elongation', () => {
   it('places the four quarters at their defining elongations', () => {
     // 0 deg New, 90 First Quarter, 180 Full, 270 Last Quarter
