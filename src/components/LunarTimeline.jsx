@@ -98,10 +98,10 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
     <div className="bottom-bar" style={{ padding: '1rem 1.5rem', position: 'relative' }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <span className="utility-label" style={{ color: 'var(--text-muted)' }}>
+        <h2 className="utility-label" style={{ color: 'var(--text-muted)' }}>
           Lunar Cycle &middot; {cycle.durationDays.toFixed(2)} days
-        </span>
-        <span className="utility-label" style={{ opacity: 0.7 }}>
+        </h2>
+        <span className="utility-label">
           Drag / Scrub Timeline
         </span>
       </div>

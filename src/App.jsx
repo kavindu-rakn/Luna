@@ -20,7 +20,7 @@ const OrbitalView = lazy(() => import('./components/OrbitalView'));
 const MoonFallback = ({ phase }) => (
   <div className="moon-viz-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
     <div style={{ width: 'min(38vh, 320px)', aspectRatio: '1' }}>
-      <MoonIcon phase={phase} size={200} title="Moon phase" style={{ width: '100%', height: '100%' }} />
+      <MoonIcon phase={phase} size={200} style={{ width: '100%', height: '100%' }} />
     </div>
   </div>
 );
@@ -72,6 +72,28 @@ function App() {
   const containerRef = useRef();
   const mainViewRef = useRef();
   const drawerRef = useRef();
+  const drawerHeadingRef = useRef(null);
+  const drawerOpenerRef = useRef(null);
+  const wasDrawerOpen = useRef(false);
+
+  // Move focus into the drawer when it opens and hand it back when it closes.
+  // Opening by keyboard used to leave focus on the button, so the panel appeared
+  // with no way to reach it short of tabbing through the rest of the page.
+  useEffect(() => {
+    if (isDrawerOpen && !wasDrawerOpen.current) {
+      wasDrawerOpen.current = true;
+      drawerOpenerRef.current = document.activeElement;
+      drawerHeadingRef.current?.focus({ preventScroll: true });
+    } else if (!isDrawerOpen && wasDrawerOpen.current) {
+      wasDrawerOpen.current = false;
+      // Only reclaim focus if it was inside the drawer, or has fallen to <body>
+      // because the element holding it just became hidden
+      const active = document.activeElement;
+      if (!active || active === document.body || drawerRef.current?.contains(active)) {
+        drawerOpenerRef.current?.focus?.({ preventScroll: true });
+      }
+    }
+  }, [isDrawerOpen]);
 
   // Only places the viewer picks are remembered. A place that arrived in someone
   // else's link is shown but not persisted, so opening a friend's link does not
@@ -129,17 +151,9 @@ function App() {
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Never hijack a keystroke aimed at a text field, or at a control that
-      // already handles arrow keys itself. The timeline slider does, so each
-      // press used to move the date twice.
-      if (e.target instanceof Element &&
-        e.target.closest('input, select, textarea, [contenteditable="true"], [role="slider"]')) {
-        return;
-      }
-
-      // Leave browser and OS chords alone: Ctrl/Cmd+T, Ctrl/Cmd+D, Alt+Arrow.
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-
+      // Escape comes first, wherever focus is. The search box and the calendar
+      // grid both hold focus while their popups are open, and are exactly where
+      // someone reaches for Escape; behind the exemption below it did nothing.
       if (e.key === 'Escape') {
         // Dismiss the innermost surface first, then the drawer behind it.
         if (isCalendarOpen) setIsCalendarOpen(false);
@@ -147,6 +161,17 @@ function App() {
         else setIsDrawerOpen(false);
         return;
       }
+
+      // Never hijack a keystroke aimed at a text field, or at a control that
+      // already handles arrow keys itself. The timeline slider does, so each
+      // press used to move the date twice.
+      if (e.target instanceof Element &&
+        e.target.closest('input, select, textarea, [contenteditable="true"], [role="slider"], [data-date-grid]')) {
+        return;
+      }
+
+      // Leave browser and OS chords alone: Ctrl/Cmd+T, Ctrl/Cmd+D, Alt+Arrow.
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
@@ -176,19 +201,38 @@ function App() {
     return null;
   }, [currentDate, location]);
 
+  // What a screen reader hears when the view changes. It names the date and place,
+  // which the old announcement left out, and waits for the view to settle: a drag
+  // across the timeline would otherwise queue an announcement for every step.
+  const [announcement, setAnnouncement] = useState('');
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      let when;
+      try {
+        when = new Intl.DateTimeFormat('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: location.timeZone
+        }).format(currentDate);
+      } catch {
+        when = currentDate.toDateString();
+      }
+      setAnnouncement(`${when}, ${location.name}: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated.`);
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [currentDate, location, lunarDetails]);
+
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
       {/* Screen Reader Live Region */}
-      <div className="sr-only" aria-live="polite">
-        Current Moon Phase: {lunarDetails.name}, Illumination: {lunarDetails.fraction} percent
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
       </div>
 
       {/* Background Starfield Canvas with Mouse Parallax */}
       <Starfield />
 
       {/* Atmospheric Space Gradients */}
-      <div className="nebula" />
-      <div className="vignette" />
+      <div className="nebula" aria-hidden="true" />
+      <div className="vignette" aria-hidden="true" />
 
       {/* Cinematic Asset Loading Screen */}
       <LoadingScreen stage={loadStage} />
@@ -260,6 +304,7 @@ function App() {
               }}
               aria-label="Toggle telemetry details"
               aria-expanded={isDrawerOpen}
+              aria-controls="telemetry-drawer"
             >
               <span
                 style={{
@@ -280,7 +325,15 @@ function App() {
 
         {/* Center Canvas Area: 3D Moon & Hero Phase Name */}
         <div className="main-canvas-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '2.5rem' }}>
-          <div className="moon-container" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+          {/* One accessible name for whichever Moon is showing, 3D or the 2D stand-in.
+              Dragging to rotate is exploration, not information: the phase and
+              illumination it shows are all available as text. */}
+          <div
+            className="moon-container"
+            role="img"
+            aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated`}
+            style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+          >
             <SceneBoundary name="Moon scene" onError={markFailed} fallback={<MoonFallback phase={lunarDetails.phase} />}>
               <Suspense fallback={<MoonFallback phase={lunarDetails.phase} />}>
                 <MoonVisualization lunarDetails={lunarDetails} onScene={markScene} onReady={markReady} />
@@ -306,8 +359,9 @@ function App() {
       {/* ═══ TELEMETRY DATA DRAWER / BOTTOM SHEET ═══ */}
       <aside
         ref={drawerRef}
+        id="telemetry-drawer"
         className={`data-drawer ${isDrawerOpen ? 'is-open' : ''}`}
-        aria-label="Lunar Telemetry Inspector"
+        aria-labelledby="telemetry-heading"
       >
         {/* Mobile Drag Indicator Handle */}
         <div
@@ -325,9 +379,15 @@ function App() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <BarChart3 size={16} color="var(--accent-light)" />
-            <span className="utility-label" style={{ color: 'var(--text-accent)', fontSize: '0.8rem', margin: 0 }}>
-              ASTRONOMICAL TELEMETRY
-            </span>
+            <h2
+              id="telemetry-heading"
+              ref={drawerHeadingRef}
+              tabIndex={-1}
+              className="utility-label"
+              style={{ color: 'var(--text-accent)', fontSize: '0.8rem', margin: 0, outline: 'none' }}
+            >
+              Astronomical Telemetry
+            </h2>
           </div>
           <button
             onClick={() => setIsDrawerOpen(false)}

@@ -8,6 +8,12 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
   const toggleButtonRef = useRef(null);
   const wasCalendarOpen = useRef(false);
 
+  // The grid is one Tab stop. Arrow keys move between days, as in any native date
+  // picker; before this every day was its own stop, 33 presses to get past.
+  const [focusedDay, setFocusedDay] = useState(1);
+  const dayRefs = useRef({});
+  const pendingFocus = useRef(false);
+
   // Send focus back to the toggle when the calendar closes, so a keyboard user
   // pressing Escape is not dropped at the top of the document.
   useEffect(() => {
@@ -17,15 +23,19 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
     wasCalendarOpen.current = isCalendarOpen;
   }, [isCalendarOpen]);
 
+  // Functional updates: computing from the currentDate captured at render meant
+  // presses landing faster than React re-rendered all stepped from the same day,
+  // and were silently dropped.
   const changeDate = (days) => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(newDate.getDate() + days);
-    setCurrentDate(newDate);
+    setCurrentDate((previous) => {
+      const next = new Date(previous);
+      next.setDate(next.getDate() + days);
+      return next;
+    });
   };
 
   const jumpQuarterPhase = (direction) => {
-    const targetDate = getAdjacentQuarterPhase(currentDate, direction);
-    setCurrentDate(targetDate);
+    setCurrentDate((previous) => getAdjacentQuarterPhase(previous, direction));
   };
 
   const formatDateDesktop = (date) => {
@@ -60,6 +70,12 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isCalendarOpen, setIsCalendarOpen]);
+
+  useEffect(() => {
+    if (!isCalendarOpen || !pendingFocus.current) return;
+    pendingFocus.current = false;
+    dayRefs.current[focusedDay]?.focus();
+  }, [isCalendarOpen, focusedDay, viewDate]);
 
   // Monthly Calendar Math
   const year = viewDate.getFullYear();
@@ -97,6 +113,42 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
     return currentDate.getFullYear() === year && currentDate.getMonth() === month && currentDate.getDate() === day;
   };
 
+  // Clamp for months shorter than the one we arrived from, so a tab stop always exists
+  const activeDay = Math.min(focusedDay, daysInMonth);
+
+  // Arrows by day and week, Home and End to the ends of the week, Page Up and Down
+  // by month. Crossing a month boundary turns the page and keeps focus moving.
+  const handleGridKeyDown = (e) => {
+    const deltas = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+    const from = new Date(year, month, activeDay);
+    let target;
+
+    if (e.key in deltas) target = new Date(year, month, activeDay + deltas[e.key]);
+    else if (e.key === 'Home') target = new Date(year, month, activeDay - from.getDay());
+    else if (e.key === 'End') target = new Date(year, month, activeDay + (6 - from.getDay()));
+    else if (e.key === 'PageUp' || e.key === 'PageDown') {
+      const step = e.key === 'PageUp' ? -1 : 1;
+      const lastDay = new Date(year, month + step + 1, 0).getDate();
+      target = new Date(year, month + step, Math.min(activeDay, lastDay));
+    } else return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    if (target.getMonth() !== month || target.getFullYear() !== year) {
+      setViewDate(new Date(target.getFullYear(), target.getMonth(), 1));
+    }
+    setFocusedDay(target.getDate());
+    pendingFocus.current = true;
+  };
+
+  // A bare "12" tells a screen reader nothing about which month it is in
+  const dayLabel = (day) => {
+    const text = new Date(year, month, day).toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    });
+    return `${text}${isSelectedDay(day) ? ', selected' : ''}${isToday(day) ? ', today' : ''}`;
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', position: 'relative' }}>
       
@@ -106,6 +158,9 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
         onClick={() => {
           if (!isCalendarOpen) {
             setViewDate(new Date(currentDate));
+            // Open onto the selected day, with focus already on it
+            setFocusedDay(currentDate.getDate());
+            pendingFocus.current = true;
           }
           setIsCalendarOpen(!isCalendarOpen);
         }}
@@ -196,7 +251,13 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           </div>
 
           {/* Days Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}>
+          <div
+            role="group"
+            aria-label={`${monthNames[month]} ${year}`}
+            data-date-grid
+            onKeyDown={handleGridKeyDown}
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}
+          >
             {/* Leading days from previous month */}
             {Array.from({ length: firstDayOfMonth }).map((_, i) => (
               <div
@@ -224,6 +285,11 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
               return (
                 <button
                   key={`day-${day}`}
+                  ref={(el) => { dayRefs.current[day] = el; }}
+                  tabIndex={day === activeDay ? 0 : -1}
+                  aria-label={dayLabel(day)}
+                  aria-current={today ? 'date' : undefined}
+                  onFocus={() => setFocusedDay(day)}
                   onClick={() => handleSelectDay(day)}
                   style={{
                     height: '34px',
@@ -237,7 +303,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
                     fontFamily: 'var(--font-mono)',
                     fontWeight: selected ? 700 : today ? 600 : 400,
                     color: selected ? '#ffffff' : today ? 'var(--accent-light)' : 'var(--text-primary)',
-                    background: selected ? 'var(--accent-primary)' : 'transparent',
+                    background: selected ? 'var(--accent-strong)' : 'transparent',
                     border: today && !selected ? '1px solid var(--accent-light)' : 'none',
                     borderRadius: '50%',
                     cursor: 'pointer',

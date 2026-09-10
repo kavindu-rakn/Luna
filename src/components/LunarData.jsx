@@ -85,7 +85,7 @@ const LunarData = ({ lunarDetails }) => {
       <div className="glass-panel" style={{ padding: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
           <div>
-            <div className="utility-label" style={{ marginBottom: '0.35rem' }}>Current Phase</div>
+            <h3 className="utility-label" style={{ marginBottom: '0.35rem' }}>Current Phase</h3>
             <div ref={nameRef} className="font-serif" style={{ fontSize: '2rem', color: 'var(--text-primary)', lineHeight: 1.1 }}>
               {name}
             </div>
@@ -136,7 +136,7 @@ const LunarData = ({ lunarDetails }) => {
       {/* 2. Earth-Moon Distance & Orbital Position Card */}
       <div className="glass-panel" style={{ padding: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <div className="utility-label">Distance to Earth</div>
+          <h3 className="utility-label">Distance to Earth</h3>
           <div className="font-mono" style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)' }}>
             {distanceKm ? distanceKm.toLocaleString() : '384,400'} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>km</span>
           </div>
@@ -169,7 +169,7 @@ const LunarData = ({ lunarDetails }) => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
               <Compass size={14} color="var(--accent-light)" />
-              <span className="utility-label">Zodiac Sign</span>
+              <h3 className="utility-label">Zodiac Sign</h3>
             </div>
             <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <span className="zodiac-glyph" aria-hidden="true">{zodiac?.symbol}</span>
@@ -190,7 +190,7 @@ const LunarData = ({ lunarDetails }) => {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
                 <Calendar size={14} color="var(--accent-light)" />
-                <span className="utility-label">{upcomingPhase.label}</span>
+                <h3 className="utility-label">{upcomingPhase.label}</h3>
               </div>
               <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-accent)' }}>
                 {upcomingPhase.countdown}
