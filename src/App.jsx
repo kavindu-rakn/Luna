@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import MoonVisualization from './components/MoonVisualization';
 import LunarData from './components/LunarData';
 import DateControls from './components/DateControls';
@@ -9,18 +9,33 @@ import SkyPosition from './components/SkyPosition';
 import OrbitalView from './components/OrbitalView';
 import LoadingScreen from './components/LoadingScreen';
 import LocationPicker from './components/LocationPicker';
+import ShareButton from './components/ShareButton';
 import { getLunarDetails, getSkyData, getAdjacentQuarterPhase } from './utils/lunarCalc';
-import { DEFAULT_LOCATION, loadStoredLocation, storeLocation } from './utils/location';
+import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone } from './utils/location';
+import { readSharedState, buildSharedSearch } from './utils/shareUrl';
 import { X, BarChart3 } from 'lucide-react';
 
 function App() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Read once. A link someone sent opens exactly the view they were looking at.
+  const [shared] = useState(() => readSharedState());
 
-  // Restore whatever was chosen last. Geolocation is no longer requested at first
-  // paint: that put a permission prompt in front of someone who had not yet seen
-  // what the app was, and a denial dropped them silently onto Greenwich. It is now
-  // asked for only when they press "Use my location" in the picker.
-  const [location, setLocation] = useState(() => loadStoredLocation() || DEFAULT_LOCATION);
+  const [currentDate, setCurrentDate] = useState(() => shared.date || new Date());
+
+  // Live means following the real clock. Once the viewer steps, scrubs or jumps,
+  // the view is pinned to that instant, and only then does the date go in the URL.
+  const [isLive, setIsLive] = useState(() => !shared.date);
+
+  // A link's location wins, then whatever was chosen last, then Greenwich.
+  // Geolocation is not requested at first paint: it is asked for only when the
+  // viewer presses "Use my location" in the picker.
+  const [location, setLocation] = useState(() => {
+    if (shared.location) {
+      // Provisional zone until it is resolved from the coordinates below. Links the
+      // app writes always carry a valid tz; this only covers hand-edited ones.
+      return { ...shared.location, timeZone: shared.location.timeZone || 'UTC' };
+    }
+    return loadStoredLocation() || DEFAULT_LOCATION;
+  });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
@@ -29,9 +44,58 @@ function App() {
   const mainViewRef = useRef();
   const drawerRef = useRef();
 
+  // Only places the viewer picks are remembered. A place that arrived in someone
+  // else's link is shown but not persisted, so opening a friend's link does not
+  // quietly replace your own default.
+  const chooseLocation = useCallback((next) => {
+    setLocation(next);
+    storeLocation(next);
+  }, []);
+
+  // Resolve the zone for a shared location that arrived without a usable one
   useEffect(() => {
-    storeLocation(location);
-  }, [location]);
+    if (!shared.location || shared.location.timeZone) return undefined;
+    let cancelled = false;
+    resolveTimeZone(shared.location.lat, shared.location.lon).then((timeZone) => {
+      if (cancelled) return;
+      // Leave it alone if the viewer has already moved somewhere else
+      setLocation((current) =>
+        current.lat === shared.location.lat && current.lon === shared.location.lon
+          ? { ...current, timeZone }
+          : current
+      );
+    });
+    return () => { cancelled = true; };
+  }, [shared]);
+
+  const selectDate = useCallback((next) => {
+    setIsLive(false);
+    setCurrentDate(next);
+  }, []);
+
+  const goLive = useCallback(() => {
+    setIsLive(true);
+    setCurrentDate(new Date());
+  }, []);
+
+  // Keep the address bar describing the view, so copying it shares what you see.
+  // replaceState rather than pushState: a drag would otherwise bury the back button
+  // under hundreds of entries. Debounced, because Safari throws once a page calls
+  // it more than a hundred times in thirty seconds.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const search = buildSharedSearch(isLive ? null : currentDate, location);
+      const { pathname, hash } = window.location;
+      const next = `${pathname}${search}${hash}`;
+      if (next === `${pathname}${window.location.search}${hash}`) return;
+      try {
+        window.history.replaceState(window.history.state, '', next);
+      } catch {
+        // Rate-limited; the next change will write it
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [currentDate, location, isLive]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -57,16 +121,16 @@ function App() {
 
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        setCurrentDate(d => e.shiftKey
+        selectDate(d => e.shiftKey
           ? getAdjacentQuarterPhase(d, -1)
           : new Date(d.getTime() - 24 * 60 * 60 * 1000));
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        setCurrentDate(d => e.shiftKey
+        selectDate(d => e.shiftKey
           ? getAdjacentQuarterPhase(d, 1)
           : new Date(d.getTime() + 24 * 60 * 60 * 1000));
       } else if (e.key.toLowerCase() === 't') {
-        setCurrentDate(new Date());
+        goLive();
       } else if (e.key.toLowerCase() === 'd') {
         setIsDrawerOpen(prev => !prev);
       }
@@ -74,7 +138,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCalendarOpen, isLocationOpen]);
+  }, [isCalendarOpen, isLocationOpen, selectDate, goLive]);
 
   // Derive lunar details and 24-hour sky transit data
   const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone), [currentDate, location]);
@@ -130,7 +194,8 @@ function App() {
           <div className="controls-panel">
             <DateControls
               currentDate={currentDate}
-              setCurrentDate={setCurrentDate}
+              setCurrentDate={selectDate}
+              onToday={goLive}
               isCalendarOpen={isCalendarOpen}
               setIsCalendarOpen={setIsCalendarOpen}
             />
@@ -140,10 +205,11 @@ function App() {
           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
             <LocationPicker
               location={location}
-              setLocation={setLocation}
+              setLocation={chooseLocation}
               isOpen={isLocationOpen}
               setIsOpen={setIsLocationOpen}
             />
+            <ShareButton date={currentDate} location={location} />
             <button
               className="glass-button"
               onClick={() => setIsDrawerOpen(prev => !prev)}
@@ -196,7 +262,7 @@ function App() {
         {/* Bottom Bar: Timeline */}
         <div style={{ width: '100%', zIndex: 20 }}>
           <div className="timeline-panel" style={{ width: '100%' }}>
-            <LunarTimeline currentDate={currentDate} setCurrentDate={setCurrentDate} />
+            <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} />
           </div>
         </div>
       </main>

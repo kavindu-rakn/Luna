@@ -26,6 +26,7 @@
   <a href="#features">FEATURES</a> &nbsp;|&nbsp;
   <a href="#logic">LOGIC</a> &nbsp;|&nbsp;
   <a href="#keybindings">KEYBINDINGS</a> &nbsp;|&nbsp;
+  <a href="#sharing">SHARING</a> &nbsp;|&nbsp;
   <a href="#architecture">ARCHITECTURE</a> &nbsp;|&nbsp;
   <a href="#cloning">CLONING</a> &nbsp;|&nbsp;
   <a href="#license">LICENSE</a>
@@ -165,6 +166,30 @@ Luna is built with a keyboard navigation system:
 | <kbd>T</kbd> | **Realtime Reset** | Snap back to current date & time |
 | <kbd>D</kbd> | **Deep Dive** | Toggle astronomical telemetry drawer |
 | <kbd>Esc</kbd> | **Dismiss** | Close modals, drawer, and popups |
+
+---
+
+<a id="sharing"></a>
+## | | | S H A R I N G
+
+Every view has a link. The address bar always describes what is on screen, and the link button copies it.
+
+```text
+https://kavindu-rakn.github.io/Luna/?d=2026-09-26T16:50Z&at=64.15,-21.94&n=Reykjavik,+Iceland&tz=Atlantic/Reykjavik
+```
+
+| Param | Meaning |
+| :--- | :--- |
+| `d` | The instant, to the minute, in UTC. A bare day such as `2026-09-26` is read as local noon at the location. |
+| `at` | Latitude and longitude, rounded to two decimals (about a kilometre). |
+| `n` | Place name, for display. |
+| `tz` | IANA timezone. If missing or invalid it is resolved from the coordinates. |
+
+**Live views carry no date.** `d` only appears once you step, scrub or jump. Bookmark Luna while it follows the real clock and the bookmark keeps showing tonight's Moon, rather than freezing on the moment you saved it. Press <kbd>T</kbd> or **Today** to go live again.
+
+**Opening someone's link does not change your saved place.** It shows their view; the bare URL still returns you to yours.
+
+Every parameter is treated as untrusted and validated on its own, so a malformed field is dropped without discarding the rest of the link.
 
 ---
 
