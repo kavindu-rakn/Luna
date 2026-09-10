@@ -96,6 +96,8 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 
 ### Custom Dark Glass Calendar
 * **Glassmorphic Month Matrix:** Non-native monthly calendar modal for instant date jumping.
+* **Month & Year Pickers:** Go straight to any month from 1900 to 2100, or type a year to jump to it.
+* **A Moon on Every Day:** Each day shows its phase at local noon, the days of New, First Quarter, Full and Last Quarter Moons are ringed, and the month's exact phase times sit below, each one click from its precise moment.
 * **Fixed Six-Week Grid:** The month matrix always renders six rows, so the modal keeps one height whether a month spans four rows or six.
 
 </td>

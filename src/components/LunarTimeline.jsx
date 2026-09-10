@@ -9,7 +9,7 @@ import MoonIcon from './MoonIcon';
 
 
 
-const LunarTimeline = ({ currentDate, setCurrentDate }) => {
+const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
   const trackRef = useRef(null);
   const [hoverFraction, setHoverFraction] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -75,7 +75,8 @@ const LunarTimeline = ({ currentDate, setCurrentDate }) => {
     setCurrentDate(next);
   };
 
-  const formatShortDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // On the place's clock, so the labels agree with the header and the sky chart
+  const formatShortDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone });
 
   const hovered = useMemo(() => {
     if (hoverFraction === null) return null;

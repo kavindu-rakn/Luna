@@ -11,7 +11,7 @@
 //
 // Everything here is untrusted input. It arrives in a link someone else wrote.
 
-import { getStartOfDayInZone } from './lunarCalc';
+import { getNoonInZone } from './lunarCalc';
 
 const MAX_NAME_LENGTH = 80;
 
@@ -70,7 +70,10 @@ export const parseSharedDate = (value, timeZone = 'UTC') => {
     // Reject impossible days that Date would silently roll over, like 2026-02-31
     if (probe.getUTCMonth() !== m - 1 || probe.getUTCDate() !== d) return null;
     const zone = isValidTimeZone(timeZone) ? timeZone : 'UTC';
-    const noon = new Date(getStartOfDayInZone(probe, zone) + 12 * 3600000);
+    // Noon on that date on the place's own clock. Reading the date off UTC noon
+    // first, as this used to, gave the next day wherever clocks run more than
+    // 12 hours ahead of UTC: a Christmas link for Auckland opened on Boxing Day.
+    const noon = getNoonInZone(y, m - 1, d, zone);
     return isValidInstant(noon) ? noon : null;
   }
 

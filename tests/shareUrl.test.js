@@ -69,6 +69,13 @@ describe('dates', () => {
     expect(noonLondon.toISOString()).toBe('2026-09-26T11:00:00.000Z'); // BST
   });
 
+  it('keeps a bare day on its date where clocks run more than 12 hours ahead of UTC', () => {
+    // These opened a day late: Christmas in Auckland landed on Boxing Day
+    expect(parseSharedDate('2026-12-25', 'Pacific/Auckland').toISOString()).toBe('2026-12-24T23:00:00.000Z');
+    expect(parseSharedDate('2026-09-26', 'Pacific/Kiritimati').toISOString()).toBe('2026-09-25T22:00:00.000Z');
+    expect(parseSharedDate('2026-09-26', 'Pacific/Tongatapu').toISOString()).toBe('2026-09-25T23:00:00.000Z');
+  });
+
   it('uses the link timezone for a bare day', () => {
     const state = readSharedState('?d=2026-09-26&at=35.68,139.65&tz=Asia/Tokyo');
     expect(state.date.toISOString()).toBe('2026-09-26T03:00:00.000Z');
