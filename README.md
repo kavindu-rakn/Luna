@@ -27,6 +27,7 @@
   <a href="#logic">LOGIC</a> &nbsp;|&nbsp;
   <a href="#keybindings">KEYBINDINGS</a> &nbsp;|&nbsp;
   <a href="#sharing">SHARING</a> &nbsp;|&nbsp;
+  <a href="#offline">OFFLINE</a> &nbsp;|&nbsp;
   <a href="#architecture">ARCHITECTURE</a> &nbsp;|&nbsp;
   <a href="#cloning">CLONING</a> &nbsp;|&nbsp;
   <a href="#license">LICENSE</a>
@@ -190,6 +191,17 @@ https://kavindu-rakn.github.io/Luna/?d=2026-09-26T16:50Z&at=64.15,-21.94&n=Reykj
 **Opening someone's link does not change your saved place.** It shows their view; the bare URL still returns you to yours.
 
 Every parameter is treated as untrusted and validated on its own, so a malformed field is dropped without discarding the rest of the link.
+
+---
+
+<a id="offline"></a>
+## | | | O F F L I N E
+
+Luna is an installable app and works with no connection. Every calculation already runs on the device, so after one visit the app, the 3D engine and the Moon texture are cached, and it opens on a hillside with no signal.
+
+* **What works offline:** everything except searching for a new place. Saved places still work, since their timezone is resolved locally from the coordinates. Shared links open too.
+* **What stays out of the cache:** the share-card image, install icons and font subsets for scripts the UI does not use, which trims the first-visit download from 3.1 MB to 1.9 MB. The Earth texture is cached the first time the drawer opens.
+* **Updates never interrupt you.** A new version installs in the background and waits. A notice offers to reload; until you do, you keep a complete and consistent copy of the version you are using.
 
 ---
 
