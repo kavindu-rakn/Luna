@@ -246,7 +246,7 @@ graph TD
 ## | | | C L O N I N G
 
 ### Prerequisites
-* **Node.js**: v18.0.0 or higher
+* **Node.js**: 20.19 or newer, or 22.12 or newer (Vite 8's minimum)
 * **npm** / **pnpm** / **yarn**
 
 ### Installation
@@ -268,7 +268,7 @@ npm install
 npm run dev
 ```
 
-Visit `http://localhost:5173/Luna/` in your browser.
+Visit `http://localhost:5173/Luna/` in your browser. The `/Luna/` path follows the site URL, so it changes if you set `SITE_URL` (see [Deploying](#deploying)).
 
 ### Production Build
 
@@ -279,6 +279,24 @@ npm run build
 # Preview production build locally
 npm run preview
 ```
+
+<a id="deploying"></a>
+### Deploying
+
+Luna is a static site: `npm run build` writes everything to `dist/`, and any static host can serve it. The one thing a build has to know is the address it will live at, because the files are served from that path and social cards need full URLs. That address is worked out in this order:
+
+| Where it is built | Address used |
+| :--- | :--- |
+| Anywhere, with `SITE_URL` set | exactly that, e.g. `SITE_URL=https://luna.example.com/ npm run build` |
+| Netlify | the deploy's own URL, previews included |
+| Vercel | the production domain, or the preview's URL |
+| Cloudflare Pages | the deployment URL |
+| GitHub Actions | the repository's GitHub Pages site, so a fork publishes to its own |
+| Anywhere else | `https://kavindu-rakn.github.io/Luna/`, from `homepage` in `package.json` |
+
+Set `SITE_URL` for a custom domain, including a custom domain on GitHub Pages, which serves from the root rather than from `/Luna/`. The Node version comes from `.nvmrc` and `engines` in `package.json`, which these hosts read.
+
+GitHub Pages cannot send response headers, so the content security policy is embedded in the page. On Netlify and Cloudflare Pages, `public/_headers` adds the ones a page cannot set for itself, including clickjacking protection.
 
 ### Tests
 

@@ -1,0 +1,13 @@
+# Response headers, for hosts that read this file (Netlify, Cloudflare Pages).
+# GitHub Pages ignores it and cannot send headers at all, which is why the content
+# security policy is also embedded in the page as a <meta> tag.
+#
+# frame-ancestors and X-Frame-Options stop other sites framing Luna (clickjacking);
+# both only work as real headers. Geolocation stays available to this site alone,
+# for "Use my location"; nothing else is wanted.
+/*
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=()

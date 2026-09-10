@@ -1,6 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { resolveSiteUrl } from './scripts/site-url.js'
+import pkg from './package.json' with { type: 'json' }
+
+// Where this build will be published, and so the path its files are served from.
+// With nothing set it is the GitHub Pages site at /Luna/; see scripts/site-url.js
+// for SITE_URL and the hosts recognised automatically.
+const SITE_URL = resolveSiteUrl(process.env, pkg.homepage)
 
 // GitHub Pages cannot set response headers, so the policy has to ride in the
 // document. It is injected at build time only: in dev it would block Vite's HMR
@@ -8,8 +15,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 //
 // frame-ancestors is deliberately absent: browsers ignore it when it arrives via
 // <meta>, and leaving it in only logs a console error. Clickjacking protection
-// needs a real response header, so it belongs in a _headers file if this ever
-// moves off GitHub Pages.
+// needs a real response header; public/_headers sends it on hosts that read that
+// file (Netlify, Cloudflare Pages). GitHub Pages cannot send headers at all.
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "base-uri 'none'",
@@ -40,11 +47,19 @@ const injectCsp = () => ({
   }
 })
 
+// Social cards need absolute URLs, so index.html carries __SITE_URL__ placeholders,
+// filled in here for dev and builds alike
+const injectSiteUrl = () => ({
+  name: 'luna-site-url',
+  transformIndexHtml: (html) => html.replaceAll('__SITE_URL__', SITE_URL.href)
+})
+
 export default defineConfig({
-  base: '/Luna/',
+  base: SITE_URL.pathname,
   plugins: [
     react(),
     injectCsp(),
+    injectSiteUrl(),
     VitePWA({
       // A new version waits for the viewer to accept it (see UpdatePrompt). The
       // alternative reloads the page the moment an update activates, which can land
