@@ -8,7 +8,7 @@ export default defineConfig([
   globalIgnores(['dist']),
   {
     // Test and config files run in Node, not the browser
-    files: ['tests/**/*.js', 'vitest.config.js', 'eslint.config.js'],
+    files: ['tests/**/*.js', 'scripts/**/*.js', 'vitest.config.js', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
   },
   {

@@ -92,7 +92,7 @@ function processSeamlessMoonTexture(rawTexture) {
   }
 }
 
-const MoonMesh = ({ phase, scale = 1 }) => {
+const MoonMesh = ({ phase, scale = 1, onReady }) => {
   const moonRef = useRef();
   const isDragging = useRef(false);
   const previousPointer = useRef({ x: 0, y: 0 });
@@ -105,6 +105,12 @@ const MoonMesh = ({ phase, scale = 1 }) => {
   const colorMap = useMemo(() => {
     return processSeamlessMoonTexture(rawTexture);
   }, [rawTexture]);
+
+  // useTexture suspends until the image is decoded, so reaching this effect
+  // means the Moon is genuinely on screen
+  useEffect(() => {
+    onReady?.();
+  }, [onReady]);
 
   // Directional sunlight illuminating from Earth observer's perspective
   const sunPosition = useMemo(() => {
@@ -209,8 +215,13 @@ const FallbackSphere = ({ scale = 1 }) => (
   </Sphere>
 );
 
-const MoonVisualization = ({ lunarDetails }) => {
+const MoonVisualization = ({ lunarDetails, onScene, onReady }) => {
   const { phase, fraction } = lunarDetails;
+
+  // This module only runs once its chunk has arrived, so mounting is the signal
+  useEffect(() => {
+    onScene?.();
+  }, [onScene]);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches);
 
   useEffect(() => {
@@ -255,6 +266,7 @@ const MoonVisualization = ({ lunarDetails }) => {
             <MoonMesh
               phase={phase}
               scale={moonScale}
+              onReady={onReady}
             />
           </React.Suspense>
         </Canvas>

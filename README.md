@@ -281,6 +281,18 @@ location, so no displayed value may depend on the machine clock; a bare
 The assertions are checked by mutation testing: each fixed bug is reintroduced in
 turn and the suite must fail. All eight are caught.
 
+### Performance Budget
+
+```bash
+npm run build && npm run check:bundle
+```
+
+Three.js, fiber and drei are about 60% of Luna's JavaScript, but only the two 3D scenes need them, so they load on demand behind the loading screen. The first-paint chunk is **111 KB gzipped**, down from 354 KB.
+
+CI fails the build if that chunk crosses 130 KB, if the 3D engine is preloaded by the document, or if the entry imports it statically. That last case is not hypothetical: a chunking change once pulled React into the 3D chunk, which made the entry look *smaller* while forcing all of Three.js back onto the critical path.
+
+If WebGL is unavailable or a scene fails to download, that scene gives way to a 2D Moon drawn at the correct phase and everything else keeps working.
+
 ---
 
 <a id="license"></a>

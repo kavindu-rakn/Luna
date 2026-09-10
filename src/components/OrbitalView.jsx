@@ -124,7 +124,7 @@ const CameraRig = () => {
   return null;
 };
 
-const OrbitalView = ({ lunarDetails }) => {
+const OrbitalView = ({ lunarDetails, active = true }) => {
   const { phase, name, fraction, distanceKm } = lunarDetails;
   const [showExplanation, setShowExplanation] = useState(false);
 
@@ -174,7 +174,9 @@ const OrbitalView = ({ lunarDetails }) => {
           position: 'relative'
         }}
       >
-        <Canvas camera={{ position: [0, 8, 6.5], fov: 42 }} dpr={[1, 2]}>
+        {/* frameloop never while the drawer is shut: the diagram used to redraw at
+            60fps behind a closed drawer for the life of the page */}
+        <Canvas camera={{ position: [0, 8, 6.5], fov: 42 }} dpr={[1, 2]} frameloop={active ? 'always' : 'never'}>
           <React.Suspense fallback={null}>
             <SunLighting />
             <Earth />

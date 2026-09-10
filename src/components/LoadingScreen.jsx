@@ -1,47 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { useProgress } from '@react-three/drei';
+import React, { useState, useEffect, useRef } from 'react';
 
 const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 const LOGO_SRC = `${BASE_URL}/icon-192.png`; // 192px source for a 96px slot at 2x DPR
 
-const LoadingScreen = () => {
-  const { progress } = useProgress();
-  const [isFading, setIsFading] = useState(false);
+// Progress follows the real load stages. The old bar tracked drei's texture
+// counter, which sat at 0% through the slowest part of startup (downloading and
+// parsing the JavaScript) and, by importing drei, pulled all of Three.js into the
+// very first chunk just to draw a progress bar.
+//   shell  the app is on screen
+//   scene  the 3D chunk has arrived and the canvas exists
+//   ready  the Moon's texture is decoded and drawn
+//   failed the scene gave way to its 2D fallback
+const STAGE_PROGRESS = { shell: 34, scene: 72, ready: 100, failed: 100 };
+
+// If the scene has not reported by now, get out of the way. Every panel works
+// without the 3D Moon, so a slow network must never mean a permanent black screen.
+const FAILSAFE_MS = 9000;
+const FADE_MS = 450;
+
+const LoadingScreen = ({ stage = 'shell' }) => {
+  const [timedOut, setTimedOut] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [displayProgress, setDisplayProgress] = useState(0);
+  const progressRef = useRef(0);
 
-  // Smoothly interpolate display progress
+  const finished = stage === 'ready' || stage === 'failed' || timedOut;
+  const target = timedOut ? 100 : (STAGE_PROGRESS[stage] ?? 0);
+
+  // Dismissal depends only on the stage. The old version also waited for the
+  // animated counter to reach 95, so a throttled background tab could hold it up.
+  const isFading = finished;
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      setDisplayProgress((prev) => {
-        if (prev < progress) {
-          const step = Math.max(1, Math.ceil((progress - prev) * 0.2));
-          return Math.min(100, prev + step);
-        }
-        return prev;
-      });
-    }, 20);
+    const timer = setTimeout(() => setTimedOut(true), FAILSAFE_MS);
+    return () => clearTimeout(timer);
+  }, []);
 
-    return () => clearInterval(timer);
-  }, [progress]);
-
-  // When assets are 100% ready, trigger smooth dissolve transition
+  // Ease the counter toward the target, stopping once it arrives instead of
+  // polling on a 20ms interval for as long as the screen exists
   useEffect(() => {
-    if (progress >= 100 && displayProgress >= 95) {
-      const fadeTimeout = setTimeout(() => {
-        setIsFading(true);
-      }, 350);
+    let frame = 0;
+    const step = () => {
+      const prev = progressRef.current;
+      if (prev >= target) return;
+      const next = Math.min(target, prev + Math.max(1, Math.ceil((target - prev) * 0.18)));
+      progressRef.current = next;
+      setDisplayProgress(next);
+      if (next < target) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [target]);
 
-      const removeTimeout = setTimeout(() => {
-        setIsDone(true);
-      }, 1000); // 350ms wait + 650ms fade
-
-      return () => {
-        clearTimeout(fadeTimeout);
-        clearTimeout(removeTimeout);
-      };
-    }
-  }, [progress, displayProgress]);
+  // Fade straight away. The old version held for 350ms first, a fixed tax on
+  // every single load, warm cache included.
+  useEffect(() => {
+    if (!finished) return undefined;
+    const timer = setTimeout(() => setIsDone(true), FADE_MS);
+    return () => clearTimeout(timer);
+  }, [finished]);
 
   if (isDone) return null;
 
@@ -57,7 +74,7 @@ const LoadingScreen = () => {
         alignItems: 'center',
         justifyContent: 'center',
         opacity: isFading ? 0 : 1,
-        transition: 'opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1)',
+        transition: `opacity ${FADE_MS}ms cubic-bezier(0.16, 1, 0.3, 1)`,
         pointerEvents: isFading ? 'none' : 'auto',
         overflow: 'hidden'
       }}
