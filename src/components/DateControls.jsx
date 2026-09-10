@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X } from 'lucide-react';
 import { getAdjacentQuarterPhase } from '../utils/lunarCalc';
 
-const DateControls = ({ currentDate, setCurrentDate, isCalendarOpen, setIsCalendarOpen }) => {
+const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, setIsCalendarOpen }) => {
   const [viewDate, setViewDate] = useState(() => new Date(currentDate));
   const calendarModalRef = useRef(null);
   const toggleButtonRef = useRef(null);
@@ -308,7 +308,7 @@ const DateControls = ({ currentDate, setCurrentDate, isCalendarOpen, setIsCalend
         <button
           className="glass-button"
           title="Jump to Today (T)"
-          onClick={() => setCurrentDate(new Date())}
+          onClick={onToday ?? (() => setCurrentDate(new Date()))}
           aria-label="Reset to Today"
           style={{
             padding: '0.22rem 0.75rem',
