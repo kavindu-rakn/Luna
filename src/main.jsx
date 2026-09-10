@@ -16,6 +16,11 @@ import '@fontsource/cormorant-garamond/latin-400-italic.css';
 
 import './index.css';
 import App from './App.jsx';
+import { tidyStoredData } from './utils/location';
+
+// Before anything reads storage, tidy away what older versions kept that this one
+// would not: a name for every place ever located, and exact positions
+tidyStoredData();
 
 class ErrorBoundary extends Component {
   constructor(props) {

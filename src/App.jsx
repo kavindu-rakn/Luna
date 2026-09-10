@@ -28,10 +28,11 @@ import LocationPicker from './components/LocationPicker';
 import ShareButton from './components/ShareButton';
 import UpdatePrompt from './components/UpdatePrompt';
 import ShortcutsDialog from './components/ShortcutsDialog';
+import PrivacyDialog from './components/PrivacyDialog';
 import DisplayPreferences from './components/DisplayPreferences';
 import { usePreferences } from './hooks/usePreferences';
 import { getLunarDetails, getSkyData, getAdjacentQuarterPhase } from './utils/lunarCalc';
-import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone } from './utils/location';
+import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
 import { X, BarChart3, Keyboard } from 'lucide-react';
 
@@ -64,6 +65,9 @@ function App() {
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const closeShortcuts = useCallback(() => setIsShortcutsOpen(false), []);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const showPrivacy = useCallback(() => setIsPrivacyOpen(true), []);
+  const closePrivacy = useCallback(() => setIsPrivacyOpen(false), []);
 
   // 12- or 24-hour clock, km or miles. How this viewer reads, not what they are
   // looking at, so these stay on the device and out of the URL.
@@ -112,8 +116,11 @@ function App() {
   // else's link is shown but not persisted, so opening a friend's link does not
   // quietly replace your own default.
   const chooseLocation = useCallback((next) => {
-    setLocation(next);
-    storeLocation(next);
+    // A searched address is as personal as a located one, so it is held to the same
+    // kilometre. isSamePlace allows for exactly that much, so saved places still match.
+    const place = roundPlace(next);
+    setLocation(place);
+    storeLocation(place);
   }, []);
 
   // Resolve the zone for a shared location that arrived without a usable one
@@ -164,12 +171,15 @@ function App() {
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // The shortcuts dialog is modal, so nothing behind it reacts to keys. Esc is
-      // closed here as well as natively: the browser's close request keys off the
-      // hardware key code, and an Esc that arrives without one would otherwise leave
-      // the dialog stuck open. Closing it twice is harmless.
-      if (isShortcutsOpen) {
-        if (e.key === 'Escape') setIsShortcutsOpen(false);
+      // The dialogs are modal, so nothing behind them reacts to keys. Esc is closed
+      // here as well as natively: the browser's close request keys off the hardware
+      // key code, and an Esc that arrives without one would otherwise leave a dialog
+      // stuck open. Closing one twice is harmless.
+      if (isShortcutsOpen || isPrivacyOpen) {
+        if (e.key === 'Escape') {
+          setIsShortcutsOpen(false);
+          setIsPrivacyOpen(false);
+        }
         return;
       }
 
@@ -220,7 +230,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCalendarOpen, isLocationOpen, isShortcutsOpen, selectDate, goLive]);
+  }, [isCalendarOpen, isLocationOpen, isShortcutsOpen, isPrivacyOpen, selectDate, goLive]);
 
   // Derive lunar details and 24-hour sky transit data
   const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone, clock), [currentDate, location, clock]);
@@ -271,6 +281,9 @@ function App() {
       {/* Every keyboard shortcut, on ? or the keyboard button */}
       <ShortcutsDialog isOpen={isShortcutsOpen} onClose={closeShortcuts} />
 
+      {/* What is sent, what stays on the device, and a way to forget it */}
+      <PrivacyDialog isOpen={isPrivacyOpen} onClose={closePrivacy} />
+
       {/* Custom Particle Comet Cursor */}
       <CustomCursor />
 
@@ -317,6 +330,7 @@ function App() {
               setLocation={chooseLocation}
               isOpen={isLocationOpen}
               setIsOpen={setIsLocationOpen}
+              onShowPrivacy={showPrivacy}
             />
             <ShareButton date={currentDate} location={location} />
             {/* Hidden on touch-only devices, which have no keyboard to use it with */}
@@ -488,7 +502,11 @@ function App() {
               lineHeight: 1.5
             }}
           >
-            Astronomical calculations powered by SunCalc ephemeris algorithms.
+            Moon and Sun positions from Meeus&rsquo; <em>Astronomical Algorithms</em> and SunCalc.
+            <br />
+            <button type="button" className="text-link" onClick={showPrivacy}>
+              Privacy
+            </button>
           </footer>
         </div>
       </aside>
