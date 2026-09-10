@@ -177,9 +177,9 @@ const SkyPosition = ({ skyData, locationName }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Moon size={16} color="var(--accent-light)" />
-          <span className="utility-label" style={{ margin: 0 }}>
+          <h3 className="utility-label" style={{ margin: 0 }}>
             24-Hour Sky Transit & Ephemeris
-          </span>
+          </h3>
         </div>
 
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-accent)' }}>

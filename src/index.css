@@ -22,6 +22,10 @@
   --text-accent: #a5b4fc;         /* 7.6:1 contrast */
   
   --accent-primary: #6366f1;
+  /* Solid accent surfaces that carry text. White on --accent-primary is 4.46:1,
+     just under the 4.5:1 body text needs; this shade gives 6.3:1. The lighter
+     token stays for glows, gradients and borders, where no text sits on it. */
+  --accent-strong: #4f46e5;
   --accent-light: #818cf8;
   --accent-glow: rgba(99, 102, 241, 0.3);
   --glass-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.6);
@@ -38,6 +42,9 @@ body {
   background-color: var(--bg-deep-space);
   color: var(--text-primary);
   height: 100vh;
+  /* The dynamic unit tracks mobile browser chrome; 100vh alone runs under the
+     URL bar and clips the bottom of the layout */
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
   position: relative;
@@ -244,7 +251,7 @@ h1, h2, h3, h4 {
 }
 
 .mode-toggle-btn.active {
-  background: var(--accent-primary);
+  background: var(--accent-strong);
   color: #ffffff;
   box-shadow: 0 2px 8px var(--accent-glow);
 }
@@ -289,10 +296,18 @@ h1, h2, h3, h4 {
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, visibility 0.45s ease;
+  /* Hide only once the slide-out has finished... */
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, visibility 0s linear 0.45s;
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
+}
+
+/* ...but become visible the instant it opens. A transitioning visibility holds
+   its start value at the first instant, so focus moved into the drawer on open
+   would otherwise land on a still-hidden element and silently fail. */
+.data-drawer.is-open {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, visibility 0s;
 }
 
 /* Desktop Drawer */

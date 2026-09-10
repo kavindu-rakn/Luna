@@ -132,9 +132,9 @@ const OrbitalView = ({ lunarDetails, active = true }) => {
     <div className="glass-panel orbital-card" style={{ width: '100%', padding: '1.25rem' }}>
       {/* Card Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <span className="utility-label" style={{ margin: 0, fontSize: '0.78rem' }}>
+        <h3 className="utility-label" style={{ margin: 0, fontSize: '0.78rem' }}>
           Earth–Moon Orbital Geometry
-        </span>
+        </h3>
         <button
           onClick={() => setShowExplanation(!showExplanation)}
           className="ghost-control-btn"
@@ -222,21 +222,21 @@ const OrbitalView = ({ lunarDetails, active = true }) => {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <div className="utility-label" style={{ fontSize: '0.62rem', opacity: 0.7, margin: 0, whiteSpace: 'nowrap' }}>Phase Name</div>
+          <div className="utility-label" style={{ fontSize: '0.7rem', margin: 0, whiteSpace: 'nowrap' }}>Phase Name</div>
           <div className="font-serif" style={{ fontSize: '0.98rem', color: 'var(--text-primary)', lineHeight: 1.2, marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {name}
           </div>
         </div>
 
         <div style={{ textAlign: 'center', minWidth: 0 }}>
-          <div className="utility-label" style={{ fontSize: '0.62rem', opacity: 0.7, margin: 0, whiteSpace: 'nowrap' }}>Illumination</div>
+          <div className="utility-label" style={{ fontSize: '0.7rem', margin: 0, whiteSpace: 'nowrap' }}>Illumination</div>
           <div style={{ fontSize: '1.02rem', fontWeight: 600, color: 'var(--accent-light)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
             {fraction}%
           </div>
         </div>
 
         <div style={{ textAlign: 'right', minWidth: 0 }}>
-          <div className="utility-label" style={{ fontSize: '0.62rem', opacity: 0.7, margin: 0, whiteSpace: 'nowrap' }}>Distance</div>
+          <div className="utility-label" style={{ fontSize: '0.7rem', margin: 0, whiteSpace: 'nowrap' }}>Distance</div>
           <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
             {distanceKm ? distanceKm.toLocaleString() : '384,400'} <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>km</span>
           </div>
