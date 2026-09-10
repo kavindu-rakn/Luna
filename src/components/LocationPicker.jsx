@@ -67,6 +67,9 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen }) => {
         setStatus(found.length ? 'idle' : 'empty');
       } catch (error) {
         if (error.name === 'AbortError') return;
+        // Clear the previous results: left in place they read as if the failed
+        // search had returned them, e.g. an error above 'Tokyo' after typing 'Kyoto'
+        setResults([]);
         setStatus('error');
         setErrorMessage('Could not reach the place search. Check your connection.');
       }

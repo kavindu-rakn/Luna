@@ -26,6 +26,7 @@ const MoonFallback = ({ phase }) => (
 );
 import LocationPicker from './components/LocationPicker';
 import ShareButton from './components/ShareButton';
+import UpdatePrompt from './components/UpdatePrompt';
 import { getLunarDetails, getSkyData, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
@@ -191,6 +192,9 @@ function App() {
 
       {/* Cinematic Asset Loading Screen */}
       <LoadingScreen stage={loadStage} />
+
+      {/* Offline readiness and update notices from the service worker */}
+      <UpdatePrompt />
 
       {/* Custom Particle Comet Cursor */}
       <CustomCursor />
