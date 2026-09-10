@@ -170,6 +170,7 @@ Luna is built with a keyboard navigation system:
 | <kbd>T</kbd> | **Realtime Reset** | Snap back to current date & time |
 | <kbd>D</kbd> | **Deep Dive** | Toggle astronomical telemetry drawer |
 | <kbd>Esc</kbd> | **Dismiss** | Close modals, drawer, and popups |
+| <kbd>?</kbd> | **Shortcuts** | Show every shortcut, including the timeline and calendar keys |
 
 ---
 

@@ -27,12 +27,16 @@ const MoonFallback = ({ phase }) => (
 import LocationPicker from './components/LocationPicker';
 import ShareButton from './components/ShareButton';
 import UpdatePrompt from './components/UpdatePrompt';
+import ShortcutsDialog from './components/ShortcutsDialog';
 import DisplayPreferences from './components/DisplayPreferences';
 import { usePreferences } from './hooks/usePreferences';
 import { getLunarDetails, getSkyData, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
-import { X, BarChart3 } from 'lucide-react';
+import { X, BarChart3, Keyboard } from 'lucide-react';
+
+// Keys that controls like the timeline and the calendar grid use to move around
+const NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
 
 function App() {
   // Read once. A link someone sent opens exactly the view they were looking at.
@@ -58,6 +62,8 @@ function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const closeShortcuts = useCallback(() => setIsShortcutsOpen(false), []);
 
   // 12- or 24-hour clock, km or miles. How this viewer reads, not what they are
   // looking at, so these stay on the device and out of the URL.
@@ -158,6 +164,15 @@ function App() {
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // The shortcuts dialog is modal, so nothing behind it reacts to keys. Esc is
+      // closed here as well as natively: the browser's close request keys off the
+      // hardware key code, and an Esc that arrives without one would otherwise leave
+      // the dialog stuck open. Closing it twice is harmless.
+      if (isShortcutsOpen) {
+        if (e.key === 'Escape') setIsShortcutsOpen(false);
+        return;
+      }
+
       // Escape comes first, wherever focus is. The search box and the calendar
       // grid both hold focus while their popups are open, and are exactly where
       // someone reaches for Escape; behind the exemption below it did nothing.
@@ -169,12 +184,15 @@ function App() {
         return;
       }
 
-      // Never hijack a keystroke aimed at a text field, or at a control that
-      // already handles arrow keys itself. The timeline slider does, so each
-      // press used to move the date twice.
-      if (e.target instanceof Element &&
-        e.target.closest('input, select, textarea, [contenteditable="true"], [role="slider"], [data-date-grid]')) {
-        return;
+      // Never hijack typing: in a text field or a select every key belongs to it.
+      // Controls that move with the arrow keys (the timeline, the calendar grid,
+      // radio buttons) keep those, so an arrow is not applied twice, but letters
+      // still reach the shortcuts. The timeline used to swallow every key while
+      // focused, so ?, T and D did nothing from there.
+      if (e.target instanceof Element) {
+        if (e.target.closest('input:not([type="radio"]), select, textarea, [contenteditable="true"]')) return;
+        if (NAVIGATION_KEYS.has(e.key) &&
+          e.target.closest('[role="slider"], [data-date-grid], input[type="radio"]')) return;
       }
 
       // Leave browser and OS chords alone: Ctrl/Cmd+T, Ctrl/Cmd+D, Alt+Arrow.
@@ -194,12 +212,15 @@ function App() {
         goLive();
       } else if (e.key.toLowerCase() === 'd') {
         setIsDrawerOpen(prev => !prev);
+      } else if (e.key === '?') {
+        e.preventDefault();
+        setIsShortcutsOpen(true);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCalendarOpen, isLocationOpen, selectDate, goLive]);
+  }, [isCalendarOpen, isLocationOpen, isShortcutsOpen, selectDate, goLive]);
 
   // Derive lunar details and 24-hour sky transit data
   const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone, clock), [currentDate, location, clock]);
@@ -246,6 +267,9 @@ function App() {
 
       {/* Offline readiness and update notices from the service worker */}
       <UpdatePrompt />
+
+      {/* Every keyboard shortcut, on ? or the keyboard button */}
+      <ShortcutsDialog isOpen={isShortcutsOpen} onClose={closeShortcuts} />
 
       {/* Custom Particle Comet Cursor */}
       <CustomCursor />
@@ -295,6 +319,25 @@ function App() {
               setIsOpen={setIsLocationOpen}
             />
             <ShareButton date={currentDate} location={location} />
+            {/* Hidden on touch-only devices, which have no keyboard to use it with */}
+            <button
+              type="button"
+              className="glass-button shortcuts-trigger"
+              onClick={() => setIsShortcutsOpen(true)}
+              aria-label="Keyboard shortcuts"
+              title="Keyboard shortcuts (?)"
+              style={{
+                padding: 0,
+                minHeight: '32px',
+                minWidth: '32px',
+                width: '32px',
+                borderRadius: '50%',
+                background: 'var(--bg-surface-1)',
+                border: '1px solid var(--border-subtle)'
+              }}
+            >
+              <Keyboard size={15} color="var(--text-secondary)" />
+            </button>
             <button
               className="glass-button"
               onClick={() => setIsDrawerOpen(prev => !prev)}
@@ -314,6 +357,7 @@ function App() {
               aria-label="Toggle telemetry details"
               aria-expanded={isDrawerOpen}
               aria-controls="telemetry-drawer"
+              aria-keyshortcuts="D"
             >
               <span
                 style={{

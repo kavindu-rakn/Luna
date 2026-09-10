@@ -456,6 +456,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           title="Previous Major Phase (Shift+←)"
           onClick={() => jumpQuarterPhase(-1)}
           aria-label="Previous Major Phase"
+          aria-keyshortcuts="Shift+ArrowLeft"
         >
           <ChevronsLeft size={16} />
         </button>
@@ -466,6 +467,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           title="Previous Day (←)"
           onClick={() => changeDate(-1)}
           aria-label="Previous Day"
+          aria-keyshortcuts="ArrowLeft"
         >
           <ChevronLeft size={16} />
         </button>
@@ -476,6 +478,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           title="Jump to Today (T)"
           onClick={onToday ?? (() => setCurrentDate(new Date()))}
           aria-label="Reset to Today"
+          aria-keyshortcuts="T"
           style={{
             padding: '0.22rem 0.75rem',
             minHeight: '26px',
@@ -498,6 +501,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           title="Next Day (→)"
           onClick={() => changeDate(1)}
           aria-label="Next Day"
+          aria-keyshortcuts="ArrowRight"
         >
           <ChevronRight size={16} />
         </button>
@@ -508,6 +512,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           title="Next Major Phase (Shift+→)"
           onClick={() => jumpQuarterPhase(1)}
           aria-label="Next Major Phase"
+          aria-keyshortcuts="Shift+ArrowRight"
         >
           <ChevronsRight size={16} />
         </button>
