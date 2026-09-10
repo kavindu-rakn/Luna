@@ -48,6 +48,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      # The 3D engine must stay lazy and the entry within budget. This is what
+      # stops a stray eager import undoing the split without anyone noticing.
+      - name: First-paint budget
+        run: npm run check:bundle
+
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest

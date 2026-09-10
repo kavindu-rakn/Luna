@@ -42,4 +42,25 @@ const injectCsp = () => ({
 export default defineConfig({
   base: '/Luna/',
   plugins: [react(), injectCsp()],
+  build: {
+    // The 3D vendor chunk is Three.js itself, around 885 KB, and it is meant to be
+    // large: it loads lazily behind the loading screen. Keeping the warning at the
+    // default would fire on every build for a known, intended chunk and teach
+    // people to ignore it. The chunk that actually gates first paint has its own
+    // budget, enforced by scripts/check-bundle.mjs in CI.
+    chunkSizeWarningLimit: 950,
+    rolldownOptions: {
+      output: {
+        // Name the 3D chunk for what it is. This touches only the file name, never
+        // which modules go where: an earlier attempt used a codeSplitting group,
+        // which by default also swallows each module's dependencies, pulled React
+        // in alongside fiber, and left the entry statically importing all of
+        // Three.js again. Composition stays with rolldown's automatic split.
+        chunkFileNames: (chunk) =>
+          chunk.moduleIds?.some((id) => /node_modules[\\/]three[\\/]/.test(id))
+            ? 'assets/three-vendor-[hash].js'
+            : 'assets/[name]-[hash].js'
+      }
+    }
+  }
 })

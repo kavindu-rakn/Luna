@@ -5,25 +5,9 @@ import {
   getDateAtCycleFraction,
   getPhaseSummary
 } from '../utils/lunarCalc';
+import MoonIcon from './MoonIcon';
 
-// SVG Moon Icon with mathematically correct terminator ellipse
-const MoonIcon = ({ phase, size = 20 }) => {
-  const r = size / 2;
-  const illumination = phase <= 0.5 ? phase * 2 : 2 - phase * 2;
-  const isWaxing = phase <= 0.5;
-  const sweepOuter = isWaxing ? 1 : 0;
-  const rx = Math.max(0.01, Math.abs(illumination * 2 - 1) * (r - 0.5));
-  const sweepInner = illumination > 0.5 ? (isWaxing ? 1 : 0) : (isWaxing ? 0 : 1);
 
-  const pathData = `M ${r},0.5 A ${r - 0.5},${r - 0.5} 0 0 ${sweepOuter} ${r},${size - 0.5} A ${rx},${r - 0.5} 0 0 ${sweepInner} ${r},0.5 Z`;
-
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
-      <circle cx={r} cy={r} r={r - 0.5} fill="#111428" stroke="rgba(255,255,255,0.18)" strokeWidth="0.75" />
-      <path d={pathData} fill="#e2e8f0" />
-    </svg>
-  );
-};
 
 const LunarTimeline = ({ currentDate, setCurrentDate }) => {
   const trackRef = useRef(null);

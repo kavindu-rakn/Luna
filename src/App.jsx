@@ -1,13 +1,29 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import MoonVisualization from './components/MoonVisualization';
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import LunarData from './components/LunarData';
 import DateControls from './components/DateControls';
 import Starfield from './components/Starfield';
 import LunarTimeline from './components/LunarTimeline';
 import CustomCursor from './components/CustomCursor';
 import SkyPosition from './components/SkyPosition';
-import OrbitalView from './components/OrbitalView';
 import LoadingScreen from './components/LoadingScreen';
+import SceneBoundary from './components/SceneBoundary';
+import MoonIcon from './components/MoonIcon';
+
+// Three.js, fiber and drei are 60% of the bundle and nothing but these two scenes
+// needs them. Loading them on demand lets the header, date, phase name and
+// timeline paint after roughly half the JavaScript.
+const MoonVisualization = lazy(() => import('./components/MoonVisualization'));
+const OrbitalView = lazy(() => import('./components/OrbitalView'));
+
+// Shown while the 3D Moon loads, and in its place if WebGL is unavailable: a flat
+// Moon drawn at the right phase, so the view is never simply empty.
+const MoonFallback = ({ phase }) => (
+  <div className="moon-viz-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ width: 'min(38vh, 320px)', aspectRatio: '1' }}>
+      <MoonIcon phase={phase} size={200} title="Moon phase" style={{ width: '100%', height: '100%' }} />
+    </div>
+  </div>
+);
 import LocationPicker from './components/LocationPicker';
 import ShareButton from './components/ShareButton';
 import { getLunarDetails, getSkyData, getAdjacentQuarterPhase } from './utils/lunarCalc';
@@ -39,6 +55,18 @@ function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
+
+  // shell -> scene -> ready, or failed. Drives the loading screen from what has
+  // actually arrived rather than from a texture byte counter.
+  const [loadStage, setLoadStage] = useState('shell');
+  const markScene = useCallback(() => setLoadStage((s) => (s === 'shell' ? 'scene' : s)), []);
+  const markReady = useCallback(() => setLoadStage('ready'), []);
+  const markFailed = useCallback(() => setLoadStage((s) => (s === 'ready' ? s : 'failed')), []);
+
+  // The orbit diagram loads the first time the drawer opens and stays mounted
+  // after, so closing the drawer does not make its contents jump mid-slide.
+  const [hasOpenedDrawer, setHasOpenedDrawer] = useState(false);
+  if (isDrawerOpen && !hasOpenedDrawer) setHasOpenedDrawer(true);
 
   const containerRef = useRef();
   const mainViewRef = useRef();
@@ -162,7 +190,7 @@ function App() {
       <div className="vignette" />
 
       {/* Cinematic Asset Loading Screen */}
-      <LoadingScreen />
+      <LoadingScreen stage={loadStage} />
 
       {/* Custom Particle Comet Cursor */}
       <CustomCursor />
@@ -249,7 +277,11 @@ function App() {
         {/* Center Canvas Area: 3D Moon & Hero Phase Name */}
         <div className="main-canvas-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '2.5rem' }}>
           <div className="moon-container" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-            <MoonVisualization lunarDetails={lunarDetails} />
+            <SceneBoundary name="Moon scene" onError={markFailed} fallback={<MoonFallback phase={lunarDetails.phase} />}>
+              <Suspense fallback={<MoonFallback phase={lunarDetails.phase} />}>
+                <MoonVisualization lunarDetails={lunarDetails} onScene={markScene} onReady={markReady} />
+              </Suspense>
+            </SceneBoundary>
           </div>
 
           <div className="hero-phase-name">
@@ -318,7 +350,13 @@ function App() {
             <SkyPosition skyData={computedSkyData} locationName={location?.name} />
           )}
 
-          <OrbitalView lunarDetails={lunarDetails} />
+          {hasOpenedDrawer && (
+            <SceneBoundary name="Orbital diagram">
+              <Suspense fallback={null}>
+                <OrbitalView lunarDetails={lunarDetails} active={isDrawerOpen} />
+              </Suspense>
+            </SceneBoundary>
+          )}
 
           <footer
             style={{
