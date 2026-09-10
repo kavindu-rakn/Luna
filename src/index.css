@@ -81,19 +81,6 @@ body {
   pointer-events: none;
 }
 
-.noise {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 100;
-  opacity: 0.025;
-  background-image: url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E');
-  mix-blend-mode: overlay;
-}
-
 /* Typography Classes */
 h1, h2, h3, h4 {
   font-family: var(--font-heading);
@@ -227,51 +214,6 @@ h1, h2, h3, h4 {
 .ghost-control-btn:focus-visible {
   outline: 2px solid var(--accent-light);
   outline-offset: 2px;
-}
-
-/* Mode Switcher Buttons inside Moon Visualization */
-.mode-toggle-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 0.35rem 0.75rem;
-  border-radius: 16px;
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: all 0.2s ease;
-}
-
-.mode-toggle-btn:hover {
-  color: var(--text-primary);
-}
-
-.mode-toggle-btn.active {
-  background: var(--accent-strong);
-  color: #ffffff;
-  box-shadow: 0 2px 8px var(--accent-glow);
-}
-
-.mode-reset-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  padding: 0.35rem;
-  border-radius: 50%;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.mode-reset-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.1);
 }
 
 /* App Container */
