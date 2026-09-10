@@ -1,9 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X } from 'lucide-react';
-import { getAdjacentQuarterPhase } from '../utils/lunarCalc';
+import { getAdjacentQuarterPhase, getZonedDay, getNoonInZone } from '../utils/lunarCalc';
 
-const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, setIsCalendarOpen }) => {
-  const [viewDate, setViewDate] = useState(() => new Date(currentDate));
+// Month arithmetic in UTC: pure calendar maths, untouched by any clock change
+const utcDate = (year, month, day) => new Date(Date.UTC(year, month, day));
+
+// Every date here is a date on the observing place's clock, like the rest of the
+// app. Reading them off the viewer's device instead put the header a day away from
+// the sky chart, and a click on the 26th could select the 25th at the place.
+const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, setIsCalendarOpen, timeZone }) => {
+  // The month on show, as { year, month }
+  const [view, setView] = useState(() => getZonedDay(currentDate, timeZone));
   const calendarModalRef = useRef(null);
   const toggleButtonRef = useRef(null);
   const wasCalendarOpen = useRef(false);
@@ -43,7 +50,8 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
       weekday: 'long',
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      timeZone
     });
   };
 
@@ -51,7 +59,8 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone
     });
   };
 
@@ -75,43 +84,39 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
     if (!isCalendarOpen || !pendingFocus.current) return;
     pendingFocus.current = false;
     dayRefs.current[focusedDay]?.focus();
-  }, [isCalendarOpen, focusedDay, viewDate]);
+  }, [isCalendarOpen, focusedDay, view]);
 
   // Monthly Calendar Math
-  const year = viewDate.getFullYear();
-  const month = viewDate.getMonth();
+  const { year, month } = view;
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const daysInPrevMonth = new Date(year, month, 0).getDate();
+  const firstDayOfMonth = utcDate(year, month, 1).getUTCDay();
+  const daysInMonth = utcDate(year, month + 1, 0).getUTCDate();
+  const daysInPrevMonth = utcDate(year, month, 0).getUTCDate();
 
-  const handlePrevMonth = () => {
-    setViewDate(new Date(year, month - 1, 1));
+  const showMonth = (y, m) => {
+    const first = utcDate(y, m, 1);
+    setView({ year: first.getUTCFullYear(), month: first.getUTCMonth() });
   };
 
-  const handleNextMonth = () => {
-    setViewDate(new Date(year, month + 1, 1));
-  };
+  const handlePrevMonth = () => showMonth(year, month - 1);
+  const handleNextMonth = () => showMonth(year, month + 1);
 
   const handleSelectDay = (day) => {
-    const selected = new Date(year, month, day, 12, 0, 0);
-    setCurrentDate(selected);
+    setCurrentDate(getNoonInZone(year, month, day, timeZone));
     setIsCalendarOpen(false);
   };
 
-  const isToday = (day) => {
-    const now = new Date();
-    return now.getFullYear() === year && now.getMonth() === month && now.getDate() === day;
-  };
-
-  const isSelectedDay = (day) => {
-    return currentDate.getFullYear() === year && currentDate.getMonth() === month && currentDate.getDate() === day;
-  };
+  // Today and the selected day, as the place's clock reads them
+  const todayAtPlace = getZonedDay(new Date(), timeZone);
+  const selectedAtPlace = getZonedDay(currentDate, timeZone);
+  const isSameDay = (p, day) => p.year === year && p.month === month && p.day === day;
+  const isToday = (day) => isSameDay(todayAtPlace, day);
+  const isSelectedDay = (day) => isSameDay(selectedAtPlace, day);
 
   // Clamp for months shorter than the one we arrived from, so a tab stop always exists
   const activeDay = Math.min(focusedDay, daysInMonth);
@@ -120,31 +125,31 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
   // by month. Crossing a month boundary turns the page and keeps focus moving.
   const handleGridKeyDown = (e) => {
     const deltas = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
-    const from = new Date(year, month, activeDay);
+    const from = utcDate(year, month, activeDay);
     let target;
 
-    if (e.key in deltas) target = new Date(year, month, activeDay + deltas[e.key]);
-    else if (e.key === 'Home') target = new Date(year, month, activeDay - from.getDay());
-    else if (e.key === 'End') target = new Date(year, month, activeDay + (6 - from.getDay()));
+    if (e.key in deltas) target = utcDate(year, month, activeDay + deltas[e.key]);
+    else if (e.key === 'Home') target = utcDate(year, month, activeDay - from.getUTCDay());
+    else if (e.key === 'End') target = utcDate(year, month, activeDay + (6 - from.getUTCDay()));
     else if (e.key === 'PageUp' || e.key === 'PageDown') {
       const step = e.key === 'PageUp' ? -1 : 1;
-      const lastDay = new Date(year, month + step + 1, 0).getDate();
-      target = new Date(year, month + step, Math.min(activeDay, lastDay));
+      const lastDay = utcDate(year, month + step + 1, 0).getUTCDate();
+      target = utcDate(year, month + step, Math.min(activeDay, lastDay));
     } else return;
 
     e.preventDefault();
     e.stopPropagation();
-    if (target.getMonth() !== month || target.getFullYear() !== year) {
-      setViewDate(new Date(target.getFullYear(), target.getMonth(), 1));
+    if (target.getUTCMonth() !== month || target.getUTCFullYear() !== year) {
+      showMonth(target.getUTCFullYear(), target.getUTCMonth());
     }
-    setFocusedDay(target.getDate());
+    setFocusedDay(target.getUTCDate());
     pendingFocus.current = true;
   };
 
   // A bare "12" tells a screen reader nothing about which month it is in
   const dayLabel = (day) => {
-    const text = new Date(year, month, day).toLocaleDateString('en-US', {
-      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    const text = utcDate(year, month, day).toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC'
     });
     return `${text}${isSelectedDay(day) ? ', selected' : ''}${isToday(day) ? ', today' : ''}`;
   };
@@ -157,9 +162,10 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
         ref={toggleButtonRef}
         onClick={() => {
           if (!isCalendarOpen) {
-            setViewDate(new Date(currentDate));
             // Open onto the selected day, with focus already on it
-            setFocusedDay(currentDate.getDate());
+            const selected = getZonedDay(currentDate, timeZone);
+            setView({ year: selected.year, month: selected.month });
+            setFocusedDay(selected.day);
             pendingFocus.current = true;
           }
           setIsCalendarOpen(!isCalendarOpen);

@@ -281,6 +281,7 @@ function App() {
               onToday={goLive}
               isCalendarOpen={isCalendarOpen}
               setIsCalendarOpen={setIsCalendarOpen}
+              timeZone={location.timeZone}
             />
           </div>
 
@@ -358,7 +359,7 @@ function App() {
         {/* Bottom Bar: Timeline */}
         <div style={{ width: '100%', zIndex: 20 }}>
           <div className="timeline-panel" style={{ width: '100%' }}>
-            <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} />
+            <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} />
           </div>
         </div>
       </main>

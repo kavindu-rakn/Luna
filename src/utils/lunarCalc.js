@@ -646,6 +646,25 @@ export const getStartOfDayInZone = (date, timeZone) => {
   return instant;
 };
 
+// The calendar day of an instant as a place's clock reads it. Month is 0-based, as in Date.
+export const getZonedDay = (date, timeZone) => {
+  const p = getZonedParts(date, timeZone);
+  return { year: p.year, month: p.month - 1, day: p.day };
+};
+
+// The instant at which a place's clock shows a given date and time. Two passes,
+// like getStartOfDayInZone, so a time on the day of a DST change still resolves.
+export const getInstantInZone = (year, month, day, hour, minute, timeZone) => {
+  const wall = Date.UTC(year, month, day, hour, minute);
+  let instant = wall - getZoneOffsetMs(new Date(wall), timeZone);
+  instant = wall - getZoneOffsetMs(new Date(instant), timeZone);
+  return new Date(instant);
+};
+
+// Noon on a date at a place: where picking a day, or opening a link to one, lands
+export const getNoonInZone = (year, month, day, timeZone) =>
+  getInstantInZone(year, month, day, 12, 0, timeZone);
+
 // Short timezone abbreviation for display, e.g. "GMT+1", "BST", "EDT"
 export const getTimeZoneLabel = (date, timeZone) => {
   try {
