@@ -16,7 +16,9 @@ import {
   getAdjacentQuarterPhase,
   getLunarDetails,
   getPhaseSummary,
-  getCyclePhases,
+  getSynodicCycle,
+  getCycleFraction,
+  getDateAtCycleFraction,
   classifyPhase,
   toCompassBearing,
   toCompassDirection,
@@ -290,12 +292,72 @@ describe('phase classification and the timeline', () => {
     expect(summary.fraction).toBe(full.fraction);
   });
 
-  it('returns a 31-day window centred on the selected date', () => {
-    const centre = new Date('2026-09-19T12:00:00Z');
-    const cycle = getCyclePhases(centre, 30);
-    expect(cycle).toHaveLength(31);
-    expect(cycle[15].isCurrent).toBe(true);
-    expect(cycle.filter((d) => d.isCurrent)).toHaveLength(1);
+  it('spans one real synodic month, New Moon to New Moon', () => {
+    const cycle = getSynodicCycle(new Date('2026-09-19T12:00:00Z'));
+    // Both ends must sit on an actual conjunction
+    expect(getMoonElongation(cycle.start)).toBeCloseTo(0, 2);
+    expect(getMoonElongation(cycle.end)).toBeCloseTo(0, 2);
+    // Synodic months genuinely vary between about 29.27 and 29.83 days
+    expect(cycle.durationDays).toBeGreaterThan(29.2);
+    expect(cycle.durationDays).toBeLessThan(29.9);
+    // The selected date has to fall inside its own cycle
+    const t = new Date('2026-09-19T12:00:00Z').getTime();
+    expect(t).toBeGreaterThanOrEqual(cycle.startMs);
+    expect(t).toBeLessThan(cycle.startMs + cycle.durationMs);
+  });
+
+  it('lets the scrubber reach both ends of its own track', () => {
+    // The regression this replaces: the timeline built a window centred on the
+    // selection, so the thumb sat at 50% forever and could never travel.
+    const cycle = getSynodicCycle(new Date('2026-09-19T12:00:00Z'));
+
+    // Thumb positions as the component computes them: one cycle, many instants
+    const positions = [];
+    for (let i = 0; i <= 100; i++) {
+      positions.push(getCycleFraction(cycle, getDateAtCycleFraction(cycle, i / 100)));
+    }
+
+    expect(Math.min(...positions)).toBeLessThan(0.001);
+    expect(Math.max(...positions)).toBeGreaterThan(0.999);
+    for (let i = 1; i < positions.length; i++) {
+      expect(positions[i]).toBeGreaterThan(positions[i - 1]);
+    }
+  });
+
+  it('rolls into the next cycle once the selection passes the closing New Moon', () => {
+    const cycle = getSynodicCycle(new Date('2026-09-19T12:00:00Z'));
+    const justPast = new Date(cycle.startMs + cycle.durationMs + 60000);
+    const next = getSynodicCycle(justPast);
+
+    expect(next.startMs).toBeGreaterThan(cycle.startMs);
+    // Not bit-identical: the closing New Moon of one cycle and the opening New
+    // Moon of the next are solved from different seeds, and golden-section settles
+    // to about a third of a second. Agreement to the second is the real contract.
+    expect(Math.abs(next.startMs - (cycle.startMs + cycle.durationMs))).toBeLessThan(1000);
+    // The thumb reappears at the start of the new cycle rather than sticking
+    expect(getCycleFraction(next, justPast)).toBeLessThan(0.01);
+  });
+
+  it('places the quarters at their solved instants, not on an even grid', () => {
+    const cycle = getSynodicCycle(new Date('2026-09-19T12:00:00Z'));
+    expect(cycle.quarters).toHaveLength(3);
+    const names = cycle.quarters.map((q) => q.name);
+    expect(names).toEqual(['First Quarter', 'Full Moon', 'Last Quarter']);
+    // Ordered, interior, and at least one is measurably off the even 25/50/75 grid
+    const fr = cycle.quarters.map((q) => q.fraction);
+    expect(fr[0]).toBeLessThan(fr[1]);
+    expect(fr[1]).toBeLessThan(fr[2]);
+    expect(fr[0]).toBeGreaterThan(0);
+    expect(fr[2]).toBeLessThan(1);
+    const evenGrid = [0.25, 0.5, 0.75];
+    expect(fr.some((f, i) => Math.abs(f - evenGrid[i]) > 0.005)).toBe(true);
+  });
+
+  it('round-trips a position back to the same instant', () => {
+    const cycle = getSynodicCycle(new Date('2026-09-19T12:00:00Z'));
+    for (const f of [0, 0.13, 0.5, 0.77, 1]) {
+      expect(getCycleFraction(cycle, getDateAtCycleFraction(cycle, f))).toBeCloseTo(f, 6);
+    }
   });
 });
 
@@ -326,9 +388,10 @@ describe('robustness', () => {
   });
 
   it('keeps the timeline cheap enough to scrub at 60fps', () => {
+    // Memoised internally, so a drag inside one cycle costs almost nothing
     const centre = new Date('2026-09-19T12:00:00Z');
     const started = performance.now();
-    for (let i = 0; i < 60; i++) getCyclePhases(new Date(centre.getTime() + i * 3600000), 30);
+    for (let i = 0; i < 60; i++) getSynodicCycle(new Date(centre.getTime() + i * 3600000));
     const perFrame = (performance.now() - started) / 60;
     expect(perFrame).toBeLessThan(8); // half the 16.7ms frame budget
   });

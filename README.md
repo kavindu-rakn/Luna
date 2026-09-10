@@ -181,7 +181,7 @@ graph TD
     B --> B3[Parallax Starfield Canvas]
 
     C --> C1[Date Controls & Chevrons]
-    C --> C2[30-Day Concentric Timeline]
+    C --> C2[Synodic Cycle Scrubber]
     C --> C3[Slide-out Telemetry Drawer]
     C --> C4[Custom Particle Comet Cursor]
 

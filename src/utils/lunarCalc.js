@@ -493,30 +493,94 @@ export const getAdjacentQuarterPhase = (currentDate = new Date(), direction = 1)
   return solvePhaseInstant(targetPhase, approxTargetTime);
 };
 
-// Get the 30-day timeline centered around the selected date
-export const getCyclePhases = (centerDate = new Date(), daysCount = 30) => {
-  const halfCycle = Math.floor(daysCount / 2);
-  const phases = [];
+// The synodic month containing `date`: the New Moon at or before it, through to the
+// next New Moon.
+//
+// The timeline used to build a 30-day window centred on the selection, which meant
+// the window moved with every change and the marker was pinned to the middle
+// forever. It could never reach either end of its own track. Anchoring to a real
+// lunar cycle gives the scrubber a fixed span to travel across, and makes the
+// panel's "Lunar Cycle" label literally true.
+let cachedCycle = null;
 
-  for (let i = -halfCycle; i <= halfCycle; i++) {
-    const d = new Date(centerDate);
-    d.setDate(d.getDate() + i);
-    const details = getPhaseSummary(d);
-    
-    phases.push({
-      date: d,
-      dayOffset: i,
-      phase: details.phase,
-      fraction: parseFloat(details.fraction),
-      name: details.name,
-      phaseKey: details.phaseKey,
-      isExactPrimary: details.isExactPrimary,
-      isMajor: ['New Moon', 'First Quarter', 'Full Moon', 'Last Quarter'].includes(details.name),
-      isCurrent: i === 0
+export const getSynodicCycle = (date = new Date()) => {
+  const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
+  const nowMs = validDate.getTime();
+
+  // Solving six phase instants costs a couple of milliseconds, and a drag asks for
+  // the cycle on every pointer move. The answer only changes when the selection
+  // crosses a New Moon, so hold the last one. Memoising a deterministic function is
+  // a property of the function, not of whoever calls it.
+  if (cachedCycle && nowMs >= cachedCycle.startMs && nowMs < cachedCycle.startMs + cachedCycle.durationMs) {
+    return cachedCycle;
+  }
+  const MS_PER_DAY = 86400000;
+  const cycleMs = SYNODIC_MONTH * MS_PER_DAY;
+
+  // Seed from the current phase, then solve for the exact instants
+  const elapsedDays = getMoonPhaseFraction(validDate) * SYNODIC_MONTH;
+  let start = solvePhaseInstant(0, nowMs - elapsedDays * MS_PER_DAY);
+  if (start.getTime() > nowMs) {
+    start = solvePhaseInstant(0, start.getTime() - cycleMs);
+  }
+
+  let end = solvePhaseInstant(0, start.getTime() + cycleMs);
+  if (end.getTime() <= nowMs) {
+    start = end;
+    end = solvePhaseInstant(0, start.getTime() + cycleMs);
+  }
+
+  const startMs = start.getTime();
+  const durationMs = end.getTime() - startMs;
+  const fractionAt = (ms) => Math.max(0, Math.min(1, (ms - startMs) / durationMs));
+
+  // Solved, not assumed to be evenly spaced. The Moon's angular speed varies, so
+  // First Quarter does not fall exactly a quarter of the way through the cycle,
+  // and the timeline should show that rather than hide it.
+  const quarters = [0.25, 0.5, 0.75].map((target) => {
+    const instant = solvePhaseInstant(target, startMs + target * durationMs);
+    return {
+      ...classifyPhase(target),
+      phase: target,
+      date: instant,
+      fraction: fractionAt(instant.getTime())
+    };
+  });
+
+  // One tick per 24 hours from the opening New Moon
+  const ticks = [];
+  for (let ms = startMs; ms < end.getTime(); ms += MS_PER_DAY) {
+    ticks.push({
+      date: new Date(ms),
+      fraction: fractionAt(ms),
+      illumination: getIlluminatedFraction(new Date(ms))
     });
   }
 
-  return phases;
+  cachedCycle = {
+    start,
+    end,
+    startMs,
+    durationMs,
+    durationDays: durationMs / MS_PER_DAY,
+    quarters,
+    ticks
+  };
+
+  return cachedCycle;
+};
+
+// Where an instant falls within a cycle, 0 at the opening New Moon and 1 at the next
+export const getCycleFraction = (cycle, date) => {
+  if (!cycle || !cycle.durationMs) return 0;
+  const ms = (date instanceof Date ? date.getTime() : Number(date)) - cycle.startMs;
+  return Math.max(0, Math.min(1, ms / cycle.durationMs));
+};
+
+// The instant at a given position along a cycle
+export const getDateAtCycleFraction = (cycle, fraction) => {
+  const clamped = Math.max(0, Math.min(1, fraction));
+  return new Date(Math.round(cycle.startMs + clamped * cycle.durationMs));
 };
 
 // ═══ TIMEZONE HELPERS ═══
