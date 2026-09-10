@@ -347,7 +347,7 @@ const formatCountdown = (ms) => {
 const hourCycleFor = (clock) => (clock === '24h' ? 'h23' : 'h12');
 
 // Date and time of a phase event, in the observing location's timezone
-const formatPhaseStamp = (d, timeZone, clock = '12h') => {
+export const formatPhaseStamp = (d, timeZone, clock = '12h') => {
   try {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
@@ -599,21 +599,31 @@ export const getBrowserTimeZone = () => {
   }
 };
 
+// Building an Intl.DateTimeFormat costs far more than using one, and the sky chart
+// and a calendar month each read hundreds of instants, so keep one per zone
+const zonedFormatters = new Map();
+const getZonedFormatter = (timeZone) => {
+  let formatter = zonedFormatters.get(timeZone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    zonedFormatters.set(timeZone, formatter);
+  }
+  return formatter;
+};
+
 // Wall-clock calendar/clock fields of an instant, as read in a given timezone
 const getZonedParts = (date, timeZone) => {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-
   const parts = {};
-  for (const { type, value } of formatter.formatToParts(date)) {
+  for (const { type, value } of getZonedFormatter(timeZone).formatToParts(date)) {
     parts[type] = value;
   }
 
@@ -683,6 +693,21 @@ export const formatTimeString = (d, timeZone, clock = '12h') => {
   try {
     return new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: hourCycleFor(clock),
+      timeZone
+    }).format(d);
+  } catch {
+    return '--:--';
+  }
+};
+
+// A clock time without the padding zero, "7:30 PM" or "19:30", for running text
+export const formatShortTime = (d, timeZone, clock = '12h') => {
+  if (!d || isNaN(d.getTime())) return '--:--';
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
       minute: '2-digit',
       hourCycle: hourCycleFor(clock),
       timeZone
@@ -814,14 +839,7 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null,
     peakAltitude: peakPoint.altitude.toFixed(1),
     // With minutes: samples are half an hour apart, and on a 24-hour clock the
     // hour-only tick "04:00" would pass off a 04:30 peak as exact
-    peakTime: peakPoint.time
-      ? new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hourCycle: hourCycleFor(clock),
-        timeZone: zone
-      }).format(peakPoint.time)
-      : '--:--',
+    peakTime: formatShortTime(peakPoint.time, zone, clock),
     peakCompass: peakPoint.compass
   };
 };

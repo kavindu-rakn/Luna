@@ -282,6 +282,7 @@ function App() {
               isCalendarOpen={isCalendarOpen}
               setIsCalendarOpen={setIsCalendarOpen}
               timeZone={location.timeZone}
+              clock={clock}
             />
           </div>
 
