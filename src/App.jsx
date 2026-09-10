@@ -8,38 +8,30 @@ import CustomCursor from './components/CustomCursor';
 import SkyPosition from './components/SkyPosition';
 import OrbitalView from './components/OrbitalView';
 import LoadingScreen from './components/LoadingScreen';
-import { getLunarDetails, getSkyData, reverseGeocodeCached, getAdjacentQuarterPhase, getBrowserTimeZone } from './utils/lunarCalc';
+import LocationPicker from './components/LocationPicker';
+import { getLunarDetails, getSkyData, getAdjacentQuarterPhase } from './utils/lunarCalc';
+import { DEFAULT_LOCATION, loadStoredLocation, storeLocation } from './utils/location';
 import { X, BarChart3 } from 'lucide-react';
 
 function App() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const DEFAULT_LOCATION = { lat: 51.4769, lon: -0.0005, name: 'Greenwich, UK', timeZone: 'Europe/London' };
-  const [location, setLocation] = useState(DEFAULT_LOCATION);
+
+  // Restore whatever was chosen last. Geolocation is no longer requested at first
+  // paint: that put a permission prompt in front of someone who had not yet seen
+  // what the app was, and a denial dropped them silently onto Greenwich. It is now
+  // asked for only when they press "Use my location" in the picker.
+  const [location, setLocation] = useState(() => loadStoredLocation() || DEFAULT_LOCATION);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isLocationOpen, setIsLocationOpen] = useState(false);
 
   const containerRef = useRef();
   const mainViewRef = useRef();
   const drawerRef = useRef();
 
-  // Safe geolocation on mount with cached reverse geocoding
   useEffect(() => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          const geoResult = await reverseGeocodeCached(lat, lon);
-          // When we geolocate the user, their browser timezone IS the location's timezone.
-          setLocation({ ...geoResult, timeZone: getBrowserTimeZone() });
-        },
-        () => {
-          // Default to Greenwich on permission denial
-        },
-        { timeout: 6000 }
-      );
-    }
-  }, []);
+    storeLocation(location);
+  }, [location]);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -58,6 +50,7 @@ function App() {
       if (e.key === 'Escape') {
         // Dismiss the innermost surface first, then the drawer behind it.
         if (isCalendarOpen) setIsCalendarOpen(false);
+        else if (isLocationOpen) setIsLocationOpen(false);
         else setIsDrawerOpen(false);
         return;
       }
@@ -81,7 +74,7 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCalendarOpen]);
+  }, [isCalendarOpen, isLocationOpen]);
 
   // Derive lunar details and 24-hour sky transit data
   const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone), [currentDate, location]);
@@ -143,8 +136,14 @@ function App() {
             />
           </div>
 
-          {/* Right: Deep Dive Action Button */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+          {/* Right: Location & Deep Dive */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
+            <LocationPicker
+              location={location}
+              setLocation={setLocation}
+              isOpen={isLocationOpen}
+              setIsOpen={setIsLocationOpen}
+            />
             <button
               className="glass-button"
               onClick={() => setIsDrawerOpen(prev => !prev)}
