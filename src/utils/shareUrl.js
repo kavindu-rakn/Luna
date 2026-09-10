@@ -12,6 +12,7 @@
 // Everything here is untrusted input. It arrives in a link someone else wrote.
 
 import { getNoonInZone } from './lunarCalc';
+import { roundCoordinate } from './location';
 
 const MAX_NAME_LENGTH = 80;
 
@@ -49,13 +50,10 @@ const coordinateName = (lat, lon) =>
 
 export const formatSharedDate = (date) => `${date.toISOString().slice(0, 16)}Z`;
 
-// Two decimals, about a kilometre. Rounding a small negative number keeps its sign,
-// so Greenwich (-0.0005) would otherwise serialise as "-0.00", which is exactly the
-// URL every first-time visitor lands on.
-const formatCoordinate = (value) => {
-  const rounded = Math.round(value * 100) / 100;
-  return (Object.is(rounded, -0) ? 0 : rounded).toFixed(2);
-};
+// Two decimals, about a kilometre, by the same rule as every stored place.
+// roundCoordinate also stops Greenwich (-0.0005) serialising as "-0.00", which is
+// exactly the URL every first-time visitor lands on.
+const formatCoordinate = (value) => roundCoordinate(value).toFixed(2);
 
 export const parseSharedDate = (value, timeZone = 'UTC') => {
   if (typeof value !== 'string') return null;

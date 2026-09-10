@@ -1,9 +1,14 @@
 // Everything to do with *where* the observer is. Astronomy lives in lunarCalc.js;
 // this module only resolves places, timezones and what the viewer has saved.
 
+import { listStoredKeys } from './storage';
+
 const NOMINATIM = 'https://nominatim.openstreetmap.org';
 const STORAGE_KEY = 'luna_location';
 const SAVED_KEY = 'luna_saved_places';
+// The name found for the last "Use my location", and only that one
+const GEOCODE_KEY = 'luna_geo_last';
+const LEGACY_GEOCODE_PREFIX = 'luna_geo_';
 
 export const DEFAULT_LOCATION = {
   lat: 51.4769,
@@ -33,6 +38,23 @@ export const resolveTimeZone = async (lat, lon) => {
     }
   }
 };
+
+// ── Precision ────────────────────────────────────────────────────────
+// Two decimals, about a kilometre: plenty for astronomy, since rise and set times
+// move by seconds over that distance, and too coarse to pick out a home. Rounding a
+// small negative number keeps its sign, which would print as "-0.00"; normalise it.
+export const roundCoordinate = (value) => {
+  const rounded = Math.round(value * 100) / 100;
+  return Object.is(rounded, -0) ? 0 : rounded;
+};
+
+// Every place Luna holds on to is rounded like this, whether it came from the
+// browser's location, a search or an older version's storage
+export const roundPlace = (place) => ({
+  ...place,
+  lat: roundCoordinate(place.lat),
+  lon: roundCoordinate(place.lon)
+});
 
 // ── Formatting ───────────────────────────────────────────────────────
 const coordinateName = (lat, lon) =>
@@ -78,12 +100,16 @@ export const searchPlaces = async (query, { signal } = {}) => {
 };
 
 // ── Reverse geocoding, for the viewer's own position ─────────────────
+// Only the most recent lookup is remembered. This used to keep an entry for every
+// place looked up, forever, which quietly built a history of where the viewer had been.
 export const reverseGeocodeCached = async (lat, lon) => {
-  const cacheKey = `luna_geo_${lat.toFixed(2)}_${lon.toFixed(2)}`;
+  const cacheKey = `${lat.toFixed(2)},${lon.toFixed(2)}`;
 
   try {
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) return JSON.parse(cached);
+    const cached = JSON.parse(localStorage.getItem(GEOCODE_KEY));
+    if (cached && cached.key === cacheKey && typeof cached.name === 'string') {
+      return { name: cached.name, lat, lon };
+    }
   } catch {
     // Ignore localStorage access errors
   }
@@ -97,18 +123,29 @@ export const reverseGeocodeCached = async (lat, lon) => {
 
     const data = await response.json();
     const name = shortenPlaceName(data) || coordinateName(lat, lon);
-    const resolved = { name, lat, lon };
 
     try {
-      localStorage.setItem(cacheKey, JSON.stringify(resolved));
+      localStorage.setItem(GEOCODE_KEY, JSON.stringify({ key: cacheKey, name }));
     } catch {
       // Ignore quota or access errors
     }
 
-    return resolved;
+    return { name, lat, lon };
   } catch {
     return { name: coordinateName(lat, lon), lat, lon };
   }
+};
+
+// A position from the browser, turned into a place. It is rounded the moment it
+// arrives, so the exact position is never stored, sent or put in a link.
+export const placeFromPosition = async ({ latitude, longitude }) => {
+  const lat = roundCoordinate(latitude);
+  const lon = roundCoordinate(longitude);
+  const [place, timeZone] = await Promise.all([
+    reverseGeocodeCached(lat, lon),
+    resolveTimeZone(lat, lon)
+  ]);
+  return { lat, lon, name: place.name, timeZone };
 };
 
 // ── Persistence ──────────────────────────────────────────────────────
@@ -153,5 +190,24 @@ export const storeSavedPlaces = (places) => {
 };
 
 // Two places are the same if they sit within about a kilometre of each other
+// Run once at startup, before anything reads storage. Older versions kept a name for
+// every place "Use my location" was pressed at, and the exact position it returned;
+// the first goes and the second is rounded like everything else.
+export const tidyStoredData = () => {
+  for (const key of listStoredKeys(LEGACY_GEOCODE_PREFIX)) {
+    if (key === GEOCODE_KEY) continue;
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      return;
+    }
+  }
+
+  const current = loadStoredLocation();
+  if (current) storeLocation(roundPlace(current));
+  const saved = loadSavedPlaces();
+  if (saved.length) storeSavedPlaces(saved.map(roundPlace));
+};
+
 export const isSamePlace = (a, b) =>
   !!a && !!b && Math.abs(a.lat - b.lat) < 0.01 && Math.abs(a.lon - b.lon) < 0.01;

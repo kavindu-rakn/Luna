@@ -515,12 +515,38 @@ h1, h2, h3, h4 {
   color: var(--text-muted);
 }
 
-/* Keyboard shortcuts: a native modal dialog, which traps focus, closes on Esc and
-   returns focus by itself */
-.shortcuts-dialog {
+/* Buttons and links that read as inline text */
+.text-link {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--accent-light);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  color: var(--text-primary);
+}
+
+.text-link:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* The app's modal dialogs (shortcuts, privacy): native <dialog>s, which trap focus,
+   close on Esc and return focus by themselves */
+.modal-dialog {
   /* The reset at the top zeroes every margin, and a modal dialog is centred by
      auto margins, so without this it sits in the top-left corner */
   margin: auto;
+  /* Draws the scrollbar of a long dialog dark, rather than the default light one */
+  color-scheme: dark;
   width: min(34rem, calc(100vw - 2rem));
   max-height: min(42rem, calc(100dvh - 2rem));
   overflow: auto;
@@ -533,19 +559,19 @@ h1, h2, h3, h4 {
   animation: fadeIn 0.2s ease-out;
 }
 
-.shortcuts-dialog::backdrop {
+.modal-dialog::backdrop {
   background: rgba(3, 5, 12, 0.6);
   backdrop-filter: blur(3px);
 }
 
-.shortcuts-header {
+.modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.1rem;
 }
 
-.shortcuts-header h2 {
+.modal-header h2 {
   margin: 0;
   font-family: var(--font-serif);
   font-size: 1.6rem;
@@ -588,7 +614,7 @@ h1, h2, h3, h4 {
   color: var(--text-secondary);
 }
 
-.shortcuts-dialog kbd {
+.shortcuts-list kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -606,7 +632,7 @@ h1, h2, h3, h4 {
 
 /* The code font has left and right arrows but not up and down, so the four came
    out in two sizes. One system font draws them all alike. */
-.shortcuts-dialog kbd.is-arrow {
+.shortcuts-list kbd.is-arrow {
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size: 0.85rem;
 }
@@ -622,6 +648,60 @@ h1, h2, h3, h4 {
   border-top: 1px solid var(--border-subtle);
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+/* Privacy */
+.privacy-lead {
+  margin: 0 0 1.2rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.privacy-section + .privacy-section {
+  margin-top: 1.15rem;
+}
+
+.privacy-section h3 {
+  margin: 0 0 0.4rem;
+}
+
+.privacy-section p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.privacy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.privacy-actions .glass-button {
+  min-height: 34px;
+  padding: 0.3rem 0.9rem;
+  border-radius: 17px;
+  font-size: 0.8rem;
+}
+
+.privacy-confirm {
+  margin-top: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(252, 165, 165, 0.35);
+  border-radius: 12px;
+  background: rgba(127, 29, 29, 0.18);
+}
+
+.privacy-confirm p {
+  color: var(--text-primary);
+}
+
+.privacy-actions .privacy-danger {
+  border-color: rgba(252, 165, 165, 0.6);
+  color: #fecaca;
 }
 
 /* On a narrow screen the keys sit above what they do */

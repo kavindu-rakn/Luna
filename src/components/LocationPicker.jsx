@@ -3,7 +3,7 @@ import { MapPin, Search, LocateFixed, Star, X, Loader } from 'lucide-react';
 import {
   searchPlaces,
   resolveTimeZone,
-  reverseGeocodeCached,
+  placeFromPosition,
   loadSavedPlaces,
   storeSavedPlaces,
   isSamePlace
@@ -14,7 +14,7 @@ import {
 const DEBOUNCE_MS = 600;
 const MIN_QUERY = 3;
 
-const LocationPicker = ({ location, setLocation, isOpen, setIsOpen }) => {
+const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivacy }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [status, setStatus] = useState('idle'); // idle | searching | error | empty
@@ -101,12 +101,8 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen }) => {
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        const { latitude, longitude } = position.coords;
-        const [place, timeZone] = await Promise.all([
-          reverseGeocodeCached(latitude, longitude),
-          resolveTimeZone(latitude, longitude)
-        ]);
-        setLocation({ lat: latitude, lon: longitude, name: place.name, timeZone });
+        // Rounded to about a kilometre before anything else sees it
+        setLocation(await placeFromPosition(position.coords));
         setIsLocating(false);
         close();
       },
@@ -343,7 +339,15 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen }) => {
           </div>
 
           <p style={{ marginTop: '0.7rem', marginBottom: 0, fontSize: '0.66rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            Place search by Nominatim, data © OpenStreetMap contributors.
+            Place search by Nominatim, data ©{' '}
+            <a className="text-link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+              OpenStreetMap contributors
+            </a>
+            .{' '}
+            {/* Said where the data is handed over, not only in a page nobody opens */}
+            <button type="button" className="text-link" onClick={onShowPrivacy}>
+              What is sent, and what stays on your device
+            </button>
           </p>
         </div>
       )}

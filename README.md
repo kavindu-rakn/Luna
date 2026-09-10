@@ -28,6 +28,7 @@
   <a href="#keybindings">KEYBINDINGS</a> &nbsp;|&nbsp;
   <a href="#sharing">SHARING</a> &nbsp;|&nbsp;
   <a href="#offline">OFFLINE</a> &nbsp;|&nbsp;
+  <a href="#privacy">PRIVACY</a> &nbsp;|&nbsp;
   <a href="#architecture">ARCHITECTURE</a> &nbsp;|&nbsp;
   <a href="#cloning">CLONING</a> &nbsp;|&nbsp;
   <a href="#license">LICENSE</a>
@@ -206,6 +207,18 @@ Luna is an installable app and works with no connection. Every calculation alrea
 * **What works offline:** everything except searching for a new place. Saved places still work, since their timezone is resolved locally from the coordinates. Shared links open too.
 * **What stays out of the cache:** the share-card image, install icons and font subsets for scripts the UI does not use, which trims the first-visit download from 3.1 MB to 1.9 MB. The Earth texture is cached the first time the drawer opens.
 * **Updates never interrupt you.** A new version installs in the background and waits. A notice offers to reload; until you do, you keep a complete and consistent copy of the version you are using.
+
+---
+
+<a id="privacy"></a>
+## | | | P R I V A C Y
+
+Luna has no accounts, cookies, analytics or ads, and every calculation runs on the device. The **Privacy** link in the app says all of this in full, beside a button that forgets everything Luna has stored.
+
+* **Your location** is asked for only when you press *Use my location*, and is rounded to about a kilometre the moment it arrives. The exact position is never stored, sent or put in a link. The rounded position is sent to OpenStreetMap's Nominatim to name the place.
+* **Place search** sends what you type to Nominatim, which, like any web service, sees your IP address.
+* **Stored on the device:** your chosen place, saved places, clock and distance settings, and the name of the last place located. Older versions also kept a name for every place ever located; that history is deleted on the first visit after updating.
+* **Share links** carry the date, the place name and coordinates rounded to about a kilometre.
 
 ---
 
