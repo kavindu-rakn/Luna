@@ -2,6 +2,8 @@ import React, { useRef, useEffect } from 'react';
 import { Moon, Sparkles, Orbit, Compass, ArrowUpRight, Calendar } from 'lucide-react';
 import gsap from 'gsap';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { MIN_MOON_DISTANCE, MAX_MOON_DISTANCE, MEAN_MOON_DISTANCE } from '../utils/lunarCalc';
+import { formatDistance, formatDistanceThousands } from '../utils/units';
 
 const AnimatedNumber = ({ value, suffix = '', decimals = 1 }) => {
   const numRef = useRef();
@@ -39,7 +41,7 @@ const AnimatedNumber = ({ value, suffix = '', decimals = 1 }) => {
   return <span ref={numRef} className="font-mono">0.0{suffix}</span>;
 };
 
-const LunarData = ({ lunarDetails }) => {
+const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
   const {
     name,
     fraction,
@@ -138,7 +140,7 @@ const LunarData = ({ lunarDetails }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
           <h3 className="utility-label">Distance to Earth</h3>
           <div className="font-mono" style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-            {distanceKm ? distanceKm.toLocaleString() : '384,400'} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>km</span>
+            {formatDistance(distanceKm || MEAN_MOON_DISTANCE, distanceUnit)} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{distanceUnit}</span>
           </div>
         </div>
 
@@ -156,8 +158,8 @@ const LunarData = ({ lunarDetails }) => {
             />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-            <span>Perigee (356k km)</span>
-            <span>Apogee (406k km)</span>
+            <span>Perigee ({formatDistanceThousands(MIN_MOON_DISTANCE, distanceUnit)})</span>
+            <span>Apogee ({formatDistanceThousands(MAX_MOON_DISTANCE, distanceUnit)})</span>
           </div>
         </div>
       </div>

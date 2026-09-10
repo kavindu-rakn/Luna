@@ -27,6 +27,8 @@ const MoonFallback = ({ phase }) => (
 import LocationPicker from './components/LocationPicker';
 import ShareButton from './components/ShareButton';
 import UpdatePrompt from './components/UpdatePrompt';
+import DisplayPreferences from './components/DisplayPreferences';
+import { usePreferences } from './hooks/usePreferences';
 import { getLunarDetails, getSkyData, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
@@ -56,6 +58,11 @@ function App() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
+
+  // 12- or 24-hour clock, km or miles. How this viewer reads, not what they are
+  // looking at, so these stay on the device and out of the URL.
+  const [preferences, setPreference] = usePreferences();
+  const { clock, distanceUnit } = preferences;
 
   // shell -> scene -> ready, or failed. Drives the loading screen from what has
   // actually arrived rather than from a texture byte counter.
@@ -195,11 +202,11 @@ function App() {
   }, [isCalendarOpen, isLocationOpen, selectDate, goLive]);
 
   // Derive lunar details and 24-hour sky transit data
-  const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone), [currentDate, location]);
+  const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone, clock), [currentDate, location, clock]);
   const computedSkyData = useMemo(() => {
-    if (location) return getSkyData(currentDate, location.lat, location.lon, location.timeZone);
+    if (location) return getSkyData(currentDate, location.lat, location.lon, location.timeZone, clock);
     return null;
-  }, [currentDate, location]);
+  }, [currentDate, location, clock]);
 
   // What a screen reader hears when the view changes. It names the date and place,
   // which the old announcement left out, and waits for the view to settle: a drag
@@ -376,7 +383,7 @@ function App() {
         />
 
         {/* Drawer Header & Close Button */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <BarChart3 size={16} color="var(--accent-light)" />
             <h2
@@ -406,9 +413,12 @@ function App() {
           </button>
         </div>
 
+        {/* Every time and distance on this panel follows these */}
+        <DisplayPreferences preferences={preferences} setPreference={setPreference} />
+
         {/* Telemetry Cards Stack */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <LunarData lunarDetails={lunarDetails} />
+          <LunarData lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
 
           {computedSkyData && (
             <SkyPosition skyData={computedSkyData} locationName={location?.name} />
@@ -417,7 +427,7 @@ function App() {
           {hasOpenedDrawer && (
             <SceneBoundary name="Orbital diagram">
               <Suspense fallback={null}>
-                <OrbitalView lunarDetails={lunarDetails} active={isDrawerOpen} />
+                <OrbitalView lunarDetails={lunarDetails} active={isDrawerOpen} distanceUnit={distanceUnit} />
               </Suspense>
             </SceneBoundary>
           )}

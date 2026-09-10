@@ -342,15 +342,19 @@ const formatCountdown = (ms) => {
   return `in ${minutes} min`;
 };
 
+// 12- or 24-hour, as the viewer prefers. hourCycle rather than hour12: false,
+// which some engines render as "24:00" at midnight.
+const hourCycleFor = (clock) => (clock === '24h' ? 'h23' : 'h12');
+
 // Date and time of a phase event, in the observing location's timezone
-const formatPhaseStamp = (d, timeZone) => {
+const formatPhaseStamp = (d, timeZone, clock = '12h') => {
   try {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true,
+      hourCycle: hourCycleFor(clock),
       timeZone
     }).format(d);
   } catch {
@@ -359,7 +363,7 @@ const formatPhaseStamp = (d, timeZone) => {
 };
 
 // Get comprehensive lunar details
-export const getLunarDetails = (date = new Date(), lat = 0, lon = 0, timeZone = null) => {
+export const getLunarDetails = (date = new Date(), lat = 0, lon = 0, timeZone = null, clock = '12h') => {
   const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
   const moonPosition = SunCalc.getMoonPosition(validDate, lat, lon);
 
@@ -374,7 +378,7 @@ export const getLunarDetails = (date = new Date(), lat = 0, lon = 0, timeZone = 
 
   const { name, phaseKey, isExactPrimary } = classifyPhase(phase);
 
-  const nextPhases = getNextMajorPhases(validDate, timeZone);
+  const nextPhases = getNextMajorPhases(validDate, timeZone, clock);
   const zodiac = getMoonZodiac(validDate);
 
   return {
@@ -401,7 +405,7 @@ export const getLunarDetails = (date = new Date(), lat = 0, lon = 0, timeZone = 
 // Exact instants of the four upcoming primary quarter phases.
 // Solved with the same golden-section search that drives Shift+Arrow navigation, so
 // the countdown in the drawer and the keyboard jump can never name different dates.
-export const getNextMajorPhases = (date = new Date(), timeZone = null) => {
+export const getNextMajorPhases = (date = new Date(), timeZone = null, clock = '12h') => {
   const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
   const zone = timeZone || getBrowserTimeZone();
   const nowMs = validDate.getTime();
@@ -426,7 +430,7 @@ export const getNextMajorPhases = (date = new Date(), timeZone = null) => {
       msRemaining,
       daysRemaining: (msRemaining / 86400000).toFixed(1),
       countdown: formatCountdown(msRemaining),
-      formatted: formatPhaseStamp(exact, zone)
+      formatted: formatPhaseStamp(exact, zone, clock)
     };
   };
 
@@ -655,13 +659,13 @@ export const getTimeZoneLabel = (date, timeZone) => {
 };
 
 // Format an instant as a clock time in the given timezone
-export const formatTimeString = (d, timeZone) => {
+export const formatTimeString = (d, timeZone, clock = '12h') => {
   if (!d || isNaN(d.getTime())) return '--:--';
   try {
     return new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: true,
+      hourCycle: hourCycleFor(clock),
       timeZone
     }).format(d);
   } catch {
@@ -703,7 +707,7 @@ const findHorizonCrossings = (dayStartMs, lat, lon) => {
 };
 
 // 24-Hour Continuous Sky Ephemeris, anchored to the observing location's local day
-export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null) => {
+export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null, clock = '12h') => {
   const validDate = date instanceof Date && !isNaN(date.getTime()) ? date : new Date();
   const zone = timeZone || getBrowserTimeZone();
 
@@ -720,6 +724,12 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null)
   // Sample the local day in 30-minute intervals (48 points)
   const altitudePoints = [];
   let peakPoint = { altitude: -90, hour: 0, label: '12 AM', azimuth: 180, compass: 'S' };
+
+  // Axis ticks read "4 AM" on a 12-hour clock and "04:00" on a 24-hour one, where a
+  // bare "04" would look like a count rather than a time. One formatter for all 48.
+  const tickFormat = new Intl.DateTimeFormat('en-US', clock === '24h'
+    ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone }
+    : { hour: 'numeric', hourCycle: 'h12', timeZone: zone });
 
   for (let step = 0; step < 48; step++) {
     const pointDate = new Date(dayStartMs + step * 30 * 60 * 1000);
@@ -742,11 +752,7 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null)
       compass: compassDir,
       isDaylight: sunAltDeg > 0,
       isMoonUp: altDeg > 0,
-      label: new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        hour12: true,
-        timeZone: zone
-      }).format(pointDate)
+      label: tickFormat.format(pointDate)
     };
 
     altitudePoints.push(point);
@@ -769,15 +775,15 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null)
     timeZoneLabel: getTimeZoneLabel(validDate, zone),
     dayStartMs,
     currentFraction,
-    moonrise: formatTimeString(moonriseDate, zone),
-    moonset: formatTimeString(moonsetDate, zone),
+    moonrise: formatTimeString(moonriseDate, zone, clock),
+    moonset: formatTimeString(moonsetDate, zone, clock),
     moonriseDate,
     moonsetDate,
-    sunrise: formatTimeString(sunTimes.sunrise, zone),
-    sunset: formatTimeString(sunTimes.sunset, zone),
-    solarNoon: formatTimeString(sunTimes.solarNoon, zone),
-    dusk: formatTimeString(sunTimes.dusk, zone),
-    dawn: formatTimeString(sunTimes.dawn, zone),
+    sunrise: formatTimeString(sunTimes.sunrise, zone, clock),
+    sunset: formatTimeString(sunTimes.sunset, zone, clock),
+    solarNoon: formatTimeString(sunTimes.solarNoon, zone, clock),
+    dusk: formatTimeString(sunTimes.dusk, zone, clock),
+    dawn: formatTimeString(sunTimes.dawn, zone, clock),
     currentMoonAltitude: currentMoonAlt.toFixed(1),
     currentMoonAltitudeValue: currentMoonAlt,
     currentMoonAzimuth: currentMoonBearing.toFixed(1),
@@ -787,7 +793,16 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null)
     isSunUp: currentSunAlt > 0,
     altitudePoints,
     peakAltitude: peakPoint.altitude.toFixed(1),
-    peakTime: peakPoint.label,
+    // With minutes: samples are half an hour apart, and on a 24-hour clock the
+    // hour-only tick "04:00" would pass off a 04:30 peak as exact
+    peakTime: peakPoint.time
+      ? new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hourCycle: hourCycleFor(clock),
+        timeZone: zone
+      }).format(peakPoint.time)
+      : '--:--',
     peakCompass: peakPoint.compass
   };
 };

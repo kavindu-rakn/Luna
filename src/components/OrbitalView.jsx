@@ -4,6 +4,8 @@ import { useTexture, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { HelpCircle } from 'lucide-react';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { MEAN_MOON_DISTANCE } from '../utils/lunarCalc';
+import { formatDistance } from '../utils/units';
 
 const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 const EARTH_TEXTURE = `${BASE_URL}/assets/textures/earth_atmos_2048.jpg`;
@@ -124,7 +126,7 @@ const CameraRig = () => {
   return null;
 };
 
-const OrbitalView = ({ lunarDetails, active = true }) => {
+const OrbitalView = ({ lunarDetails, active = true, distanceUnit = 'km' }) => {
   const { phase, name, fraction, distanceKm } = lunarDetails;
   const [showExplanation, setShowExplanation] = useState(false);
 
@@ -238,7 +240,7 @@ const OrbitalView = ({ lunarDetails, active = true }) => {
         <div style={{ textAlign: 'right', minWidth: 0 }}>
           <div className="utility-label" style={{ fontSize: '0.7rem', margin: 0, whiteSpace: 'nowrap' }}>Distance</div>
           <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
-            {distanceKm ? distanceKm.toLocaleString() : '384,400'} <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>km</span>
+            {formatDistance(distanceKm || MEAN_MOON_DISTANCE, distanceUnit)} <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{distanceUnit}</span>
           </div>
         </div>
       </div>
