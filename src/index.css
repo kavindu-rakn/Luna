@@ -515,6 +515,130 @@ h1, h2, h3, h4 {
   color: var(--text-muted);
 }
 
+/* Keyboard shortcuts: a native modal dialog, which traps focus, closes on Esc and
+   returns focus by itself */
+.shortcuts-dialog {
+  /* The reset at the top zeroes every margin, and a modal dialog is centred by
+     auto margins, so without this it sits in the top-left corner */
+  margin: auto;
+  width: min(34rem, calc(100vw - 2rem));
+  max-height: min(42rem, calc(100dvh - 2rem));
+  overflow: auto;
+  padding: 1.5rem;
+  border: 1px solid var(--border-medium);
+  border-radius: 18px;
+  background: rgba(9, 12, 28, 0.97);
+  color: var(--text-primary);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(99, 102, 241, 0.15);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.shortcuts-dialog::backdrop {
+  background: rgba(3, 5, 12, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.shortcuts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+
+.shortcuts-header h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.shortcuts-group + .shortcuts-group {
+  margin-top: 1.2rem;
+}
+
+.shortcuts-group h3 {
+  margin: 0 0 0.55rem;
+}
+
+.shortcuts-list {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.shortcuts-row {
+  display: grid;
+  grid-template-columns: 11.5rem 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+
+.shortcuts-row dt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.shortcuts-row dd {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.shortcuts-dialog kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  padding: 0 0.45rem;
+  border: 1px solid var(--border-medium);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--bg-surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-primary);
+}
+
+/* The code font has left and right arrows but not up and down, so the four came
+   out in two sizes. One system font draws them all alike. */
+.shortcuts-dialog kbd.is-arrow {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 0.85rem;
+}
+
+.shortcuts-sep {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.shortcuts-note {
+  margin: 1.3rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* On a narrow screen the keys sit above what they do */
+@media (max-width: 480px) {
+  .shortcuts-row {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+}
+
+/* No keyboard, no use for the button. ? still works wherever there is one. */
+@media (any-hover: none) {
+  .shortcuts-trigger {
+    display: none;
+  }
+}
+
 /* Bottom Bar / Timeline */
 .bottom-bar {
   background: var(--bg-surface-1);

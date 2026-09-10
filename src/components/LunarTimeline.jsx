@@ -3,7 +3,8 @@ import {
   getSynodicCycle,
   getCycleFraction,
   getDateAtCycleFraction,
-  getPhaseSummary
+  getPhaseSummary,
+  getAdjacentQuarterPhase
 } from '../utils/lunarCalc';
 import MoonIcon from './MoonIcon';
 
@@ -58,13 +59,15 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
 
   const handlePointerLeave = useCallback(() => setHoverFraction(null), []);
 
-  // Keyboard: a day at a time, a quarter-cycle with Shift, and the cycle's ends
+  // Keyboard: a day at a time, the cycle's ends, and with Shift the exact next or
+  // previous principal phase. That is what Shift+arrow does everywhere else; here it
+  // used to step a quarter of the cycle, which lands near a phase but not on it.
   const handleKeyDown = (e) => {
     const DAY = 86400000;
     let next;
 
-    if (e.key === 'ArrowLeft') next = new Date(currentDate.getTime() - (e.shiftKey ? cycle.durationMs / 4 : DAY));
-    else if (e.key === 'ArrowRight') next = new Date(currentDate.getTime() + (e.shiftKey ? cycle.durationMs / 4 : DAY));
+    if (e.key === 'ArrowLeft') next = e.shiftKey ? getAdjacentQuarterPhase(currentDate, -1) : new Date(currentDate.getTime() - DAY);
+    else if (e.key === 'ArrowRight') next = e.shiftKey ? getAdjacentQuarterPhase(currentDate, 1) : new Date(currentDate.getTime() + DAY);
     else if (e.key === 'Home') next = new Date(cycle.startMs);
     else if (e.key === 'End') next = new Date(cycle.startMs + cycle.durationMs - 1000);
     else return;
