@@ -28,7 +28,8 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self' 'unsafe-inline'",
   // drei/troika embeds a fallback font as a data: URI inside the bundle
   "font-src 'self' data:",
-  // data: covers the inline SVG noise texture; blob: covers canvas-derived textures
+  // data: covers the SVG chevron in the calendar's month and year pickers; blob:
+  // covers canvas-derived textures
   "img-src 'self' data: blob:",
   // The only third party we talk to is the reverse geocoder
   "connect-src 'self' https://nominatim.openstreetmap.org",
