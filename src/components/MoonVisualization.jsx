@@ -92,6 +92,15 @@ function processSeamlessMoonTexture(rawTexture) {
   }
 }
 
+// Earthshine: sunlight reflected off Earth onto the Moon's night side, the faint
+// "ashen glow" visible beside a young crescent. Seen from the Moon, Earth is full
+// when the Moon is new, so the glow is strongest exactly when the Moon would
+// otherwise be a featureless black disc, and fades to nothing by Full Moon. Real
+// earthshine is far fainter; this is brightened enough to show the surface, and kept
+// dim and cool enough to still read unmistakably as the unlit side.
+const EARTHSHINE_MAX = 0.55;
+const EARTHSHINE_COLOR = '#9fb0e0';
+
 const CAMERA_Z = 5.8;
 const CAMERA_FOV = 40; // vertical, in degrees
 const MOON_RADIUS = 1.85;
@@ -128,6 +137,13 @@ const MoonMesh = ({ phase, onReady }) => {
   useEffect(() => {
     onReady?.();
   }, [onReady]);
+
+  // Earth's lit fraction as seen from the Moon is the Moon's unlit fraction as seen
+  // from Earth: 1 at New Moon, 0 at Full
+  const earthshine = useMemo(() => {
+    const moonLit = (1 - Math.cos(phase * Math.PI * 2)) / 2;
+    return EARTHSHINE_MAX * (1 - moonLit);
+  }, [phase]);
 
   // Directional sunlight illuminating from Earth observer's perspective
   const sunPosition = useMemo(() => {
@@ -166,8 +182,13 @@ const MoonMesh = ({ phase, onReady }) => {
 
   return (
     <group scale={scale}>
-      {/* Subtle Earthshine illumination */}
+      {/* A trace of ambient light so no part of the sphere is ever pure black */}
       <ambientLight intensity={0.09} color="#7880ab" />
+
+      {/* Earthshine arrives from Earth, which is where the viewer stands, so it
+          lights the face turned towards the camera and falls off towards the limb,
+          keeping the Moon's roundness at New Moon */}
+      <directionalLight position={[0, 0, 10]} intensity={earthshine} color={EARTHSHINE_COLOR} />
 
       {/* Direct Sunlight */}
       <directionalLight
