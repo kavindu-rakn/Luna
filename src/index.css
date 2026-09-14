@@ -698,6 +698,28 @@ h1, h2, h3, h4 {
   width: 100%;
 }
 
+/* The Moon and its name, between the header and the timeline */
+.main-canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2.5rem;
+}
+
+.moon-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* The flat Moon shown while the 3D one loads */
+.moon-fallback-disc {
+  width: min(38vh, 320px);
+  aspect-ratio: 1;
+}
+
 /* Moon Viz Wrapper */
 .moon-viz-wrapper {
   width: 100%;
@@ -708,14 +730,6 @@ h1, h2, h3, h4 {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-@media (max-width: 768px) {
-  .moon-viz-wrapper {
-    height: 38vh;
-    min-height: 240px;
-    max-height: 360px;
-  }
 }
 
 /* Hero Phase Name */
@@ -735,8 +749,9 @@ h1, h2, h3, h4 {
 
 @media (max-width: 768px) {
   .hero-phase-name {
-    margin-top: 0.25rem;
-    margin-bottom: 1.5rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    flex-shrink: 0;
   }
   .hero-phase-name span {
     font-size: clamp(1.75rem, 6vw, 2.4rem);
@@ -800,8 +815,31 @@ h1, h2, h3, h4 {
     display: inline-block;
   }
 
+  /* On a phone the Moon used to sit in a canvas 38% of the screen tall, at a fixed
+     reduced scale, with the spare height left over as gaps above and below it. Now
+     the canvas starts just under the date controls and asks for a square as wide as
+     the screen, shrinking when the screen is too short. Whatever height is left is
+     shared evenly above the Moon, between it and its name, and above the timeline. */
   .main-canvas-area {
-    margin-top: 5.5rem !important;
+    margin-top: 9.5rem;
+    min-height: 0;
+    justify-content: space-evenly;
+  }
+
+  .moon-container {
+    flex: 0 1 min(100vw, 560px);
+    min-height: 0;
+  }
+
+  .moon-viz-wrapper {
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+  }
+
+  .moon-fallback-disc {
+    width: auto;
+    height: min(84%, 80vw);
   }
 }
 
