@@ -661,6 +661,34 @@ h1, h2, h3, h4 {
   }
 }
 
+/* Location picker. On a wide screen the panel hangs under its button, right edges
+   aligned. On a phone the button sits mid-header, and a panel wider than the space to
+   its left spilled off the screen, so there it centres across the full width instead. */
+.location-picker {
+  position: relative;
+}
+
+.location-panel {
+  position: absolute;
+  top: 2.75rem;
+  right: 0;
+  width: min(21rem, calc(100vw - 2rem));
+}
+
+@media (max-width: 768px) {
+  /* Let the panel position against the full-width header rather than the button.
+     Centred with auto margins, not a transform, which the fade-in animation owns. */
+  .location-picker {
+    position: static;
+  }
+
+  .location-panel {
+    left: 0;
+    right: 0;
+    margin-inline: auto;
+  }
+}
+
 /* Bottom Bar / Timeline */
 .bottom-bar {
   background: var(--bg-surface-1);
