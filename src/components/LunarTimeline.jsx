@@ -105,7 +105,9 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
         <h2 className="utility-label" style={{ color: 'var(--text-muted)' }}>
           Lunar Cycle &middot; {cycle.durationDays.toFixed(2)} days
         </h2>
-        <span className="utility-label">
+        {/* Right-aligned, so when a narrow screen wraps it onto two lines it still
+            lines up with the right end of the timeline below */}
+        <span className="utility-label" style={{ textAlign: 'right' }}>
           Drag / Scrub Timeline
         </span>
       </div>

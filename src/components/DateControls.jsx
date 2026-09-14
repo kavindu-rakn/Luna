@@ -448,8 +448,12 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
         </div>
       )}
 
-      {/* Control Navigation Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+      {/* Control Navigation Bar. What the eye compares is the drawn chevrons, not the
+          38px buttons around them: with a uniform gap, the pairs of chevrons sat 35px
+          apart but only 21px from the Today pill. The icon buttons now touch, so their
+          touch targets never overlap, and the pill's margin makes up the difference:
+          every glyph-to-glyph gap is the same 31px. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
         {/* Previous Major Phase (New, 1st Q, Full, Last Q) */}
         <button
           className="ghost-control-btn"
@@ -481,6 +485,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           aria-keyshortcuts="T"
           style={{
             padding: '0.22rem 0.75rem',
+            margin: '0 0.9rem',
             minHeight: '26px',
             borderRadius: '13px',
             fontSize: '0.68rem',
