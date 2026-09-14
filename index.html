@@ -29,21 +29,26 @@
     <meta property="og:url" content="__SITE_URL__" />
     <meta property="og:site_name" content="Luna" />
     <!-- Open Graph requires an absolute URL; a relative one renders no card at all.
-         __SITE_URL__ is the address this build is published at (vite.config.js). -->
-    <meta property="og:image" content="__SITE_URL__og-card.png" />
+         __SITE_URL__ is the address this build is published at (vite.config.js).
+         Bump ?v= whenever the image changes: WhatsApp, Slack and others cache preview
+         images by URL for a long time and would keep showing the old one. -->
+    <meta property="og:image" content="__SITE_URL__og-card.png?v=2" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Luna, an interactive lunar ephemeris explorer" />
+    <meta property="og:image:alt" content="The Luna crescent moon glowing against a starry sky" />
     
     <!-- Twitter Cards -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Luna | Astronomical Lunar Ephemeris Explorer" />
     <meta name="twitter:description" content="An interactive 3D lunar cycle explorer and astronomical ephemeris tracker." />
-    <meta name="twitter:image" content="__SITE_URL__og-card.png" />
-    <meta name="twitter:image:alt" content="Luna, an interactive lunar ephemeris explorer" />
+    <meta name="twitter:image" content="__SITE_URL__og-card.png?v=2" />
+    <meta name="twitter:image:alt" content="The Luna crescent moon glowing against a starry sky" />
     
-    <title>Luna | Astronomical Lunar Ephemeris Explorer</title>
+    <!-- Just the name: tabs, bookmarks and home-screen labels are narrow, and a long
+         title only ever showed as "Luna | Astronomic...". Share cards keep the
+         descriptive og:title above, where there is room for it. -->
+    <title>Luna</title>
   </head>
   <body>
     <div id="root"></div>

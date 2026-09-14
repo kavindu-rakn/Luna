@@ -19,7 +19,7 @@ const OrbitalView = lazy(() => import('./components/OrbitalView'));
 // Moon drawn at the right phase, so the view is never simply empty.
 const MoonFallback = ({ phase }) => (
   <div className="moon-viz-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    <div style={{ width: 'min(38vh, 320px)', aspectRatio: '1' }}>
+    <div className="moon-fallback-disc">
       <MoonIcon phase={phase} size={200} style={{ width: '100%', height: '100%' }} />
     </div>
   </div>
@@ -187,6 +187,17 @@ function App() {
       // grid both hold focus while their popups are open, and are exactly where
       // someone reaches for Escape; behind the exemption below it did nothing.
       if (e.key === 'Escape') {
+        // An open option list (the calendar's month and year pickers) closes itself
+        // on Escape, and that should be all Escape does. Without this, closing the
+        // year list also slammed the whole calendar shut.
+        const select = e.target instanceof Element ? e.target.closest('select') : null;
+        if (select) {
+          try {
+            if (select.matches(':open')) return;
+          } catch {
+            // Browsers without :open show a native list, whose keys never reach the page
+          }
+        }
         // Dismiss the innermost surface first, then the drawer behind it.
         if (isCalendarOpen) setIsCalendarOpen(false);
         else if (isLocationOpen) setIsLocationOpen(false);
@@ -391,7 +402,7 @@ function App() {
         </header>
 
         {/* Center Canvas Area: 3D Moon & Hero Phase Name */}
-        <div className="main-canvas-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '2.5rem' }}>
+        <div className="main-canvas-area">
           {/* One accessible name for whichever Moon is showing, 3D or the 2D stand-in.
               Dragging to rotate is exploration, not information: the phase and
               illumination it shows are all available as text. */}
@@ -399,7 +410,6 @@ function App() {
             className="moon-container"
             role="img"
             aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated`}
-            style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
           >
             <SceneBoundary name="Moon scene" onError={markFailed} fallback={<MoonFallback phase={lunarDetails.phase} />}>
               <Suspense fallback={<MoonFallback phase={lunarDetails.phase} />}>

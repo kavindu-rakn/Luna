@@ -152,7 +152,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
   };
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="location-picker">
       <button
         ref={triggerRef}
         type="button"
@@ -187,11 +187,8 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
           ref={panelRef}
           role="dialog"
           aria-label="Choose an observing location"
+          className="location-panel"
           style={{
-            position: 'absolute',
-            top: '2.75rem',
-            right: 0,
-            width: 'min(21rem, calc(100vw - 2rem))',
             background: 'rgba(9, 12, 28, 0.96)',
             backdropFilter: 'blur(32px)',
             WebkitBackdropFilter: 'blur(32px)',

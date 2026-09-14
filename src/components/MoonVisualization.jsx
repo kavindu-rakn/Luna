@@ -1,5 +1,5 @@
 import React, { useRef, useMemo, useState, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -92,7 +92,33 @@ function processSeamlessMoonTexture(rawTexture) {
   }
 }
 
-const MoonMesh = ({ phase, scale = 1, onReady }) => {
+// Earthshine: sunlight reflected off Earth onto the Moon's night side, the faint
+// "ashen glow" visible beside a young crescent. Seen from the Moon, Earth is full
+// when the Moon is new, so the glow is strongest exactly when the Moon would
+// otherwise be a featureless black disc, and fades to nothing by Full Moon. Real
+// earthshine is far fainter; this is brightened enough to show the surface, and kept
+// dim and cool enough to still read unmistakably as the unlit side.
+const EARTHSHINE_MAX = 0.55;
+const EARTHSHINE_COLOR = '#9fb0e0';
+
+const CAMERA_Z = 5.8;
+const CAMERA_FOV = 40; // vertical, in degrees
+const MOON_RADIUS = 1.85;
+
+// Size the Moon to its canvas rather than by a fixed factor. On a wide canvas it fills
+// 87.6% of the height, exactly the size it has always had on desktop. On a narrow
+// portrait phone the width is what runs out, so there it fills 80% of the width. The
+// old fixed 0.8 scale left a small Moon adrift in empty space on phones.
+const useMoonScale = () => {
+  const { size } = useThree();
+  const visibleHeight = 2 * CAMERA_Z * Math.tan((CAMERA_FOV * Math.PI) / 360);
+  const visibleWidth = visibleHeight * (size.width / Math.max(1, size.height));
+  const diameter = Math.min(0.876 * visibleHeight, 0.8 * visibleWidth);
+  return diameter / (2 * MOON_RADIUS);
+};
+
+const MoonMesh = ({ phase, onReady }) => {
+  const scale = useMoonScale();
   const moonRef = useRef();
   const isDragging = useRef(false);
   const previousPointer = useRef({ x: 0, y: 0 });
@@ -111,6 +137,13 @@ const MoonMesh = ({ phase, scale = 1, onReady }) => {
   useEffect(() => {
     onReady?.();
   }, [onReady]);
+
+  // Earth's lit fraction as seen from the Moon is the Moon's unlit fraction as seen
+  // from Earth: 1 at New Moon, 0 at Full
+  const earthshine = useMemo(() => {
+    const moonLit = (1 - Math.cos(phase * Math.PI * 2)) / 2;
+    return EARTHSHINE_MAX * (1 - moonLit);
+  }, [phase]);
 
   // Directional sunlight illuminating from Earth observer's perspective
   const sunPosition = useMemo(() => {
@@ -149,8 +182,13 @@ const MoonMesh = ({ phase, scale = 1, onReady }) => {
 
   return (
     <group scale={scale}>
-      {/* Subtle Earthshine illumination */}
+      {/* A trace of ambient light so no part of the sphere is ever pure black */}
       <ambientLight intensity={0.09} color="#7880ab" />
+
+      {/* Earthshine arrives from Earth, which is where the viewer stands, so it
+          lights the face turned towards the camera and falls off towards the limb,
+          keeping the Moon's roundness at New Moon */}
+      <directionalLight position={[0, 0, 10]} intensity={earthshine} color={EARTHSHINE_COLOR} />
 
       {/* Direct Sunlight */}
       <directionalLight
@@ -161,7 +199,7 @@ const MoonMesh = ({ phase, scale = 1, onReady }) => {
 
       {/* 3D Moon Sphere */}
       <group ref={moonRef}>
-        <Sphere args={[1.85, 128, 128]}>
+        <Sphere args={[MOON_RADIUS, 128, 128]}>
           {/* No bumpMap: the only texture we ship is an albedo map, and feeding
               brightness in as height inverts the terrain — bright crater rays such
               as Tycho's rise as ridges while the dark maria sink into pits. Relief
@@ -209,11 +247,14 @@ const MoonMesh = ({ phase, scale = 1, onReady }) => {
   );
 };
 
-const FallbackSphere = ({ scale = 1 }) => (
-  <Sphere args={[1.85 * scale, 32, 32]}>
-    <meshStandardMaterial color="#2d3047" roughness={0.9} />
-  </Sphere>
-);
+const FallbackSphere = () => {
+  const scale = useMoonScale();
+  return (
+    <Sphere args={[MOON_RADIUS * scale, 32, 32]}>
+      <meshStandardMaterial color="#2d3047" roughness={0.9} />
+    </Sphere>
+  );
+};
 
 const MoonVisualization = ({ lunarDetails, onScene, onReady }) => {
   const { phase, fraction } = lunarDetails;
@@ -236,7 +277,6 @@ const MoonVisualization = ({ lunarDetails, onScene, onReady }) => {
     }
   }, []);
 
-  const moonScale = isMobile ? 0.8 : 1.0;
   const glowSize = isMobile ? '300px' : '440px';
 
   return (
@@ -258,14 +298,13 @@ const MoonVisualization = ({ lunarDetails, onScene, onReady }) => {
       {/* Three.js R3F Canvas Container */}
       <div style={{ width: '100%', height: '100%', zIndex: 1 }}>
         <Canvas
-          camera={{ position: [0, 0, 5.8], fov: 40 }}
+          camera={{ position: [0, 0, CAMERA_Z], fov: CAMERA_FOV }}
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         >
-          <React.Suspense fallback={<FallbackSphere scale={moonScale} />}>
+          <React.Suspense fallback={<FallbackSphere />}>
             <MoonMesh
               phase={phase}
-              scale={moonScale}
               onReady={onReady}
             />
           </React.Suspense>
