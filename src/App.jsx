@@ -187,6 +187,17 @@ function App() {
       // grid both hold focus while their popups are open, and are exactly where
       // someone reaches for Escape; behind the exemption below it did nothing.
       if (e.key === 'Escape') {
+        // An open option list (the calendar's month and year pickers) closes itself
+        // on Escape, and that should be all Escape does. Without this, closing the
+        // year list also slammed the whole calendar shut.
+        const select = e.target instanceof Element ? e.target.closest('select') : null;
+        if (select) {
+          try {
+            if (select.matches(':open')) return;
+          } catch {
+            // Browsers without :open show a native list, whose keys never reach the page
+          }
+        }
         // Dismiss the innermost surface first, then the drawer behind it.
         if (isCalendarOpen) setIsCalendarOpen(false);
         else if (isLocationOpen) setIsLocationOpen(false);

@@ -415,6 +415,92 @@ h1, h2, h3, h4 {
   font-size: 0.9rem;
 }
 
+/* On a desktop browser the native option list is drawn by the operating system, with
+   a stark system scrollbar that no page style reaches. Where the browser supports it,
+   opt into the stylable select so the list matches the calendar. Only for a mouse
+   and keyboard: on a phone the native picker (the iOS wheel) is the better control,
+   and browsers without support simply keep their native list. */
+@supports (appearance: base-select) {
+  @media (hover: hover) and (pointer: fine) {
+    .calendar-select,
+    .calendar-select::picker(select) {
+      appearance: base-select;
+    }
+
+    .calendar-select {
+      /* A stylable select sizes itself to the current choice rather than the longest,
+         so "May" and "September" would shift the header. Fix each one's width. */
+      box-sizing: border-box;
+      min-block-size: 0;
+      line-height: normal;
+    }
+
+    .calendar-select-month {
+      inline-size: 6.2rem;
+    }
+
+    .calendar-select-year {
+      inline-size: 3.6rem;
+    }
+
+    /* The chevron is already drawn by the background image */
+    .calendar-select::picker-icon {
+      display: none;
+    }
+
+    .calendar-select::picker(select) {
+      margin-block-start: 6px;
+      padding: 4px;
+      max-block-size: min(17rem, 60vh);
+      overflow-y: auto;
+      border: 1px solid var(--border-medium);
+      border-radius: 12px;
+      background: rgba(9, 12, 28, 0.98);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7), 0 0 24px rgba(99, 102, 241, 0.12);
+      color-scheme: dark;
+    }
+
+    /* Its scrollbar is styled in DateControls.jsx; see PICKER_SCROLLBAR_CSS there */
+
+    /* Twelve months fit without scrolling; the two centuries of years scroll */
+    .calendar-select-month::picker(select) {
+      max-block-size: min(26rem, 70vh);
+    }
+
+    .calendar-select option {
+      min-inline-size: 5.5rem;
+      padding: 0.3rem 0.65rem;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      font-variant-numeric: tabular-nums;
+      cursor: pointer;
+    }
+
+    .calendar-select-month option {
+      font-family: var(--font-sans);
+    }
+
+    .calendar-select option::checkmark {
+      display: none;
+    }
+
+    .calendar-select option:hover,
+    .calendar-select option:focus-visible {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    .calendar-select option:checked {
+      background: var(--accent-strong);
+      color: #ffffff;
+    }
+  }
+}
+
 /* The month's exact phases, under the calendar grid */
 .calendar-phases {
   list-style: none;

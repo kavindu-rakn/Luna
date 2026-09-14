@@ -13,6 +13,23 @@ import MoonIcon from './MoonIcon';
 // Month arithmetic in UTC: pure calendar maths, untouched by any clock change
 const utcDate = (year, month, day) => new Date(Date.UTC(year, month, day));
 
+// The scrollbar inside the styled month and year lists (see .calendar-select in
+// index.css): a slim rounded thumb with no track and no arrow buttons. The standard
+// scrollbar-width: thin still draws arrows on Windows, and setting either standard
+// property makes Chrome ignore these rules, so they are left unset. These live here
+// rather than in index.css because the CSS minifier cannot parse a pseudo-element
+// chained onto ::picker(select), and fails the build. Only Chromium supports
+// base-select, and it reads them.
+const PICKER_SCROLLBAR_CSS = `
+@supports (appearance: base-select) {
+  @media (hover: hover) and (pointer: fine) {
+    .calendar-select::picker(select)::-webkit-scrollbar { width: 6px; }
+    .calendar-select::picker(select)::-webkit-scrollbar-button { display: none; }
+    .calendar-select::picker(select)::-webkit-scrollbar-track { background: transparent; }
+    .calendar-select::picker(select)::-webkit-scrollbar-thumb { border-radius: 3px; background: rgba(129, 140, 248, 0.5); }
+  }
+}`;
+
 // The year picker spans the two centuries around today, where the ephemeris is at
 // its best. A year outside them, arriving in a shared link, is added so it can show.
 const FIRST_YEAR = 1900;
@@ -244,6 +261,9 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
             animation: 'fadeIn 0.2s ease-out'
           }}
         >
+          {/* React hoists this into <head> once, however often the calendar opens */}
+          <style href="luna-calendar-picker-scrollbar" precedence="default">{PICKER_SCROLLBAR_CSS}</style>
+
           {/* Header: Month/Year Navigator & Close Button */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
@@ -259,7 +279,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
               {/* Native selects: the keyboard, screen readers and type-to-jump all
                   work as anywhere else, so typing 1969 on the year goes straight there */}
               <select
-                className="calendar-select"
+                className="calendar-select calendar-select-month"
                 aria-label="Month"
                 value={month}
                 onChange={(e) => showMonth(year, Number(e.target.value))}
@@ -269,7 +289,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
                 ))}
               </select>
               <select
-                className="calendar-select"
+                className="calendar-select calendar-select-year"
                 aria-label="Year"
                 value={year}
                 onChange={(e) => showMonth(Number(e.target.value), month)}
