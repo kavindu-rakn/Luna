@@ -71,7 +71,8 @@ export default defineConfig({
       // injected inline script would also be refused by the CSP.
       injectRegister: false,
       manifest: {
-        name: 'Luna | Lunar Ephemeris Explorer',
+        // The installed app's name, shown under its icon and in the Start menu
+        name: 'Luna',
         short_name: 'Luna',
         description: 'Moon phases, rise and set times, and the lunar cycle for any place on Earth. Works offline.',
         theme_color: '#04060d',
