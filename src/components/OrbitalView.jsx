@@ -2,6 +2,7 @@ import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useTexture, Sphere, Line } from '@react-three/drei';
 import * as THREE from 'three';
+import '../utils/threeConsole';
 import { HelpCircle } from 'lucide-react';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { MEAN_MOON_DISTANCE } from '../utils/lunarCalc';
