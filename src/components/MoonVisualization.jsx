@@ -2,6 +2,7 @@ import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
+import '../utils/threeConsole';
 
 const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 const MOON_TEXTURE_PATH = `${BASE_URL}/assets/textures/moon_1024.jpg`;
