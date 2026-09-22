@@ -42,14 +42,63 @@ const Starfield = () => {
       });
     }
 
-    let mouseX = width / 2;
-    let mouseY = height / 2;
-    let targetMouseX = width / 2;
-    let targetMouseY = height / 2;
+    // Parallax shift in pixels, eased toward a target set by the mouse on a desktop
+    // and by how the device is tilted on a phone
+    let offsetX = 0;
+    let offsetY = 0;
+    let targetOffsetX = 0;
+    let targetOffsetY = 0;
 
-    const handleMouseMove = (e) => {
-      targetMouseX = e.clientX;
-      targetMouseY = e.clientY;
+    // Only a real mouse steers. A tap fires compatibility mouse events at the finger,
+    // which used to throw the sky toward wherever the screen was touched.
+    const handlePointerMove = (e) => {
+      if (e.pointerType !== 'mouse') return;
+      targetOffsetX = (e.clientX - width / 2) * 0.025;
+      targetOffsetY = (e.clientY - height / 2) * 0.025;
+    };
+
+    const TILT_RANGE = 25; // degrees of tilt for the full shift
+    const TILT_SHIFT = 22; // pixels at full tilt, before each star's depth
+    let rest = null; // the way the phone is being held, which the shift is measured from
+
+    const handleOrientation = (e) => {
+      if (e.beta == null || e.gamma == null) return;
+
+      // Tilt along the screen's own axes, whichever way up it is turned
+      const angle = window.screen.orientation?.angle ?? window.orientation ?? 0;
+      let x = e.gamma;
+      let y = e.beta;
+      if (angle === 90) { x = e.beta; y = -e.gamma; }
+      else if (angle === 270 || angle === -90) { x = -e.beta; y = e.gamma; }
+      else if (angle === 180) { x = -e.gamma; y = -e.beta; }
+
+      // The rest pose follows slowly, so a phone settled at a new angle recentres
+      // over a few seconds instead of leaving the sky pinned to one side
+      if (!rest) rest = { x, y };
+      rest.x += (x - rest.x) * 0.005;
+      rest.y += (y - rest.y) * 0.005;
+
+      const unit = (v) => Math.max(-1, Math.min(1, v / TILT_RANGE));
+      targetOffsetX = unit(x - rest.x) * TILT_SHIFT;
+      targetOffsetY = unit(y - rest.y) * TILT_SHIFT;
+    };
+
+    // iOS hands out motion only after the visitor allows it, and only when asked from
+    // a tap. Android and the rest send it without asking.
+    let disposed = false;
+    const isTouch = window.matchMedia?.('(pointer: coarse)').matches;
+    const needsPermission = typeof DeviceOrientationEvent !== 'undefined'
+      && typeof DeviceOrientationEvent.requestPermission === 'function';
+
+    const askForTilt = () => {
+      window.removeEventListener('touchend', askForTilt);
+      DeviceOrientationEvent.requestPermission()
+        .then((state) => {
+          if (state === 'granted' && !disposed) {
+            window.addEventListener('deviceorientation', handleOrientation);
+          }
+        })
+        .catch(() => {});
     };
 
     let isVisible = true;
@@ -65,11 +114,8 @@ const Starfield = () => {
       ctx.clearRect(0, 0, width, height);
 
       // Smooth parallax easing
-      mouseX += (targetMouseX - mouseX) * 0.035;
-      mouseY += (targetMouseY - mouseY) * 0.035;
-
-      const offsetX = (mouseX - width / 2) * 0.025;
-      const offsetY = (mouseY - height / 2) * 0.025;
+      offsetX += (targetOffsetX - offsetX) * 0.035;
+      offsetY += (targetOffsetY - offsetY) * 0.035;
 
       const margin = 40; // Pixel margin overshoot for smooth wrapping without edge popping
 
@@ -119,15 +165,22 @@ const Starfield = () => {
     if (prefersReducedMotion) {
       drawStatic();
     } else {
-      window.addEventListener('mousemove', handleMouseMove, { passive: true });
+      window.addEventListener('pointermove', handlePointerMove, { passive: true });
+      if (isTouch) {
+        if (needsPermission) window.addEventListener('touchend', askForTilt);
+        else window.addEventListener('deviceorientation', handleOrientation);
+      }
       document.addEventListener('visibilitychange', handleVisibilityChange);
       render();
     }
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('touchend', askForTilt);
+      window.removeEventListener('deviceorientation', handleOrientation);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [prefersReducedMotion]);
