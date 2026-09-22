@@ -238,23 +238,16 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
         <div
           ref={calendarModalRef}
           className="calendar-panel"
-          style={{
-            position: 'absolute',
-            top: '3rem',
-            zIndex: 100,
-            animation: 'fadeIn 0.2s ease-out'
-          }}
         >
           {/* React hoists this into <head> once, however often the calendar opens */}
           <style href="luna-calendar-picker-scrollbar" precedence="default">{PICKER_SCROLLBAR_CSS}</style>
 
           {/* Header: Month/Year Navigator & Close Button */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
+          <div className="calendar-header">
+            <div className="calendar-month-navigation">
               <button
                 onClick={handlePrevMonth}
                 className="ghost-control-btn"
-                style={{ minWidth: '28px', minHeight: '28px', padding: 0 }}
                 title="Previous Month"
                 aria-label="Previous Month"
               >
@@ -285,7 +278,6 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
               <button
                 onClick={handleNextMonth}
                 className="ghost-control-btn"
-                style={{ minWidth: '28px', minHeight: '28px', padding: 0 }}
                 title="Next Month"
                 aria-label="Next Month"
               >
@@ -295,8 +287,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
 
             <button
               onClick={() => setIsCalendarOpen(false)}
-              className="ghost-control-btn"
-              style={{ minWidth: '28px', minHeight: '28px', padding: 0 }}
+              className="ghost-control-btn calendar-close"
               aria-label="Close calendar"
             >
               <X size={15} />
@@ -304,9 +295,9 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           </div>
 
           {/* Weekday Names */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', marginBottom: '0.5rem' }}>
+          <div className="calendar-weekdays" aria-hidden="true">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-              <span key={d} style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+              <span key={d}>
                 {d}
               </span>
             ))}
@@ -316,23 +307,16 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           <div
             role="group"
             aria-label={`${monthNames[month]} ${year}`}
+            className="calendar-grid"
             data-date-grid
             onKeyDown={handleGridKeyDown}
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' }}
           >
             {/* Leading days from previous month */}
             {Array.from({ length: firstDayOfMonth }).map((_, i) => (
               <div
                 key={`prev-${i}`}
-                style={{
-                  height: '42px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.78rem',
-                  color: 'rgba(255, 255, 255, 0.15)',
-                  fontFamily: 'var(--font-mono)'
-                }}
+                className="calendar-day-outside"
+                aria-hidden="true"
               >
                 {daysInPrevMonth - firstDayOfMonth + i + 1}
               </div>
@@ -344,57 +328,30 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
               const selected = isSelectedDay(day);
               const today = isToday(day);
               const info = monthPhases?.days[i];
+              const dayClassName = [
+                'calendar-day',
+                selected && 'is-selected',
+                today && 'is-today',
+                info?.event && 'has-phase'
+              ].filter(Boolean).join(' ');
 
               return (
                 <button
                   key={`day-${day}`}
+                  type="button"
                   ref={(el) => { dayRefs.current[day] = el; }}
+                  className={dayClassName}
                   tabIndex={day === activeDay ? 0 : -1}
                   aria-label={dayLabel(day)}
                   aria-current={today ? 'date' : undefined}
                   onFocus={() => setFocusedDay(day)}
                   onClick={() => handleSelectDay(day)}
-                  style={{
-                    height: '42px',
-                    width: '100%',
-                    padding: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '4px',
-                    fontSize: '0.8rem',
-                    lineHeight: 1,
-                    fontFamily: 'var(--font-mono)',
-                    fontWeight: selected ? 700 : today ? 600 : 400,
-                    color: selected ? '#ffffff' : today ? 'var(--accent-light)' : 'var(--text-primary)',
-                    background: selected ? 'var(--accent-strong)' : 'transparent',
-                    border: today && !selected ? '1px solid var(--accent-light)' : '1px solid transparent',
-                    borderRadius: '10px',
-                    cursor: 'pointer',
-                    boxShadow: selected ? '0 0 12px var(--accent-glow)' : 'none',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!selected) {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!selected) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
                 >
                   <span>{day}</span>
                   {/* The day's Moon at local noon. A ring marks the day a principal
                       phase falls on, matching the list of exact phases below. */}
                   <span
-                    style={{
-                      display: 'block',
-                      borderRadius: '50%',
-                      boxShadow: info?.event ? `0 0 0 1.5px ${selected ? '#ffffff' : 'var(--accent-light)'}` : 'none'
-                    }}
+                    className={`calendar-day-moon${info?.event ? ' has-phase' : ''}`}
                   >
                     <MoonIcon phase={info?.phase ?? 0} size={12} />
                   </span>
@@ -407,15 +364,8 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
             {Array.from({ length: Math.max(0, 42 - firstDayOfMonth - daysInMonth) }).map((_, i) => (
               <div
                 key={`next-${i}`}
-                style={{
-                  height: '42px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.78rem',
-                  color: 'rgba(255, 255, 255, 0.15)',
-                  fontFamily: 'var(--font-mono)'
-                }}
+                className="calendar-day-outside"
+                aria-hidden="true"
               >
                 {i + 1}
               </div>
@@ -424,8 +374,8 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
 
           {/* The month's principal phases, each one a jump to its exact instant */}
           {monthPhases && monthPhases.events.length > 0 && (
-            <div style={{ marginTop: '0.85rem', paddingTop: '0.7rem', borderTop: '1px solid var(--border-subtle)' }}>
-              <div id="calendar-phases-label" className="utility-label" style={{ fontSize: '0.68rem', margin: '0 0 0.35rem 0.45rem' }}>
+            <div className="calendar-events">
+              <div id="calendar-phases-label" className="utility-label calendar-events-label">
                 Exact phases
               </div>
               <ul className="calendar-phases" aria-labelledby="calendar-phases-label">
