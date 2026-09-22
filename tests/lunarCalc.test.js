@@ -41,8 +41,8 @@ describe('the machine timezone must not leak into results', () => {
   it('renders Greenwich sunrise and sunset on the location clock, not the viewer clock', () => {
     const sky = getSkyData(new Date('2026-09-19T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
     // Before the fix these read 11:12 AM and 11:38 PM on an Asia/Colombo machine
-    expect(sky.sunrise).toBe('06:42 AM');
-    expect(sky.sunset).toBe('07:08 PM');
+    expect(sky.sunrise).toBe('06:41 AM');
+    expect(sky.sunset).toBe('07:05 PM');
   });
 
   it('anchors the charted day to local midnight at the location', () => {
@@ -98,9 +98,9 @@ describe('the viewer chooses the clock', () => {
   const ticks = (data) => data.altitudePoints.filter((_, i) => i % 8 === 0).map((p) => p.label);
 
   it('shows ephemeris times on a 24-hour clock when asked', () => {
-    expect(sky('24h').sunrise).toBe('06:42');
-    expect(sky('24h').sunset).toBe('19:08');
-    expect(sky('24h').moonrise).toBe('16:07');
+    expect(sky('24h').sunrise).toBe('06:41');
+    expect(sky('24h').sunset).toBe('19:05');
+    expect(sky('24h').moonrise).toBe('16:13');
   });
 
   it('labels the chart axis to match', () => {
@@ -128,7 +128,7 @@ describe('the viewer chooses the clock', () => {
   });
 
   it('stays on 12-hour when no clock is given', () => {
-    expect(getSkyData(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz).sunrise).toBe('06:42 AM');
+    expect(getSkyData(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz).sunrise).toBe('06:41 AM');
     expect(getNextMajorPhases(WHEN, 'Europe/London').nextFullMoon.formatted).toBe('Sep 26, 5:50 PM');
   });
 });
@@ -420,7 +420,9 @@ describe('robustness', () => {
   });
 
   it('converts SunCalc azimuth to a compass bearing', () => {
-    expect(toCompassBearing(0)).toBeCloseTo(180, 6); // SunCalc zero is due South
+    expect(toCompassBearing(0)).toBeCloseTo(0, 6); // SunCalc 2 zero is due North
+    expect(toCompassBearing(-90)).toBeCloseTo(270, 6);
+    expect(toCompassBearing(360)).toBeCloseTo(0, 6);
     expect(toCompassDirection(0)).toBe('N');
     expect(toCompassDirection(90)).toBe('E');
     expect(toCompassDirection(180)).toBe('S');

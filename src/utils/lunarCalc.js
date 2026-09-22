@@ -1,4 +1,4 @@
-import SunCalc from 'suncalc';
+import * as SunCalc from 'suncalc';
 
 // Constants for lunar mechanics
 export const SYNODIC_MONTH = 29.53058867; // average synodic month in days
@@ -21,14 +21,9 @@ const ZODIAC_SIGNS = [
   { name: 'Pisces', symbol: '♓\uFE0E', startDeg: 330 }
 ];
 
-// Convert radians to degrees
-export const toDeg = (rad) => (rad * 180) / Math.PI;
-
-// Convert SunCalc azimuth (where 0 is South, West is positive, East is negative) to compass bearing (0 = North, 90 = East, 180 = South, 270 = West)
-export const toCompassBearing = (azimuthRad) => {
-  const deg = toDeg(azimuthRad);
-  return (deg + 180) % 360;
-};
+// SunCalc 2 already reports azimuth as a compass bearing in degrees (0 = North,
+// 90 = East); this only folds it into [0, 360) so toFixed never prints "360.0"
+export const toCompassBearing = (azimuthDeg) => ((azimuthDeg % 360) + 360) % 360;
 
 // Compass bearing to 16-wind cardinal direction string
 export const toCompassDirection = (bearingDeg) => {
@@ -386,8 +381,8 @@ export const getLunarDetails = (date = new Date(), lat = 0, lon = 0, timeZone = 
     phase,
     fraction: (fraction * 100).toFixed(1),
     fractionValue: fraction,
-    angle: angle.toFixed(2),
-    angleDeg: toDeg(angle).toFixed(1),
+    angle: (angle * Math.PI / 180).toFixed(2),
+    angleDeg: angle.toFixed(1),
     name,
     phaseKey,
     isExactPrimary,
@@ -397,7 +392,7 @@ export const getLunarDetails = (date = new Date(), lat = 0, lon = 0, timeZone = 
     distancePercent: distancePercent.toFixed(1),
     zodiac,
     nextPhases,
-    altitude: toDeg(moonPosition.altitude).toFixed(1),
+    altitude: moonPosition.altitude.toFixed(1),
     azimuth: toCompassBearing(moonPosition.azimuth).toFixed(1)
   };
 };
@@ -720,8 +715,17 @@ export const formatShortTime = (d, timeZone, clock = '12h') => {
 // Locate moonrise / moonset by scanning the location's own 24-hour day for horizon
 // crossings, then bisecting to the second. Derived from the same altitude function
 // that draws the transit curve, so the chart and the numbers beneath it always agree.
+//
+// Rise and set follow the USNO convention of the upper limb touching the horizon, so the
+// centre's apparent altitude is lifted by the Moon's semidiameter (0.2725 x horizontal
+// parallax) plus the 0.09 deg residual refraction SunCalc 2 tunes its own getMoonTimes with.
+const EARTH_RADIUS_KM = 6378.14;
 const findHorizonCrossings = (dayStartMs, lat, lon) => {
-  const altitudeAt = (ms) => SunCalc.getMoonPosition(new Date(ms), lat, lon).altitude;
+  const altitudeAt = (ms) => {
+    const { altitude, distance } = SunCalc.getMoonPosition(new Date(ms), lat, lon);
+    const semidiameter = (0.2725 * Math.asin(EARTH_RADIUS_KM / distance) * 180) / Math.PI;
+    return altitude + semidiameter + 0.09;
+  };
 
   const COARSE_STEP = 10 * 60 * 1000; // 10 minutes
   const dayEndMs = dayStartMs + 24 * 60 * 60 * 1000;
@@ -758,7 +762,7 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null,
   // The day we chart runs from local midnight to local midnight AT THE LOCATION.
   const dayStartMs = getStartOfDayInZone(validDate, zone);
 
-  // SunCalc.getTimes is longitude-based and therefore already timezone-independent.
+  // SunCalc.getTimes works in UTC instants and resolves the solar day itself.
   const sunTimes = SunCalc.getTimes(validDate, lat, lon);
   const { rise: moonriseDate, set: moonsetDate } = findHorizonCrossings(dayStartMs, lat, lon);
 
@@ -780,8 +784,8 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null,
     const moonPos = SunCalc.getMoonPosition(pointDate, lat, lon);
     const sunPos = SunCalc.getPosition(pointDate, lat, lon);
 
-    const altDeg = toDeg(moonPos.altitude);
-    const sunAltDeg = toDeg(sunPos.altitude);
+    const altDeg = moonPos.altitude;
+    const sunAltDeg = sunPos.altitude;
     const azimuthDeg = toCompassBearing(moonPos.azimuth);
     const compassDir = toCompassDirection(azimuthDeg);
     const zoned = getZonedParts(pointDate, zone);
@@ -806,8 +810,8 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null,
     }
   }
 
-  const currentMoonAlt = toDeg(currentMoonPos.altitude);
-  const currentSunAlt = toDeg(currentSunPos.altitude);
+  const currentMoonAlt = currentMoonPos.altitude;
+  const currentSunAlt = currentSunPos.altitude;
   const currentMoonBearing = toCompassBearing(currentMoonPos.azimuth);
 
   // Where the selected instant falls within the charted day (0 = local midnight, 1 = next midnight)
