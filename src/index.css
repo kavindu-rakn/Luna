@@ -740,8 +740,10 @@ h1, h2, h3, h4 {
   }
 }
 
-/* No keyboard, no use for the button. ? still works wherever there is one. */
-@media (any-hover: none) {
+/* No keyboard, no use for the button. ? still works wherever there is one.
+   Asked of the primary input: any-hover was not enough, because many Android phones
+   report some input that can hover (a stylus, or Chrome's own guess) and kept it. */
+@media (hover: none), (pointer: coarse) {
   .shortcuts-trigger {
     display: none;
   }
