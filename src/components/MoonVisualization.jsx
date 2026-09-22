@@ -281,23 +281,19 @@ const MoonVisualization = ({ lunarDetails, onScene, onReady }) => {
   const glowSize = isMobile ? '300px' : '440px';
 
   return (
-    <div className="moon-viz-wrapper" style={{ position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+    <div className="moon-viz-wrapper">
       {/* Background Radial Glow */}
       <div
+        className="moon-aura"
         style={{
-          position: 'absolute',
           width: glowSize,
           height: glowSize,
-          background: `radial-gradient(circle, var(--accent-glow) 0%, transparent 65%)`,
-          opacity: Math.max(0.12, parseFloat(fraction) / 100),
-          transition: 'opacity 0.6s ease',
-          zIndex: 0,
-          pointerEvents: 'none'
+          opacity: Math.max(0.12, parseFloat(fraction) / 100)
         }}
       />
 
       {/* Three.js R3F Canvas Container */}
-      <div style={{ width: '100%', height: '100%', zIndex: 1 }}>
+      <div className="moon-canvas">
         <Canvas
           camera={{ position: [0, 0, CAMERA_Z], fov: CAMERA_FOV }}
           dpr={[1, 2]}

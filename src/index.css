@@ -1,34 +1,40 @@
 :root {
-  /* Typography Tokens */
+  /* Observatory typography */
   --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-heading: 'Outfit Variable', 'Outfit', 'Inter Variable', sans-serif;
   --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-  
-  /* Color Palette - Deep Space & Accessible High Contrast */
-  --bg-deep-space: #04060d;
-  --bg-surface-1: rgba(12, 16, 34, 0.75);
-  --bg-surface-2: rgba(19, 24, 52, 0.82);
-  --bg-surface-elevated: rgba(28, 34, 72, 0.9);
-  
-  --border-subtle: rgba(255, 255, 255, 0.1);
-  --border-medium: rgba(255, 255, 255, 0.18);
-  --border-highlight: rgba(165, 180, 252, 0.4);
-  
-  /* Text Contrast - Tested against --bg-deep-space for WCAG AAA/AA */
-  --text-primary: #f8fafc;        /* 18.2:1 contrast */
-  --text-secondary: #cbd5e1;      /* 11.4:1 contrast */
-  --text-muted: #94a3b8;          /* 5.8:1 contrast (Passes AA for all sizes) */
-  --text-accent: #a5b4fc;         /* 7.6:1 contrast */
-  
-  --accent-primary: #6366f1;
-  /* Solid accent surfaces that carry text. White on --accent-primary is 4.46:1,
-     just under the 4.5:1 body text needs; this shade gives 6.3:1. The lighter
-     token stays for glows, gradients and borders, where no text sits on it. */
-  --accent-strong: #4f46e5;
-  --accent-light: #818cf8;
-  --accent-glow: rgba(99, 102, 241, 0.3);
-  --glass-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.6);
+
+  /* Quiet lunar colour system */
+  --bg-deep-space: #060910;
+  --bg-night-blue: #0a101b;
+  --bg-surface-1: rgba(15, 22, 34, 0.78);
+  --bg-surface-2: rgba(20, 29, 44, 0.9);
+  --bg-surface-elevated: rgba(29, 40, 59, 0.96);
+  --bg-surface-solid: #0c1421;
+
+  --border-subtle: rgba(217, 228, 255, 0.11);
+  --border-medium: rgba(217, 228, 255, 0.19);
+  --border-highlight: rgba(187, 203, 245, 0.42);
+
+  --text-primary: #eef1f7;
+  --text-secondary: #bdc7d6;
+  --text-muted: #8490a2;
+  --text-accent: #becbf1;
+
+  /* Solid accent surfaces carry white text; the light token is for emphasis only. */
+  --accent-primary: #8d9dd6;
+  --accent-strong: #5c6eaa;
+  --accent-light: #c2cff7;
+  --accent-glow: rgba(141, 157, 214, 0.26);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+  --glass-shadow: 0 20px 60px -24px rgba(0, 0, 0, 0.82);
+  --shadow-overlay: 0 28px 80px -26px rgba(0, 0, 0, 0.92);
+  --ease-observe: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 * {
@@ -39,7 +45,7 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-deep-space);
+  background: var(--bg-deep-space);
   color: var(--text-primary);
   height: 100vh;
   /* The dynamic unit tracks mobile browser chrome; 100vh alone runs under the
@@ -68,17 +74,24 @@ body {
 /* Background Atmosphere */
 .nebula {
   position: fixed;
-  top: -25vh;
-  left: -25vw;
-  width: 150vw;
-  height: 150vh;
+  inset: 0;
   z-index: -3;
-  background: 
-    radial-gradient(circle at 25% 25%, rgba(55, 30, 110, 0.28) 0%, transparent 45%),
-    radial-gradient(circle at 75% 70%, rgba(25, 45, 120, 0.22) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(8, 10, 25, 0.9) 0%, transparent 100%);
-  filter: blur(90px);
+  background:
+    linear-gradient(180deg, rgba(35, 51, 76, 0.16), transparent 31%),
+    radial-gradient(ellipse at 50% 39%, rgba(95, 119, 177, 0.08), transparent 49%),
+    linear-gradient(118deg, rgba(8, 14, 25, 0.2), transparent 50%);
+  filter: blur(28px);
   pointer-events: none;
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(3, 6, 12, 0.35), transparent 22%, transparent 76%, rgba(3, 6, 12, 0.55)),
+    radial-gradient(ellipse at center, transparent 52%, rgba(3, 6, 12, 0.38) 100%);
 }
 
 /* Typography Classes */
@@ -98,10 +111,10 @@ h1, h2, h3, h4 {
 
 .utility-label {
   font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.13em;
   color: var(--text-muted);
 }
 
@@ -117,62 +130,53 @@ h1, h2, h3, h4 {
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 45%, #818cf8 80%, #ffffff 100%);
-  background-size: 250% 250%;
+  background: linear-gradient(135deg, #f5f6fb 0%, #c9d3f5 58%, #8d9dd6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: gradient-shift 8s ease-in-out infinite;
 }
 
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* Glass Panels */
+/* Shared surfaces: separation comes from tone and shadow before borders. */
 .glass-panel {
-  background: var(--bg-surface-1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: linear-gradient(145deg, rgba(24, 34, 51, 0.78), rgba(10, 16, 27, 0.88));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   border: 1px solid var(--border-subtle);
-  border-top: 1px solid var(--border-medium);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--glass-shadow);
   padding: 1.5rem;
   position: relative;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .glass-panel:hover {
   border-color: var(--border-highlight);
 }
 
-/* Glass Buttons */
+/* Controls use a single tactile language across the observatory. */
 .glass-button {
-  background: var(--bg-surface-2);
+  background: rgba(18, 27, 42, 0.72);
   border: 1px solid var(--border-subtle);
   color: var(--text-primary);
-  border-radius: 20px;
-  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-pill);
+  padding: 0.5rem 1rem;
   font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: 550;
+  font-size: 0.78rem;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-observe), box-shadow 0.2s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: 40px;
+  min-height: 38px;
 }
 
 .glass-button:hover {
   background: var(--bg-surface-elevated);
   border-color: var(--border-highlight);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px var(--accent-glow);
+  box-shadow: 0 8px 24px -14px var(--accent-glow);
 }
 
 .glass-button:active {
@@ -181,7 +185,7 @@ h1, h2, h3, h4 {
 
 .glass-button:focus-visible {
   outline: 2px solid var(--accent-light);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 /* Ghost Buttons (Nav/Controls) */
@@ -189,7 +193,7 @@ h1, h2, h3, h4 {
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-secondary);
-  padding: 0.5rem;
+  padding: 0.45rem;
   cursor: pointer;
   border-radius: 50%;
   display: inline-flex;
@@ -197,14 +201,14 @@ h1, h2, h3, h4 {
   justify-content: center;
   min-width: 38px;
   min-height: 38px;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-observe);
 }
 
 .ghost-control-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(206, 218, 244, 0.1);
   border-color: var(--border-subtle);
-  transform: scale(1.05);
+  transform: scale(1.04);
 }
 
 .ghost-control-btn:active {
@@ -226,20 +230,114 @@ h1, h2, h3, h4 {
   position: relative;
 }
 
+.main-view-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  z-index: 10;
+}
+
+.app-header {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  padding: 0 1.5rem;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.app-header > * {
+  pointer-events: auto;
+}
+
+.app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  justify-self: start;
+}
+
+.app-brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 1px solid rgba(194, 207, 247, 0.5);
+  border-radius: 50%;
+  color: var(--accent-light);
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  line-height: 1;
+  transform: rotate(-25deg);
+}
+
+.hero-title {
+  margin: 0;
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.app-header-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.icon-button {
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+}
+
+.deep-dive-trigger {
+  min-height: 36px;
+  padding-inline: 0.85rem;
+  font-family: var(--font-serif);
+  font-size: 1.02rem;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.deep-dive-trigger.is-active {
+  background: var(--bg-surface-elevated);
+  border-color: var(--accent-light);
+  box-shadow: 0 0 0 3px rgba(194, 207, 247, 0.08);
+}
+
+.controls-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  grid-column: 2;
+}
+
 /* Data Drawer / Telemetry Inspector */
 .data-drawer {
   position: absolute;
-  background: rgba(8, 11, 26, 0.94);
-  backdrop-filter: blur(36px);
-  -webkit-backdrop-filter: blur(36px);
-  box-shadow: -12px 0 50px rgba(0, 0, 0, 0.7);
+  background: rgba(8, 13, 22, 0.96);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: -20px 0 70px rgba(0, 0, 0, 0.64);
   z-index: 50;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   /* Hide only once the slide-out has finished... */
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, visibility 0s linear 0.45s;
+  transition: transform 0.42s var(--ease-observe), opacity 0.3s ease, visibility 0s linear 0.42s;
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
@@ -249,7 +347,7 @@ h1, h2, h3, h4 {
    its start value at the first instant, so focus moved into the drawer on open
    would otherwise land on a still-hidden element and silently fail. */
 .data-drawer.is-open {
-  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease, visibility 0s;
+  transition: transform 0.42s var(--ease-observe), opacity 0.3s ease, visibility 0s;
 }
 
 /* Desktop Drawer */
@@ -257,10 +355,10 @@ h1, h2, h3, h4 {
   .data-drawer {
     top: 0;
     right: 0;
-    width: 480px;
+    width: min(31rem, 100vw);
     height: 100vh;
     padding: 2.5rem 2rem;
-    border-left: 1px solid var(--border-subtle);
+    border-left: 1px solid var(--border-medium);
     transform: translateX(100%);
   }
 
@@ -287,9 +385,9 @@ h1, h2, h3, h4 {
     left: 0;
     width: 100%;
     height: 85vh;
-    border-top: 1px solid var(--border-subtle);
-    border-radius: 24px 24px 0 0;
-    padding: 1.5rem;
+    border-top: 1px solid var(--border-medium);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 1.25rem;
     transform: translateY(100%);
     padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   }
@@ -308,6 +406,65 @@ h1, h2, h3, h4 {
   flex-wrap: wrap;
   gap: 0.75rem 1.5rem;
   margin-bottom: 1.5rem;
+}
+
+/* Date control cluster */
+.date-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  position: relative;
+}
+
+.date-display-btn {
+  background: rgba(15, 22, 34, 0.76);
+  border-color: var(--border-subtle);
+  padding: 0.38rem 1rem;
+  min-height: 36px;
+  white-space: nowrap;
+}
+
+.date-display-btn.is-open {
+  background: var(--bg-surface-elevated);
+  border-color: var(--accent-light);
+}
+
+.date-text-desktop,
+.date-text-mobile {
+  font-size: 1.08rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: 0.015em;
+}
+
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.today-button {
+  padding: 0.25rem 0.78rem;
+  margin: 0 0.75rem;
+  min-height: 28px;
+  border-radius: var(--radius-pill);
+  font-size: 0.66rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+@media (max-width: 480px) {
+  .date-text-mobile {
+    font-size: 1rem;
+  }
+
+  .today-button {
+    margin-inline: 0.55rem;
+  }
 }
 
 .segmented {
@@ -779,66 +936,161 @@ h1, h2, h3, h4 {
 
 /* Bottom Bar / Timeline */
 .bottom-bar {
-  background: var(--bg-surface-1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(10, 16, 27, 0.72), rgba(7, 11, 19, 0.94));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(217, 228, 255, 0.14);
+  box-shadow: 0 -18px 40px -34px rgba(120, 145, 204, 0.45);
   width: 100%;
+}
+
+.lunar-timeline {
+  --timeline-line: rgba(185, 199, 235, 0.22);
+  position: relative;
+  padding: 0.85rem 1.5rem;
+}
+
+.timeline-header {
+  gap: 1rem;
+}
+
+.timeline-title,
+.timeline-hint {
+  line-height: 1.3;
+}
+
+.timeline-track {
+  min-height: 3rem;
+  border-radius: var(--radius-pill);
+}
+
+.timeline-track:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 4px;
+}
+
+.timeline-tooltip {
+  border: 1px solid rgba(194, 207, 247, 0.3);
+  background: rgba(16, 24, 38, 0.96);
+  box-shadow: var(--shadow-overlay);
+}
+
+.timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+}
+
+@media (max-width: 640px) {
+  .lunar-timeline {
+    padding-inline: 0.8rem;
+  }
+
+  .timeline-header {
+    align-items: flex-end !important;
+  }
+
+  .timeline-hint {
+    max-width: 8rem;
+    line-height: 1.2;
+  }
+
+  .timeline-track {
+    min-height: 3.25rem;
+  }
 }
 
 /* The Moon and its name, between the header and the timeline */
 .main-canvas-area {
   flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 2.5rem;
+  margin-top: 3.5rem;
+  padding: 0 1.5rem 0.75rem;
+}
+
+.observatory-stage {
+  isolation: isolate;
 }
 
 .moon-container {
   width: 100%;
+  min-height: 0;
   display: flex;
   justify-content: center;
 }
 
 /* The flat Moon shown while the 3D one loads */
 .moon-fallback-disc {
-  width: min(38vh, 320px);
+  width: min(42vh, 360px);
   aspect-ratio: 1;
 }
 
 /* Moon Viz Wrapper */
 .moon-viz-wrapper {
   width: 100%;
-  height: 52vh;
-  min-height: 320px;
-  max-height: 560px;
+  height: min(58vh, 620px);
+  min-height: 280px;
+  max-height: 620px;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+.moon-viz-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.moon-viz-wrapper > div {
+  min-height: 0;
+}
+
+.moon-aura {
+  position: absolute;
+  width: min(48vw, 520px);
+  height: min(48vw, 520px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(147, 164, 221, 0.12) 0%, rgba(147, 164, 221, 0.035) 36%, transparent 70%);
+  transition: opacity 0.6s ease;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.moon-canvas {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
 /* Hero Phase Name */
 .hero-phase-name {
   text-align: center;
-  margin-top: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-top: 0.15rem;
+  margin-bottom: 1rem;
   z-index: 10;
 }
 
 .hero-phase-name span {
-  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  font-size: clamp(2.15rem, 4.4vw, 3.5rem);
   color: var(--text-primary);
   line-height: 1.2;
   display: inline-block;
+  letter-spacing: -0.035em;
 }
 
 @media (max-width: 768px) {
   .hero-phase-name {
     margin-top: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 0.65rem;
     flex-shrink: 0;
   }
   .hero-phase-name span {
@@ -903,15 +1155,10 @@ h1, h2, h3, h4 {
     display: inline-block;
   }
 
-  /* On a phone the Moon used to sit in a canvas 38% of the screen tall, at a fixed
-     reduced scale, with the spare height left over as gaps above and below it. Now
-     the canvas starts just under the date controls and asks for a square as wide as
-     the screen, shrinking when the screen is too short. Whatever height is left is
-     shared evenly above the Moon, between it and its name, and above the timeline. */
   .main-canvas-area {
     margin-top: 9.5rem;
-    min-height: 0;
     justify-content: space-evenly;
+    padding-inline: 0.75rem;
   }
 
   .moon-container {
@@ -928,6 +1175,11 @@ h1, h2, h3, h4 {
   .moon-fallback-disc {
     width: auto;
     height: min(84%, 80vw);
+  }
+
+  .moon-aura {
+    width: min(94vw, 420px);
+    height: min(94vw, 420px);
   }
 }
 

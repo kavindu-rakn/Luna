@@ -104,15 +104,15 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
   ]), [cycle]);
 
   return (
-    <div className="bottom-bar" style={{ padding: '1rem 1.5rem', position: 'relative' }}>
+    <div className="bottom-bar lunar-timeline">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-        <h2 className="utility-label" style={{ color: 'var(--text-muted)' }}>
+      <div className="timeline-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <h2 className="utility-label timeline-title" style={{ color: 'var(--text-muted)' }}>
           Lunar Cycle &middot; {cycle.durationDays.toFixed(2)} days
         </h2>
         {/* Right-aligned, so when a narrow screen wraps it onto two lines it still
             lines up with the right end of the timeline below */}
-        <span className="utility-label" style={{ textAlign: 'right' }}>
+        <span className="utility-label timeline-hint" style={{ textAlign: 'right' }}>
           Drag / Scrub Timeline
         </span>
       </div>
@@ -120,14 +120,14 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
       {/* Floating hover tooltip */}
       {hovered && (
         <div
+          className="timeline-tooltip"
           style={{
             position: 'absolute',
             top: '-2.8rem',
             // Clamped so the tooltip stays inside the panel at either extreme
             left: `clamp(7rem, calc(${hoverFraction * 100}% + 1.5rem), calc(100% - 7rem))`,
             transform: 'translateX(-50%)',
-            background: 'var(--bg-surface-elevated)',
-            border: '1px solid var(--border-medium)',
+            
             borderRadius: '10px',
             padding: '0.4rem 0.75rem',
             fontSize: '0.8rem',
@@ -135,7 +135,6 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
             zIndex: 30,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.6)',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
@@ -153,6 +152,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
 
       {/* Interactive track */}
       <div
+        className="timeline-track"
         ref={trackRef}
         role="slider"
         tabIndex={0}
@@ -180,6 +180,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
       >
         {/* Track line */}
         <div
+          className="timeline-line"
           style={{
             position: 'absolute',
             top: '50%',
@@ -193,6 +194,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
 
         {/* Progress fill, which now genuinely travels from 0 to 100 across the cycle */}
         <div
+          className="timeline-progress"
           style={{
             position: 'absolute',
             top: '50%',
@@ -209,6 +211,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
         {/* Day ticks, placed by their true position in time */}
         {cycle.ticks.map((tick, idx) => (
           <div
+            className="timeline-tick"
             key={idx}
             style={{
               position: 'absolute',
@@ -227,6 +230,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
         {/* Primary phases */}
         {milestones.map((milestone, idx) => (
           <div
+            className="timeline-milestone"
             key={`milestone-${idx}`}
             title={`${milestone.name} — ${formatShortDate(milestone.date)}`}
             style={{
@@ -244,6 +248,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
 
         {/* Selected-position thumb */}
         <div
+          className="timeline-thumb"
           style={{
             position: 'absolute',
             left: `${currentFraction * 100}%`,
@@ -274,16 +279,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
       </div>
 
       {/* The cycle's own bounds, rather than a window that follows the selection */}
-      <div
-        className="utility-label"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginTop: '0.4rem',
-          fontSize: '0.7rem',
-          color: 'var(--text-muted)'
-        }}
-      >
+      <div className="utility-label timeline-labels">
         <span>{formatShortDate(cycle.start)}</span>
         <span style={{ color: 'var(--text-accent)', fontWeight: 700 }}>
           {formatShortDate(currentDate)}

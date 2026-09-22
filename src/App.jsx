@@ -18,7 +18,7 @@ const OrbitalView = lazy(() => import('./components/OrbitalView'));
 // Shown while the 3D Moon loads, and in its place if WebGL is unavailable: a flat
 // Moon drawn at the right phase, so the view is never simply empty.
 const MoonFallback = ({ phase }) => (
-  <div className="moon-viz-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <div className="moon-viz-wrapper moon-viz-fallback">
     <div className="moon-fallback-disc">
       <MoonIcon phase={phase} size={200} style={{ width: '100%', height: '100%' }} />
     </div>
@@ -302,21 +302,13 @@ function App() {
       <main
         ref={mainViewRef}
         className={`main-view-container ${isDrawerOpen ? 'drawer-open' : ''}`}
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          position: 'relative',
-          zIndex: 10
-        }}
       >
         {/* Header Bar */}
         <header className="app-header">
           {/* Left: Brand / Title */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <h1 className="text-gradient hero-title" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', margin: 0, lineHeight: 1 }}>
+          <div className="app-brand">
+            <span className="app-brand-mark" aria-hidden="true">◐</span>
+            <h1 className="text-gradient hero-title">
               Luna
             </h1>
           </div>
@@ -335,7 +327,7 @@ function App() {
           </div>
 
           {/* Right: Location & Deep Dive */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="app-header-actions">
             <LocationPicker
               location={location}
               setLocation={chooseLocation}
@@ -347,62 +339,30 @@ function App() {
             {/* Hidden on touch-only devices, which have no keyboard to use it with */}
             <button
               type="button"
-              className="glass-button shortcuts-trigger"
+              className="glass-button icon-button shortcuts-trigger"
               onClick={() => setIsShortcutsOpen(true)}
               aria-label="Keyboard shortcuts"
               title="Keyboard shortcuts (?)"
-              style={{
-                padding: 0,
-                minHeight: '32px',
-                minWidth: '32px',
-                width: '32px',
-                borderRadius: '50%',
-                background: 'var(--bg-surface-1)',
-                border: '1px solid var(--border-subtle)'
-              }}
             >
               <Keyboard size={15} color="var(--text-secondary)" />
             </button>
             <button
-              className="glass-button"
+              type="button"
+              className={`glass-button deep-dive-trigger ${isDrawerOpen ? 'is-active' : ''}`}
               onClick={() => setIsDrawerOpen(prev => !prev)}
-              style={{
-                padding: '0.35rem 1.05rem',
-                minHeight: '32px',
-                borderRadius: '16px',
-                background: isDrawerOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
-                border: isDrawerOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)',
-                boxShadow: isDrawerOpen ? '0 0 16px var(--accent-glow)' : 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
               aria-label="Toggle telemetry details"
               aria-expanded={isDrawerOpen}
               aria-controls="telemetry-drawer"
               aria-keyshortcuts="D"
             >
-              <span
-                style={{
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: '1.05rem',
-                  fontWeight: 500,
-                  fontStyle: 'italic',
-                  letterSpacing: '0.04em',
-                  color: 'var(--text-primary)',
-                  lineHeight: 1
-                }}
-              >
-                Deep Dive
-              </span>
+              <BarChart3 size={14} aria-hidden="true" />
+              <span>Deep Dive</span>
             </button>
           </div>
         </header>
 
         {/* Center Canvas Area: 3D Moon & Hero Phase Name */}
-        <div className="main-canvas-area">
+        <div className="main-canvas-area observatory-stage">
           {/* One accessible name for whichever Moon is showing, 3D or the 2D stand-in.
               Dragging to rotate is exploration, not information: the phase and
               illumination it shows are all available as text. */}
@@ -427,7 +387,7 @@ function App() {
 
         {/* Bottom Bar: Timeline */}
         <div style={{ width: '100%', zIndex: 20 }}>
-          <div className="timeline-panel" style={{ width: '100%' }}>
+          <div className="timeline-panel">
             <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} />
           </div>
         </div>

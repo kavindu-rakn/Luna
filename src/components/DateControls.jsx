@@ -205,7 +205,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', position: 'relative' }}>
+    <div className="date-controls">
       
       {/* Date Display Pill (Clickable to open custom dark calendar) */}
       <button
@@ -220,24 +220,15 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           }
           setIsCalendarOpen(!isCalendarOpen);
         }}
-        className="glass-button date-display-btn"
-        style={{
-          background: isCalendarOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
-          border: isCalendarOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)',
-          borderRadius: '24px',
-          padding: '0.35rem 1rem',
-          cursor: 'pointer',
-          whiteSpace: 'nowrap',
-          minHeight: '34px'
-        }}
+        className={`glass-button date-display-btn ${isCalendarOpen ? 'is-open' : ''}`}
         title="Click to open calendar (or press T for Today)"
         aria-label="Current Date. Click to open calendar."
         aria-expanded={isCalendarOpen}
       >
-        <span className="font-serif date-text-desktop" style={{ fontSize: '1.15rem', fontWeight: 400, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
+        <span className="font-serif date-text-desktop">
           {formatDateDesktop(currentDate)}
         </span>
-        <span className="font-serif date-text-mobile" style={{ fontSize: '1.05rem', fontWeight: 400, color: 'var(--text-primary)', letterSpacing: '0.02em' }}>
+        <span className="font-serif date-text-mobile">
           {formatDateMobile(currentDate)}
         </span>
       </button>
@@ -473,7 +464,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           apart but only 21px from the Today pill. The icon buttons now touch, so their
           touch targets never overlap, and the pill's margin makes up the difference:
           every glyph-to-glyph gap is the same 31px. */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+      <div className="date-nav">
         {/* Previous Major Phase (New, 1st Q, Full, Last Q) */}
         <button
           className="ghost-control-btn"
@@ -498,24 +489,11 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
 
         {/* Today Pill */}
         <button
-          className="glass-button"
+          className="glass-button today-button"
           title="Jump to Today (T)"
           onClick={onToday ?? (() => setCurrentDate(new Date()))}
           aria-label="Reset to Today"
           aria-keyshortcuts="T"
-          style={{
-            padding: '0.22rem 0.75rem',
-            margin: '0 0.9rem',
-            minHeight: '26px',
-            borderRadius: '13px',
-            fontSize: '0.68rem',
-            fontFamily: 'var(--font-sans)',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: 'var(--text-secondary)',
-            lineHeight: 1
-          }}
         >
           Today
         </button>
