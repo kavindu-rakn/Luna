@@ -34,8 +34,13 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
     return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   }, []);
 
+  // The right end of the track is the next New Moon, which already belongs to the
+  // next cycle. Landing on it rebuilt the track one cycle on, so a drag held past the
+  // end kept jumping a month a frame. Stop a second short, as End does.
   const scrubTo = useCallback((fraction) => {
-    setCurrentDate(getDateAtCycleFraction(cycle, fraction));
+    const lastMs = cycle.startMs + cycle.durationMs - 1000;
+    const date = getDateAtCycleFraction(cycle, fraction);
+    setCurrentDate(date.getTime() > lastMs ? new Date(lastMs) : date);
   }, [cycle, setCurrentDate]);
 
   const handlePointerDown = useCallback((e) => {
