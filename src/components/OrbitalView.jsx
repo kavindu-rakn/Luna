@@ -132,16 +132,15 @@ const OrbitalView = ({ lunarDetails, active = true, distanceUnit = 'km' }) => {
   const [showExplanation, setShowExplanation] = useState(false);
 
   return (
-    <div className="glass-panel orbital-card" style={{ width: '100%', padding: '1.25rem' }}>
+    <div className="glass-panel orbital-card">
       {/* Card Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <h3 className="utility-label" style={{ margin: 0, fontSize: '0.78rem' }}>
+      <div className="orbital-header">
+        <h3 className="utility-label orbital-title">
           Earth–Moon Orbital Geometry
         </h3>
         <button
           onClick={() => setShowExplanation(!showExplanation)}
-          className="ghost-control-btn"
-          style={{ padding: '4px', minWidth: '26px', minHeight: '26px' }}
+          className="ghost-control-btn orbital-explain"
           title="Explain orbital view"
           aria-label="Toggle Orbital View Explanation"
         >
@@ -150,33 +149,13 @@ const OrbitalView = ({ lunarDetails, active = true, distanceUnit = 'km' }) => {
       </div>
 
       {showExplanation && (
-        <div
-          style={{
-            background: 'var(--bg-surface-2)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '10px',
-            padding: '0.75rem',
-            marginBottom: '0.75rem',
-            fontSize: '0.75rem',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.5
-          }}
-        >
-          <strong style={{ color: 'var(--text-primary)' }}>Astronomical Context:</strong> Sunlight arrives from the right side (+X). As the Moon revolves around Earth, the illuminated portion visible from Earth produces the lunar phase cycle.
+        <div className="orbital-explanation">
+          <strong>Astronomical Context:</strong> Sunlight arrives from the right side (+X). As the Moon revolves around Earth, the illuminated portion visible from Earth produces the lunar phase cycle.
         </div>
       )}
 
       {/* 3D Orbit View Canvas (100% Unobstructed) */}
-      <div
-        style={{
-          width: '100%',
-          height: '240px',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          background: 'radial-gradient(circle at center, rgba(17, 21, 48, 0.7) 0%, rgba(4, 6, 13, 0.95) 100%)',
-          position: 'relative'
-        }}
-      >
+      <div className="orbital-canvas-wrap">
         {/* frameloop never while the drawer is shut: the diagram used to redraw at
             60fps behind a closed drawer for the life of the page */}
         <Canvas camera={{ position: [0, 8, 6.5], fov: 42 }} dpr={[1, 2]} frameloop={active ? 'always' : 'never'}>
@@ -190,58 +169,31 @@ const OrbitalView = ({ lunarDetails, active = true, distanceUnit = 'km' }) => {
         </Canvas>
 
         {/* Sunlight Direction Indicator Badge */}
-        <div
-          style={{
-            position: 'absolute',
-            top: '0.5rem',
-            right: '0.5rem',
-            background: 'rgba(5, 7, 14, 0.8)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '6px',
-            padding: '0.3rem 0.55rem',
-            fontSize: '0.7rem',
-            color: 'var(--text-accent)',
-            pointerEvents: 'none'
-          }}
-        >
+        <div className="orbital-sunlight" aria-hidden="true">
           ☀ Sunlight from Right
         </div>
       </div>
 
-      {/* Telemetry Stats Grid (Constant Height, Zero Wrapping Layout Shifts) */}
-      <div
-        style={{
-          marginTop: '0.75rem',
-          background: 'var(--bg-surface-1)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: '12px',
-          padding: '0.65rem 0.95rem',
-          display: 'grid',
-          gridTemplateColumns: '1.35fr 0.8fr 0.85fr',
-          gap: '0.4rem',
-          alignItems: 'center',
-          minHeight: '56px'
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <div className="utility-label" style={{ fontSize: '0.7rem', margin: 0, whiteSpace: 'nowrap' }}>Phase Name</div>
-          <div className="font-serif" style={{ fontSize: '0.98rem', color: 'var(--text-primary)', lineHeight: 1.2, marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      {/* Current phase context, kept alongside the orbital figure */}
+      <div className="orbital-readout">
+        <div className="orbital-reading orbital-reading-phase">
+          <div className="utility-label orbital-reading-label">Phase Name</div>
+          <div className="font-serif orbital-phase-value">
             {name}
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', minWidth: 0 }}>
-          <div className="utility-label" style={{ fontSize: '0.7rem', margin: 0, whiteSpace: 'nowrap' }}>Illumination</div>
-          <div style={{ fontSize: '1.02rem', fontWeight: 600, color: 'var(--accent-light)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
+        <div className="orbital-reading orbital-reading-illumination">
+          <div className="utility-label orbital-reading-label">Illumination</div>
+          <div className="orbital-illumination-value">
             {fraction}%
           </div>
         </div>
 
-        <div style={{ textAlign: 'right', minWidth: 0 }}>
-          <div className="utility-label" style={{ fontSize: '0.7rem', margin: 0, whiteSpace: 'nowrap' }}>Distance</div>
-          <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', marginTop: '0.2rem', whiteSpace: 'nowrap' }}>
-            {formatDistance(distanceKm || MEAN_MOON_DISTANCE, distanceUnit)} <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{distanceUnit}</span>
+        <div className="orbital-reading orbital-reading-distance">
+          <div className="utility-label orbital-reading-label">Distance</div>
+          <div className="orbital-distance-value">
+            {formatDistance(distanceKm || MEAN_MOON_DISTANCE, distanceUnit)} <span>{distanceUnit}</span>
           </div>
         </div>
       </div>

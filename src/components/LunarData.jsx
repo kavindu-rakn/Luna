@@ -102,22 +102,22 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
         {/* 2-Column Stats */}
         <div className="telemetry-measurements">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
-              <Sparkles size={14} color="var(--accent-light)" />
+            <div className="telemetry-measurement-heading">
+              <Sparkles size={14} aria-hidden="true" />
               <span className="utility-label">Illumination</span>
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+            <div className="telemetry-measurement-value">
               <AnimatedNumber value={fraction} suffix="%" decimals={1} />
             </div>
           </div>
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
-              <Orbit size={14} color="var(--accent-light)" />
+            <div className="telemetry-measurement-heading">
+              <Orbit size={14} aria-hidden="true" />
               <span className="utility-label">Lunar Age</span>
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-              <AnimatedNumber value={age} suffix="" decimals={1} /> <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 400 }}>days</span>
+            <div className="telemetry-measurement-value">
+              <AnimatedNumber value={age} suffix="" decimals={1} /> <span className="telemetry-unit">days</span>
             </div>
           </div>
         </div>
@@ -128,7 +128,7 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
         <div className="telemetry-section-header telemetry-distance-header">
           <h3 className="utility-label telemetry-section-label">Distance to Earth</h3>
           <div className="font-mono telemetry-distance-value">
-            {formatDistance(distanceKm || MEAN_MOON_DISTANCE, distanceUnit)} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{distanceUnit}</span>
+            {formatDistance(distanceKm || MEAN_MOON_DISTANCE, distanceUnit)} <span className="telemetry-unit">{distanceUnit}</span>
           </div>
         </div>
 
@@ -153,20 +153,20 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
       <section className="telemetry-section telemetry-context">
         <div className="telemetry-context-grid">
           {/* Zodiac Constellation */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
-              <Compass size={14} color="var(--accent-light)" />
+          <div className="telemetry-context-block">
+            <div className="telemetry-context-heading">
+              <Compass size={14} aria-hidden="true" />
               <h3 className="utility-label">Zodiac Sign</h3>
             </div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div className="telemetry-context-title">
               <span className="zodiac-glyph" aria-hidden="true">{zodiac?.symbol}</span>
               <span>{zodiac?.name}</span>
             </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+            <div className="telemetry-context-note">
               {zodiac?.degreeInSign} tropical
             </div>
             {zodiac?.sidereal && (
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem', opacity: 0.8 }}>
+              <div className="telemetry-context-note is-sidereal">
                 {zodiac.sidereal.name} {zodiac.sidereal.degreeInSign} sidereal
               </div>
             )}
@@ -174,15 +174,15 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
 
           {/* Next Key Phase Countdown */}
           {upcomingPhase && (
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
-                <Calendar size={14} color="var(--accent-light)" />
+            <div className="telemetry-context-block">
+              <div className="telemetry-context-heading">
+                <Calendar size={14} aria-hidden="true" />
                 <h3 className="utility-label">{upcomingPhase.label}</h3>
               </div>
-              <div style={{ fontSize: '1.15rem', fontWeight: 600, color: 'var(--text-accent)' }}>
+              <div className="telemetry-context-title is-accent">
                 {upcomingPhase.countdown}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+              <div className="telemetry-context-note">
                 {upcomingPhase.formatted}
               </div>
             </div>

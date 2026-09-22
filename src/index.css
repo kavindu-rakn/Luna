@@ -503,13 +503,379 @@ h1, h2, h3, h4 {
   gap: 1rem;
 }
 
+.telemetry-measurement-heading,
+.telemetry-context-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+  color: var(--accent-light);
+}
+
+.telemetry-measurement-heading .utility-label,
+.telemetry-context-heading .utility-label {
+  margin: 0;
+}
+
+.telemetry-measurement-value {
+  color: var(--text-primary);
+  font-size: 1.65rem;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.telemetry-unit {
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.telemetry-context-block {
+  min-width: 0;
+}
+
+.telemetry-context-heading svg {
+  flex: 0 0 auto;
+}
+
+.telemetry-context-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.telemetry-context-title.is-accent {
+  color: var(--text-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.telemetry-context-note {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.telemetry-context-note.is-sidereal {
+  margin-top: 0.1rem;
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+.sky-position-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sky-position-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.sky-position-heading svg {
+  flex: 0 0 auto;
+  color: var(--accent-light);
+}
+
+.sky-position-heading .utility-label {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.sky-position-context {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  color: var(--text-accent);
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.sky-position-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.sky-position-location svg {
+  flex: 0 0 auto;
+}
+
+.sky-position-timezone,
+.sky-position-timezone-note {
+  color: var(--text-muted);
+}
+
+.sky-position-timezone {
+  white-space: nowrap;
+}
+
+.sky-position-chart-wrap {
+  margin-bottom: 1.1rem;
+}
+
+.sky-altitude-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.sky-ephemeris-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1rem 0.5rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sky-stat {
+  grid-column: span 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.sky-stat:nth-last-child(2) {
+  grid-column: 2 / span 2;
+}
+
+.sky-stat:last-child {
+  grid-column: 4 / span 2;
+}
+
+.sky-stat-icon {
+  margin-bottom: 0.05rem;
+  color: var(--text-muted);
+}
+
+.sky-stat.is-highlighted .sky-stat-icon {
+  color: var(--text-accent);
+}
+
+.sky-stat-label {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.sky-stat-value {
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.sky-stat-note,
+.sky-position-timezone-note {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.sky-stat-note {
+  margin-top: 0.05rem;
+}
+
+.sky-position-timezone-note {
+  margin-top: 0.85rem;
+  text-align: center;
+}
+
+.orbital-card {
+  width: 100%;
+  padding: 1.1rem;
+}
+
+.orbital-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.orbital-title {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+.orbital-explain {
+  flex: 0 0 30px;
+  width: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+}
+
+.orbital-explanation {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-surface-2);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.orbital-explanation strong {
+  color: var(--text-primary);
+}
+
+.orbital-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: radial-gradient(circle at center, rgba(17, 21, 48, 0.7) 0%, rgba(4, 6, 13, 0.95) 100%);
+}
+
+.orbital-sunlight {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: rgba(5, 7, 14, 0.8);
+  backdrop-filter: blur(8px);
+  color: var(--text-accent);
+  font-size: 0.7rem;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.orbital-readout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(5.25rem, 0.8fr) minmax(0, 0.85fr);
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 56px;
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-surface-1);
+}
+
+.orbital-reading {
+  min-width: 0;
+}
+
+.orbital-reading-illumination {
+  text-align: center;
+}
+
+.orbital-reading-distance {
+  text-align: right;
+}
+
+.orbital-reading-label {
+  margin: 0;
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.orbital-phase-value {
+  overflow: hidden;
+  margin-top: 0.2rem;
+  color: var(--text-primary);
+  font-size: 0.98rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orbital-illumination-value {
+  margin-top: 0.2rem;
+  color: var(--accent-light);
+  font-family: var(--font-mono);
+  font-size: 1.02rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.orbital-distance-value {
+  margin-top: 0.2rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.orbital-distance-value span {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
 @media (max-width: 520px) {
   .telemetry-phase-name {
     font-size: 1.85rem;
   }
 
+  .telemetry-measurement-value {
+    font-size: 1.5rem;
+  }
+
   .telemetry-context-grid {
     grid-template-columns: 1fr;
+  }
+
+  .sky-position-header {
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .sky-position-context {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .sky-ephemeris-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 0.6rem;
+  }
+
+  .sky-stat,
+  .sky-stat:nth-last-child(2),
+  .sky-stat:last-child {
+    grid-column: auto;
+  }
+
+  .sky-stat:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .orbital-card {
+    padding: 1rem;
+  }
+
+  .orbital-readout {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem 0.5rem;
+  }
+
+  .orbital-reading-phase {
+    grid-column: 1 / -1;
+  }
+
+  .orbital-reading-illumination {
+    text-align: left;
   }
 }
 
@@ -523,6 +889,10 @@ h1, h2, h3, h4 {
     padding: 2.5rem 2rem;
     border-left: 1px solid var(--border-medium);
     transform: translateX(100%);
+  }
+
+  .drawer-handle {
+    display: none;
   }
 
   .data-drawer.is-open {
@@ -548,6 +918,7 @@ h1, h2, h3, h4 {
     left: 0;
     width: 100%;
     height: 85vh;
+    height: min(85dvh, calc(100dvh - 1rem));
     border-top: 1px solid var(--border-medium);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     padding: 1.25rem;
