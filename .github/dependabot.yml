@@ -19,6 +19,18 @@ updates:
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"
+    ignore:
+      # @react-three/fiber 9.7 peers on react ">=19 <19.3", so npm ci refuses to
+      # install React 19.3. 19.2.x patches still come through. Drop this block
+      # once a fiber release widens its peer range to cover 19.3.
+      - dependency-name: "react"
+        versions: [">=19.3.0"]
+      - dependency-name: "react-dom"
+        versions: [">=19.3.0"]
+      - dependency-name: "@types/react"
+        versions: [">=19.3.0"]
+      - dependency-name: "@types/react-dom"
+        versions: [">=19.3.0"]
     groups:
       # One PR for the toolchain rather than a stream of them
       dev-dependencies:
