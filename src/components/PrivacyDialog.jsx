@@ -102,6 +102,14 @@ const PrivacyDialog = ({ isOpen, onClose }) => {
         )}
       </Section>
 
+      <Section title="Motion">
+        <p>
+          On a phone the stars drift as you tilt it, read from the motion sensor. On an iPhone
+          Luna asks first. The readings move the stars and nothing else: they are never stored
+          or sent.
+        </p>
+      </Section>
+
       <Section title="Share links">
         <p>
           A share link holds the date and the place you are looking at: its name, and coordinates
