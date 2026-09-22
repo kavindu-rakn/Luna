@@ -52,6 +52,7 @@ const UpdatePrompt = () => {
     <div
       role="status"
       aria-live="polite"
+      className="update-prompt"
       style={{
         position: 'fixed',
         right: '1rem',
@@ -60,17 +61,6 @@ const UpdatePrompt = () => {
         display: 'flex',
         alignItems: 'center',
         gap: '0.65rem',
-        maxWidth: 'min(22rem, calc(100vw - 2rem))',
-        padding: '0.65rem 0.75rem 0.65rem 0.9rem',
-        background: 'rgba(9, 12, 28, 0.96)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        border: '1px solid var(--border-medium)',
-        borderRadius: '14px',
-        boxShadow: '0 16px 40px rgba(0, 0, 0, 0.6)',
-        color: 'var(--text-primary)',
-        fontSize: '0.82rem',
-        fontFamily: 'var(--font-sans)',
         animation: 'fadeIn 0.25s ease-out'
       }}
     >

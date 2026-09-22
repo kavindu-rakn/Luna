@@ -89,7 +89,7 @@ const OrbitPath = () => {
   return (
     <Line
       points={points}
-      color="#818cf8"
+      color="#8d9dd6"
       lineWidth={1.2}
       transparent
       opacity={0.45}

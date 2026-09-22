@@ -75,8 +75,8 @@ export default defineConfig({
         name: 'Luna',
         short_name: 'Luna',
         description: 'Moon phases, rise and set times, and the lunar cycle for any place on Earth. Works offline.',
-        theme_color: '#04060d',
-        background_color: '#04060d',
+        theme_color: '#060910',
+        background_color: '#060910',
         display: 'standalone',
         orientation: 'any',
         icons: [

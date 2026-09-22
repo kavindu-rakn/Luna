@@ -106,7 +106,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
   return (
     <div className="bottom-bar lunar-timeline">
       {/* Header */}
-      <div className="timeline-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+      <div className="timeline-header">
         <h2 className="utility-label timeline-title" style={{ color: 'var(--text-muted)' }}>
           Lunar Cycle &middot; {cycle.durationDays.toFixed(2)} days
         </h2>

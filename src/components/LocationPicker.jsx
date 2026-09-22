@@ -138,17 +138,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
   const rowStyle = {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.55rem',
-    width: '100%',
-    background: 'transparent',
-    border: '1px solid transparent',
-    borderRadius: '10px',
-    padding: '0.5rem 0.6rem',
-    color: 'var(--text-primary)',
-    fontSize: '0.85rem',
-    textAlign: 'left',
-    cursor: 'pointer',
-    fontFamily: 'var(--font-sans)'
+    gap: '0.55rem'
   };
 
   return (
@@ -189,13 +179,6 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
           aria-label="Choose an observing location"
           className="location-panel"
           style={{
-            background: 'rgba(9, 12, 28, 0.96)',
-            backdropFilter: 'blur(32px)',
-            WebkitBackdropFilter: 'blur(32px)',
-            border: '1px solid var(--border-medium)',
-            borderRadius: '16px',
-            padding: '0.9rem',
-            boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(99, 102, 241, 0.15)',
             zIndex: 120,
             animation: 'fadeIn 0.2s ease-out'
           }}
@@ -208,6 +191,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
               style={{ position: 'absolute', left: '0.7rem', top: '50%', transform: 'translateY(-50%)' }}
             />
             <input
+              className="location-search"
               ref={inputRef}
               type="search"
               value={query}
@@ -236,7 +220,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
           </div>
 
           {/* Use my location */}
-          <button type="button" onClick={useMyLocation} disabled={isLocating} style={rowStyle}>
+          <button type="button" className="location-row" onClick={useMyLocation} disabled={isLocating} style={rowStyle}>
             {isLocating
               ? <Loader size={14} color="var(--accent-light)" />
               : <LocateFixed size={14} color="var(--accent-light)" />}
@@ -267,11 +251,10 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                 <button
                   key={place.id}
                   type="button"
+                  className="location-row"
                   onClick={() => applyPlace(place)}
                   title={place.detail}
                   style={rowStyle}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                 >
                   <MapPin size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -311,10 +294,9 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                 <div key={`${place.lat},${place.lon}`} style={{ display: 'flex', alignItems: 'center' }}>
                   <button
                     type="button"
+                    className="location-row"
                     onClick={() => applyPlace(place)}
                     style={{ ...rowStyle, flex: 1 }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
                     <Star size={12} color="var(--accent-light)" fill="var(--accent-light)" style={{ flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

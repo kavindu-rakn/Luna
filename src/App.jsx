@@ -401,42 +401,24 @@ function App() {
         aria-labelledby="telemetry-heading"
       >
         {/* Mobile Drag Indicator Handle */}
-        <div
-          style={{
-            width: '40px',
-            height: '4px',
-            background: 'rgba(255, 255, 255, 0.25)',
-            borderRadius: '2px',
-            margin: '0 auto 1rem auto',
-            display: 'block'
-          }}
-        />
+        <div className="drawer-handle" aria-hidden="true" />
 
         {/* Drawer Header & Close Button */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="drawer-header">
+          <div className="drawer-heading">
             <BarChart3 size={16} color="var(--accent-light)" />
             <h2
               id="telemetry-heading"
               ref={drawerHeadingRef}
               tabIndex={-1}
-              className="utility-label"
-              style={{ color: 'var(--text-accent)', fontSize: '0.8rem', margin: 0, outline: 'none' }}
+              className="utility-label drawer-title"
             >
               Astronomical Telemetry
             </h2>
           </div>
           <button
             onClick={() => setIsDrawerOpen(false)}
-            className="ghost-control-btn"
-            style={{
-              background: 'var(--bg-surface-2)',
-              border: '1px solid var(--border-medium)',
-              borderRadius: '50%',
-              minWidth: '36px',
-              minHeight: '36px',
-              padding: 0
-            }}
+            className="ghost-control-btn drawer-close"
             aria-label="Close details (Esc)"
           >
             <X size={16} />
@@ -447,7 +429,7 @@ function App() {
         <DisplayPreferences preferences={preferences} setPreference={setPreference} />
 
         {/* Telemetry Cards Stack */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="telemetry-content">
           <LunarData lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
 
           {computedSkyData && (

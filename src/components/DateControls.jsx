@@ -237,17 +237,10 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
       {isCalendarOpen && (
         <div
           ref={calendarModalRef}
+          className="calendar-panel"
           style={{
             position: 'absolute',
             top: '3rem',
-            background: 'rgba(9, 12, 28, 0.96)',
-            backdropFilter: 'blur(32px)',
-            WebkitBackdropFilter: 'blur(32px)',
-            border: '1px solid var(--border-medium)',
-            borderRadius: '18px',
-            padding: '1.25rem',
-            width: '320px',
-            boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(99, 102, 241, 0.15)',
             zIndex: 100,
             animation: 'fadeIn 0.2s ease-out'
           }}

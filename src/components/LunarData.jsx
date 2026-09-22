@@ -82,37 +82,25 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
   const upcomingPhase = nextPhaseList[0];
 
   return (
-    <div ref={cardRef} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div ref={cardRef} className="telemetry-stack">
       {/* 1. Core Phase Telemetry Card */}
-      <div className="glass-panel" style={{ padding: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+      <section className="telemetry-section telemetry-phase">
+        <div className="telemetry-section-header">
           <div>
-            <h3 className="utility-label" style={{ marginBottom: '0.35rem' }}>Current Phase</h3>
-            <div ref={nameRef} className="font-serif" style={{ fontSize: '2rem', color: 'var(--text-primary)', lineHeight: 1.1 }}>
+            <h3 className="utility-label telemetry-section-label">Current Phase</h3>
+            <div ref={nameRef} className="font-serif telemetry-phase-name">
               {name}
             </div>
           </div>
           {isExactPrimary && (
-            <span
-              style={{
-                background: 'rgba(99, 102, 241, 0.2)',
-                border: '1px solid var(--accent-light)',
-                color: 'var(--text-accent)',
-                borderRadius: '12px',
-                padding: '0.2rem 0.6rem',
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}
-            >
+            <span className="telemetry-exact-badge">
               Exact Quarter
             </span>
           )}
         </div>
 
         {/* 2-Column Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border-subtle)' }}>
+        <div className="telemetry-measurements">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
               <Sparkles size={14} color="var(--accent-light)" />
@@ -133,40 +121,37 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* 2. Earth-Moon Distance & Orbital Position Card */}
-      <div className="glass-panel" style={{ padding: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-          <h3 className="utility-label">Distance to Earth</h3>
-          <div className="font-mono" style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+      <section className="telemetry-section telemetry-distance">
+        <div className="telemetry-section-header telemetry-distance-header">
+          <h3 className="utility-label telemetry-section-label">Distance to Earth</h3>
+          <div className="font-mono telemetry-distance-value">
             {formatDistance(distanceKm || MEAN_MOON_DISTANCE, distanceUnit)} <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{distanceUnit}</span>
           </div>
         </div>
 
         {/* Distance Gauge (Perigee to Apogee) */}
-        <div style={{ marginTop: '0.75rem', marginBottom: '0.5rem' }}>
-          <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '3px', overflow: 'hidden', position: 'relative' }}>
+        <div className="distance-gauge-wrap">
+          <div className="distance-gauge-track">
             <div
+              className="distance-gauge-fill"
               style={{
                 width: `${distancePercent}%`,
-                height: '100%',
-                background: 'linear-gradient(90deg, #6366f1, #a5b4fc)',
-                borderRadius: '3px',
-                transition: 'width 0.6s ease'
               }}
             />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
+          <div className="distance-gauge-labels">
             <span>Perigee ({formatDistanceThousands(MIN_MOON_DISTANCE, distanceUnit)})</span>
             <span>Apogee ({formatDistanceThousands(MAX_MOON_DISTANCE, distanceUnit)})</span>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* 3. Constellation & Upcoming Phase Card */}
-      <div className="glass-panel" style={{ padding: '1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+      <section className="telemetry-section telemetry-context">
+        <div className="telemetry-context-grid">
           {/* Zodiac Constellation */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
@@ -203,7 +188,7 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
             </div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

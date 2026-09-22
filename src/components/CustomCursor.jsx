@@ -156,7 +156,7 @@ const CustomCursor = () => {
               width: `${Math.max(2, 11 * factor)}px`,
               height: `${Math.max(2, 11 * factor)}px`,
               borderRadius: '50%',
-              background: i < 8 ? '#e0e7ff' : i < 20 ? '#818cf8' : '#6366f1',
+              background: i < 8 ? '#eef1f7' : i < 20 ? '#becbf1' : '#8d9dd6',
               boxShadow: `0 0 ${12 * factor}px var(--accent-glow), 0 0 ${4 * factor}px rgba(255, 255, 255, 0.8)`,
               opacity: 0,
               pointerEvents: 'none',

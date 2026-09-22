@@ -350,6 +350,169 @@ h1, h2, h3, h4 {
   transition: transform 0.42s var(--ease-observe), opacity 0.3s ease, visibility 0s;
 }
 
+.drawer-handle {
+  width: 2.5rem;
+  height: 3px;
+  margin: 0 auto 1.1rem;
+  border-radius: var(--radius-pill);
+  background: rgba(194, 207, 247, 0.32);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.35rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.drawer-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.drawer-title {
+  margin: 0;
+  color: var(--text-accent);
+  font-size: 0.7rem;
+  outline: none;
+}
+
+.drawer-close {
+  background: var(--bg-surface-2);
+  border-color: var(--border-medium);
+}
+
+/* Deep Dive measurement language: aligned instrument sections instead of a
+   stack of unrelated dashboard cards. */
+.telemetry-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.telemetry-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.telemetry-section {
+  padding: 1.15rem 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.telemetry-section:first-child {
+  padding-top: 0.1rem;
+  border-top: 0;
+}
+
+.telemetry-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.telemetry-section-label {
+  margin: 0;
+}
+
+.telemetry-phase-name {
+  margin-top: 0.35rem;
+  color: var(--text-primary);
+  font-size: 2.15rem;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.telemetry-exact-badge {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid rgba(194, 207, 247, 0.42);
+  border-radius: var(--radius-pill);
+  background: rgba(141, 157, 214, 0.12);
+  color: var(--text-accent);
+  font-size: 0.64rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.telemetry-measurements {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.telemetry-measurements > div {
+  min-width: 0;
+}
+
+.telemetry-distance-header {
+  align-items: center;
+  margin-bottom: 0.7rem;
+}
+
+.telemetry-distance-value {
+  font-size: 1.12rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.distance-gauge-wrap {
+  margin-top: 0.75rem;
+}
+
+.distance-gauge-track {
+  position: relative;
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: rgba(194, 207, 247, 0.11);
+}
+
+.distance-gauge-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #6e7fba, #c2cff7);
+  transition: width 0.6s ease;
+}
+
+.distance-gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.66rem;
+}
+
+.telemetry-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 520px) {
+  .telemetry-phase-name {
+    font-size: 1.85rem;
+  }
+
+  .telemetry-context-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Desktop Drawer */
 @media (min-width: 960px) {
   .data-drawer {
@@ -732,21 +895,21 @@ h1, h2, h3, h4 {
   margin: auto;
   /* Draws the scrollbar of a long dialog dark, rather than the default light one */
   color-scheme: dark;
-  width: min(34rem, calc(100vw - 2rem));
+  width: min(36rem, calc(100vw - 2rem));
   max-height: min(42rem, calc(100dvh - 2rem));
   overflow: auto;
-  padding: 1.5rem;
+  padding: 1.35rem;
   border: 1px solid var(--border-medium);
-  border-radius: 18px;
-  background: rgba(9, 12, 28, 0.97);
+  border-radius: var(--radius-lg);
+  background: rgba(10, 16, 27, 0.97);
   color: var(--text-primary);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(99, 102, 241, 0.15);
+  box-shadow: var(--shadow-overlay);
   animation: fadeIn 0.2s ease-out;
 }
 
 .modal-dialog::backdrop {
-  background: rgba(3, 5, 12, 0.6);
-  backdrop-filter: blur(3px);
+  background: rgba(3, 6, 12, 0.68);
+  backdrop-filter: blur(6px);
 }
 
 .modal-header {
@@ -889,6 +1052,20 @@ h1, h2, h3, h4 {
   color: #fecaca;
 }
 
+.update-prompt {
+  max-width: min(22rem, calc(100vw - 2rem));
+  padding: 0.65rem 0.75rem 0.65rem 0.9rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: rgba(10, 16, 27, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-overlay);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-family: var(--font-sans);
+}
+
 /* On a narrow screen the keys sit above what they do */
 @media (max-width: 480px) {
   .shortcuts-row {
@@ -918,6 +1095,84 @@ h1, h2, h3, h4 {
   top: 2.75rem;
   right: 0;
   width: min(21rem, calc(100vw - 2rem));
+  padding: 0.85rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: rgba(10, 16, 27, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-overlay);
+}
+
+.location-row {
+  width: 100%;
+  min-height: 2.4rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.location-row:hover:not(:disabled) {
+  background: rgba(194, 207, 247, 0.09);
+  border-color: var(--border-subtle);
+}
+
+.location-row:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: -2px;
+}
+
+.location-row:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.location-search {
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-2);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+}
+
+.location-search::placeholder {
+  color: var(--text-muted);
+}
+
+.location-search:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 1px;
+  border-color: var(--border-highlight);
+}
+
+.calendar-panel {
+  width: min(22rem, calc(100vw - 1.5rem));
+  padding: 1.1rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  background: rgba(10, 16, 27, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-overlay);
+  color-scheme: dark;
+}
+
+.calendar-panel .ghost-control-btn {
+  min-width: 30px;
+  min-height: 30px;
+}
+
+.calendar-panel [data-date-grid] button:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: -2px;
 }
 
 @media (max-width: 768px) {
@@ -951,6 +1206,10 @@ h1, h2, h3, h4 {
 }
 
 .timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
   gap: 1rem;
 }
 
@@ -989,7 +1248,7 @@ h1, h2, h3, h4 {
   }
 
   .timeline-header {
-    align-items: flex-end !important;
+    align-items: flex-end;
   }
 
   .timeline-hint {
@@ -1034,9 +1293,9 @@ h1, h2, h3, h4 {
 /* Moon Viz Wrapper */
 .moon-viz-wrapper {
   width: 100%;
-  height: min(58vh, 620px);
+  height: min(62vh, 720px);
   min-height: 280px;
-  max-height: 620px;
+  max-height: 720px;
   position: relative;
   display: flex;
   justify-content: center;
@@ -1135,7 +1394,7 @@ h1, h2, h3, h4 {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    top: 0.75rem;
+    top: max(0.75rem, env(safe-area-inset-top, 0px));
     padding: 0 1rem;
   }
 
@@ -1180,6 +1439,54 @@ h1, h2, h3, h4 {
   .moon-aura {
     width: min(94vw, 420px);
     height: min(94vw, 420px);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding-inline: 0.7rem;
+  }
+
+  .app-brand {
+    gap: 0.3rem;
+  }
+
+  .app-brand-mark {
+    width: 1rem;
+    height: 1rem;
+    font-size: 0.8rem;
+  }
+
+  .hero-title {
+    font-size: 1.5rem;
+  }
+
+  .app-header-actions {
+    gap: 0.25rem;
+  }
+
+  .location-picker > .glass-button,
+  .deep-dive-trigger {
+    width: 36px;
+    min-width: 36px;
+    padding-inline: 0;
+  }
+
+  .location-trigger-label,
+  .deep-dive-trigger > span {
+    display: none;
+  }
+
+  .location-picker > .glass-button {
+    gap: 0;
+  }
+
+  .main-canvas-area {
+    margin-top: 9rem;
+  }
+
+  .hero-phase-name span {
+    font-size: clamp(1.75rem, 8vw, 2.25rem);
   }
 }
 

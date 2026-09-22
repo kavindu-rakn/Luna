@@ -172,7 +172,7 @@ const SkyPosition = ({ skyData, locationName }) => {
   if (!skyData) return null;
 
   return (
-    <div ref={cardRef} className="glass-panel" style={{ width: '100%', padding: '1.5rem' }}>
+    <section ref={cardRef} className="telemetry-section sky-position-panel">
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -244,7 +244,7 @@ const SkyPosition = ({ skyData, locationName }) => {
           All times shown in {skyData.timeZone} ({skyData.timeZoneLabel})
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
