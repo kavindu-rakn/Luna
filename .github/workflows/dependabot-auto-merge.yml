@@ -1,0 +1,43 @@
+# Queue low-risk Dependabot PRs for auto-merge.
+#
+# This only switches on GitHub's auto-merge; the merge itself waits for the
+# required status checks on master. Without branch protection requiring
+# "Lint, test and build" and "Dependency audit", auto-merge would not wait for
+# CI at all, and without "Allow auto-merge" in the repo settings the merge
+# command below fails.
+#
+# Left for a human: major bumps, and anything in the Three.js stack. Three is
+# still on 0.x, where a minor bump like 0.185 -> 0.186 can carry breaking
+# changes that only show up in the 3D scenes, which CI does not render.
+name: Dependabot auto-merge
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Queue auto-merge
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'kavindu-rakn/Luna'
+
+    steps:
+      - name: Read Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+
+      # For a grouped PR, update-type is the largest bump in the group, so one
+      # major inside a group keeps the whole PR out.
+      - name: Enable auto-merge for patch and minor bumps
+        if: >-
+          (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+           steps.meta.outputs.update-type == 'version-update:semver-minor') &&
+          steps.meta.outputs.dependency-group != 'three-stack' &&
+          !contains(steps.meta.outputs.dependency-names, 'three')
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
