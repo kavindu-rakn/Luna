@@ -116,13 +116,10 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
 
   return (
     <div className="lunar-timeline">
+      {/* The cycle's length now lives in Deep Dive, beside the Moon's age. Here
+          there is only a quiet hint, tucked close above the track it describes. */}
       <div className="timeline-header">
-        <h2 className="utility-label timeline-title">
-          Lunar Cycle &middot; {cycle.durationDays.toFixed(2)} days
-        </h2>
-        <span className="utility-label timeline-hint">
-          Drag / Scrub Timeline
-        </span>
+        <span className="utility-label timeline-hint">Drag the slider</span>
       </div>
 
       {/* Interactive track: full width, so its side margins catch a thumb too */}

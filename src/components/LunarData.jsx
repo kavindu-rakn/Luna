@@ -1,8 +1,8 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useMemo } from 'react';
 import { Moon, Sparkles, Orbit, Compass, ArrowUpRight, Calendar } from 'lucide-react';
 import gsap from 'gsap';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import { MIN_MOON_DISTANCE, MAX_MOON_DISTANCE, MEAN_MOON_DISTANCE } from '../utils/lunarCalc';
+import { MIN_MOON_DISTANCE, MAX_MOON_DISTANCE, MEAN_MOON_DISTANCE, getSynodicCycle } from '../utils/lunarCalc';
 import { formatDistance, formatDistanceThousands } from '../utils/units';
 
 const AnimatedNumber = ({ value, suffix = '', decimals = 1 }) => {
@@ -42,6 +42,9 @@ const AnimatedNumber = ({ value, suffix = '', decimals = 1 }) => {
 };
 
 const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
+  // The same solved cycle the timeline spans, so the two always agree
+  const cycleDays = useMemo(() => getSynodicCycle(lunarDetails.date).durationDays, [lunarDetails.date]);
+
   const {
     name,
     fraction,
@@ -118,6 +121,11 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
             </div>
             <div className="telemetry-measurement-value">
               <AnimatedNumber value={age} suffix="" decimals={1} /> <span className="telemetry-unit">days</span>
+            </div>
+            {/* The length of this particular cycle, New Moon to New Moon: they run
+                from about 29.3 to 29.8 days */}
+            <div className="telemetry-context-note">
+              of a {cycleDays.toFixed(2)}-day lunar cycle
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X } from 'lucide-react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X, CircleDot } from 'lucide-react';
 import {
   getAdjacentQuarterPhase,
   getZonedDay,
@@ -432,15 +432,15 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           <ChevronLeft size={16} />
         </button>
 
-        {/* Today Pill */}
+        {/* Today: a centre dot between the arrows, drawn just like them */}
         <button
-          className="glass-button today-button"
+          className="ghost-control-btn"
           title="Jump to Today (T)"
           onClick={onToday ?? (() => setCurrentDate(new Date()))}
           aria-label="Reset to Today"
           aria-keyshortcuts="T"
         >
-          Today
+          <CircleDot size={16} aria-hidden="true" />
         </button>
 
         {/* +1 Day */}

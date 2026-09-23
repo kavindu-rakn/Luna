@@ -56,7 +56,8 @@ const UpdatePrompt = () => {
       style={{
         position: 'fixed',
         right: 'max(1rem, env(safe-area-inset-right, 0px))',
-        bottom: 'calc(8.5rem + env(safe-area-inset-bottom, 0px))',
+        // The lane above the toasts' (see .share-toast), so both can show at once
+        bottom: 'calc(var(--toast-bottom) + 3.5rem)',
         zIndex: 200,
         display: 'flex',
         alignItems: 'center',

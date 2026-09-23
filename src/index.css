@@ -263,7 +263,10 @@ h1, h2, h3, h4 {
   /* Side columns never shrink below their content, so a crowded header pushes the
      date controls off-centre rather than sliding the actions underneath them */
   grid-template-columns: 1fr auto 1fr;
-  align-items: center;
+  /* Wordmark, date pill and actions share one line of this height, so all three
+     sit on the same centre line. The date's nav row hangs below the pill. */
+  --header-row: 40px;
+  align-items: start;
   padding: 0 max(1.5rem, env(safe-area-inset-right, 0px)) 0 max(1.5rem, env(safe-area-inset-left, 0px));
   z-index: 30;
   pointer-events: none;
@@ -280,26 +283,31 @@ h1, h2, h3, h4 {
   align-items: center;
   gap: 0.16em;
   justify-self: start;
-  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  min-height: var(--header-row);
+  font-size: clamp(1.85rem, 3.2vw, 2.45rem);
 }
 
 /* The app icon's crescent, cut out with its glow as transparency. A little taller
-   than the capitals, as round shapes need to be to look the same size. The
+   than Cormorant's capitals, as a round shape with a halo needs to be to look the
+   same size. The
    crescent's lit side is its left, leaving the right of the box as dark disc, so
    the gap is kept tight to look even beside the L. */
 .app-brand-mark {
   display: block;
   flex: none;
-  width: 0.86em;
-  height: 0.86em;
+  width: 0.76em;
+  height: 0.76em;
 }
 
+/* Set in Cormorant, the serif of the phase names, to sit with the crescent. No
+   tracking: any letter-spacing also switches off the font's ligatures. */
 .hero-title {
   margin: 0;
+  font-family: var(--font-serif);
   font-size: 1em;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1;
-  letter-spacing: -0.06em;
+  letter-spacing: 0;
 }
 
 .app-header-actions {
@@ -308,6 +316,7 @@ h1, h2, h3, h4 {
   align-items: center;
   gap: 0.4rem;
   min-width: 0;
+  min-height: var(--header-row);
 }
 
 .icon-button {
@@ -845,9 +854,6 @@ h1, h2, h3, h4 {
     font-size: 1.5rem;
   }
 
-  .telemetry-context-grid {
-    grid-template-columns: 1fr;
-  }
 
   .sky-ephemeris-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -941,28 +947,30 @@ h1, h2, h3, h4 {
   text-align: center;
 }
 
-/* Display preferences: radio groups drawn as pills */
+/* Display preferences: two equal halves, each toggle stretching to fill its own,
+   so the row is balanced edge to edge */
 .display-preferences {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.25rem;
   margin-bottom: 1.5rem;
 }
 
-/* Date control cluster */
+/* Date control cluster: the full date as a pill, and its five controls spread
+   evenly across exactly the pill's width beneath it */
 .date-controls {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
   position: relative;
+  display: grid;
+  justify-items: stretch;
+  width: max-content;
+  gap: 0.35rem;
 }
 
 .date-display-btn {
   background: rgba(15, 22, 34, 0.76);
   border-color: var(--border-subtle);
-  padding: 0.38rem 1rem;
-  min-height: 36px;
+  padding: 0.38rem 1.1rem;
+  min-height: var(--header-row);
   white-space: nowrap;
 }
 
@@ -982,29 +990,12 @@ h1, h2, h3, h4 {
 .date-nav {
   display: flex;
   align-items: center;
-  gap: 0;
+  justify-content: space-between;
 }
 
-.today-button {
-  padding: 0.25rem 0.78rem;
-  margin: 0 0.75rem;
-  min-height: 28px;
-  border-radius: var(--radius-pill);
-  font-size: 0.72rem;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-secondary);
-  line-height: 1;
-}
-
-@media (max-width: 480px) {
-  .date-text-mobile {
+@media (max-width: 380px) {
+  .date-text-desktop {
     font-size: 1rem;
-  }
-
-  .today-button {
-    margin-inline: 0.55rem;
   }
 }
 
@@ -1026,7 +1017,11 @@ h1, h2, h3, h4 {
 }
 
 .segmented-track {
-  display: inline-flex;
+  position: relative;
+  flex: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 2px;
   padding: 2px;
   border: 1px solid var(--border-medium);
@@ -1034,9 +1029,28 @@ h1, h2, h3, h4 {
   background: var(--bg-surface-1);
 }
 
+/* The selected option's pill is one shape that slides between the two, rather
+   than two backgrounds that swap in place */
+.segmented-track::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 3px);
+  border-radius: 999px;
+  background: var(--accent-strong);
+  transition: transform 0.3s var(--ease-observe);
+}
+
+.segmented-track:has(.segmented-option:nth-child(2) input:checked)::before {
+  transform: translateX(calc(100% + 2px));
+}
+
 .segmented-option {
   position: relative;
-  display: inline-flex;
+  z-index: 1;
+  display: flex;
 }
 
 /* The real input lies over its option, invisible: it takes the click and the focus */
@@ -1059,10 +1073,11 @@ h1, h2, h3, h4 {
   padding: 0 0.65rem;
   border-radius: 999px;
   font-family: var(--font-mono);
+  flex: 1;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-muted);
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: color 0.25s ease;
 }
 
 .segmented-option input:hover:not(:checked) + span {
@@ -1070,7 +1085,6 @@ h1, h2, h3, h4 {
 }
 
 .segmented-option input:checked + span {
-  background: var(--accent-strong);
   color: #ffffff;
 }
 
@@ -1430,11 +1444,17 @@ h1, h2, h3, h4 {
   color: #fecaca;
 }
 
-/* Share confirmation: centred above the timeline, in the overlays' surface */
+/* Toasts: in the bottom-right corner above the timeline on wide screens, well
+   away from the Moon and the phase name; centred on phones. The update notice
+   takes the lane above, so the two never cover each other. */
+:root {
+  --toast-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+}
+
 .share-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+  bottom: var(--toast-bottom);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -1459,6 +1479,18 @@ h1, h2, h3, h4 {
 .share-toast.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+@media (min-width: 769px) {
+  .share-toast {
+    left: auto;
+    right: max(1.5rem, env(safe-area-inset-right, 0px));
+    transform: translate(0, 0.5rem);
+  }
+
+  .share-toast.is-visible {
+    transform: translate(0, 0);
+  }
 }
 
 .share-toast svg {
@@ -1578,10 +1610,6 @@ h1, h2, h3, h4 {
   z-index: 100;
   width: min(22rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   padding: 1.1rem;
-  max-height: min(42rem, calc(100vh - 6rem));
-  max-height: min(42rem, calc(100dvh - 6rem));
-  overflow-y: auto;
-  overscroll-behavior: contain;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-lg);
   background: rgba(10, 16, 27, 0.97);
@@ -1722,11 +1750,6 @@ h1, h2, h3, h4 {
 }
 
 @media (max-width: 768px) {
-  .calendar-panel {
-    max-height: min(42rem, calc(100vh - 7rem));
-    max-height: min(42rem, calc(100dvh - 7.75rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
-  }
-
   .calendar-panel .calendar-grid {
     gap: 2px;
   }
@@ -1744,6 +1767,104 @@ h1, h2, h3, h4 {
   }
 }
 
+/* The calendar always shows whole, never scrolling (only the month and year
+   lists inside it scroll). Its tallest month is six weeks and five phase events,
+   which is more than a short screen has below the date. So on short screens it
+   rises to the top of the screen, over the header, to use the full height; when
+   there is width to spare the phase list moves beside the grid instead of under
+   it; and the day cells shrink to the height left. Touch targets stay at least
+   32px there, still clear of WCAG's 24px minimum. */
+.calendar-panel {
+  --cal-cell: 44px;
+}
+
+.calendar-panel .calendar-day,
+.calendar-panel .calendar-day-outside {
+  min-height: var(--cal-cell);
+}
+
+@media (max-height: 760px) {
+  .calendar-panel {
+    position: fixed;
+    top: max(0.75rem, env(safe-area-inset-top, 0px));
+    --cal-cell: 38px;
+  }
+
+  .calendar-header {
+    margin-bottom: 0.5rem;
+  }
+
+  .calendar-events {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .calendar-panel .calendar-phase {
+    min-height: 32px;
+    padding-block: 0.2rem;
+  }
+}
+
+@media (max-height: 640px) {
+  .calendar-panel {
+    --cal-cell: 33px;
+    padding: 0.85rem;
+  }
+
+  .calendar-panel .calendar-month-navigation .ghost-control-btn,
+  .calendar-panel .calendar-close {
+    flex-basis: 34px;
+    width: 34px;
+    min-width: 34px;
+    min-height: 34px;
+  }
+
+  .calendar-panel .calendar-phase {
+    min-height: 28px;
+    padding-block: 0.1rem;
+  }
+}
+
+/* Wide but short (laptop windows, phones on their side): phases beside the grid */
+@media (min-width: 540px) and (max-height: 760px) {
+  .calendar-panel {
+    display: grid;
+    grid-template-columns: minmax(15rem, 1fr) minmax(15.5rem, 17rem);
+    grid-template-areas:
+      "head events"
+      "week events"
+      "days events";
+    align-items: start;
+    column-gap: 1.1rem;
+    width: min(42rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  }
+
+  /* Each phase on one line: its name, then its time */
+  .calendar-phase,
+  .calendar-phase-time {
+    white-space: nowrap;
+  }
+
+  .calendar-header { grid-area: head; }
+  .calendar-weekdays { grid-area: week; }
+  .calendar-grid { grid-area: days; }
+
+  .calendar-events {
+    grid-area: events;
+    margin: 0;
+    padding: 0.2rem 0 0 1.1rem;
+    border-top: 0;
+    border-left: 1px solid var(--border-subtle);
+    align-self: stretch;
+  }
+}
+
+@media (min-width: 540px) and (max-height: 480px) {
+  .calendar-panel {
+    --cal-cell: 30px;
+  }
+}
+
 /* Lunar-cycle timeline. It has no panel of its own: the rail, its marks and their
    dates sit straight on the sky, so the Moon keeps the height a panel used to take.
    --timeline-reach is the margin either side of the drawn rail that still catches a
@@ -1755,23 +1876,24 @@ h1, h2, h3, h4 {
   padding: 0.25rem max(1.5rem, env(safe-area-inset-right, 0px)) calc(0.9rem + env(safe-area-inset-bottom, 0px)) max(1.5rem, env(safe-area-inset-left, 0px));
 }
 
+/* The hint sits centred and close above the track it names, with the open sky
+   above it separating it from the Moon */
 .timeline-header {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
+  justify-content: center;
   padding-inline: var(--timeline-reach);
+  /* Close to the track, but clear of the thumb's pulsing ring when it sits at Full
+     Moon, right under the hint */
+  margin-bottom: 0;
 }
 
-.timeline-title,
 .timeline-hint {
   margin: 0;
-  line-height: 1.3;
+  font-size: 0.625rem;
+  letter-spacing: 0.12em;
+  line-height: 1;
   white-space: nowrap;
-}
-
-.timeline-hint {
-  text-align: right;
+  opacity: 0.85;
 }
 
 .timeline-track {
@@ -1918,14 +2040,6 @@ h1, h2, h3, h4 {
   }
 }
 
-/* The hint and the cycle length can't share a phone-width row, and a drag handle
-   on a touch screen explains itself */
-@media (max-width: 480px) {
-  .timeline-hint {
-    display: none;
-  }
-}
-
 /* The Moon and its name, between the header and the timeline */
 .main-canvas-area {
   flex: 1;
@@ -2039,7 +2153,7 @@ h1, h2, h3, h4 {
   .app-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     top: max(0.75rem, env(safe-area-inset-top, 0px));
     padding: 0 max(1rem, env(safe-area-inset-right, 0px)) 0 max(1rem, env(safe-area-inset-left, 0px));
   }
@@ -2053,17 +2167,10 @@ h1, h2, h3, h4 {
     justify-content: center;
   }
 
-  .date-text-desktop {
-    display: none;
-  }
-  .date-text-mobile {
-    display: inline-block;
-  }
-
   /* The phone header stacks three rows: actions, date pill, nav. The nav row ends
-     about 9.25rem below the header's top with 44px touch targets. */
+     about 9.4rem below the header's top with 44px touch targets. */
   .main-canvas-area {
-    margin-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 9.75rem);
+    margin-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 10.5rem);
     justify-content: space-evenly;
     padding-inline: max(0.75rem, env(safe-area-inset-left, 0px)) max(0.75rem, env(safe-area-inset-right, 0px));
   }
@@ -2151,7 +2258,7 @@ h1, h2, h3, h4 {
   }
 
   .app-brand {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
   }
 
   .app-header-actions {
@@ -2191,8 +2298,14 @@ h1, h2, h3, h4 {
    the Moon gets the height back. That row ends about 2.75rem below the header's top. */
 @media (max-height: 560px) {
   .date-controls {
-    flex-direction: row;
+    grid-auto-flow: column;
+    align-items: center;
+    width: auto;
     gap: 0.5rem;
+  }
+
+  .date-nav {
+    gap: 0.1rem;
   }
 
   .date-text-desktop {
@@ -2254,11 +2367,6 @@ h1, h2, h3, h4 {
     position: static;
   }
 
-  /* The row is tight at 660–700px; the nav's own 44px targets keep it tappable */
-  .today-button {
-    margin-inline: 0.25rem;
-  }
-
   .main-canvas-area {
     margin-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 4.5rem);
   }
@@ -2268,6 +2376,10 @@ h1, h2, h3, h4 {
    is width-specific. The 320px calendar wraps Close rather than squeezing its
    month and year controls. */
 @media (hover: none), (pointer: coarse) {
+  .app-header {
+    --header-row: 44px;
+  }
+
   .app-header-actions .icon-button {
     width: 44px;
     min-width: 44px;
@@ -2284,7 +2396,6 @@ h1, h2, h3, h4 {
     min-height: 44px;
   }
 
-  .today-button,
   .segmented-option span,
   .location-row,
   .calendar-phase,
@@ -2350,69 +2461,17 @@ h1, h2, h3, h4 {
   }
 }
 
+/* At 320px there is no room for three 44px buttons beside the month and year, and
+   wrapping the close button onto its own row cost the calendar a whole row of
+   height; the header's buttons step down to 36px instead */
 @media (max-width: 380px) and (hover: none),
        (max-width: 380px) and (pointer: coarse) {
-  .calendar-header {
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  }
-
-  .calendar-month-navigation {
-    flex: 1 0 100%;
-    justify-content: center;
-  }
-
-  .calendar-close {
-    margin-left: auto;
-  }
-}
-
-/* Portrait phones: the date sits between its arrows as one stepper,
-   « ‹ [Sep 27, 2026] › », and Today is a small chip centred beneath it. Stacked the
-   desktop way, a 44px Today pill sat under a 36px date pill, the secondary control
-   outweighing the primary one. The nav's own box steps aside (display: contents)
-   so its buttons join the date in one grid; tab order is unchanged. */
-@media (max-width: 768px) and (min-height: 561px) {
-  .date-controls {
-    display: grid;
-    grid-template-columns: 44px 44px auto 44px 44px;
-    grid-template-areas:
-      "prev-phase prev-day date next-day next-phase"
-      ".          .        today .      .";
-    align-items: center;
-    justify-items: center;
-    column-gap: 0.15rem;
-    row-gap: 0;
-  }
-
-  .date-nav {
-    display: contents;
-  }
-
-  .date-display-btn {
-    grid-area: date;
-    min-height: 40px;
-    margin-inline: 0.2rem;
-  }
-
-  .date-nav > :nth-child(1) { grid-area: prev-phase; }
-  .date-nav > :nth-child(2) { grid-area: prev-day; }
-  .date-nav > :nth-child(4) { grid-area: next-day; }
-  .date-nav > :nth-child(5) { grid-area: next-phase; }
-
-  /* Drawn small, as it is on desktop, while its tap area stays 44px tall */
-  .today-button {
-    grid-area: today;
-    position: relative;
-    min-height: 28px;
-    margin: 8px 0;
-    padding: 0.25rem 0.8rem;
-  }
-
-  .today-button::after {
-    content: "";
-    position: absolute;
-    inset: -8px -6px;
+  .calendar-panel .calendar-month-navigation .ghost-control-btn,
+  .calendar-panel .calendar-close {
+    flex-basis: 36px;
+    width: 36px;
+    min-width: 36px;
+    min-height: 36px;
   }
 }
 
