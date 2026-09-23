@@ -132,7 +132,7 @@ const OrbitalView = ({ lunarDetails, active = true, distanceUnit = 'km' }) => {
   const [showExplanation, setShowExplanation] = useState(false);
 
   return (
-    <div className="glass-panel orbital-card">
+    <section className="telemetry-section orbital-card">
       {/* Card Header */}
       <div className="orbital-header">
         <h3 className="utility-label orbital-title">
@@ -197,7 +197,7 @@ const OrbitalView = ({ lunarDetails, active = true, distanceUnit = 'km' }) => {
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
