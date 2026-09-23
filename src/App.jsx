@@ -8,6 +8,7 @@ import SkyPosition from './components/SkyPosition';
 import LoadingScreen from './components/LoadingScreen';
 import SceneBoundary from './components/SceneBoundary';
 import MoonIcon from './components/MoonIcon';
+import { canCreateWebGL } from './utils/webgl';
 
 // Three.js, fiber and drei are 60% of the bundle and nothing but these two scenes
 // needs them. Loading them on demand lets the header, date, phase name and
@@ -74,9 +75,17 @@ function App() {
   const [preferences, setPreference] = usePreferences();
   const { clock, distanceUnit } = preferences;
 
+  // Without WebGL the 3D scenes fail asynchronously, out of SceneBoundary's reach,
+  // so decide up front: the flat Moon and no orbit diagram, and no Three.js download
+  const [hasWebGL] = useState(canCreateWebGL);
+  useEffect(() => {
+    if (!hasWebGL) console.warn('WebGL unavailable, showing the 2D Moon and hiding the orbit diagram');
+  }, [hasWebGL]);
+
   // shell -> scene -> ready, or failed. Drives the loading screen from what has
-  // actually arrived rather than from a texture byte counter.
-  const [loadStage, setLoadStage] = useState('shell');
+  // actually arrived rather than from a texture byte counter. Without WebGL there
+  // is nothing to wait for, so it starts out finished.
+  const [loadStage, setLoadStage] = useState(hasWebGL ? 'shell' : 'failed');
   const markScene = useCallback(() => setLoadStage((s) => (s === 'shell' ? 'scene' : s)), []);
   const markReady = useCallback(() => setLoadStage('ready'), []);
   const markFailed = useCallback(() => setLoadStage((s) => (s === 'ready' ? s : 'failed')), []);
@@ -378,11 +387,15 @@ function App() {
             role="img"
             aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated`}
           >
-            <SceneBoundary name="Moon scene" onError={markFailed} fallback={<MoonFallback phase={lunarDetails.phase} />}>
-              <Suspense fallback={<MoonFallback phase={lunarDetails.phase} />}>
-                <MoonVisualization lunarDetails={lunarDetails} onScene={markScene} onReady={markReady} />
-              </Suspense>
-            </SceneBoundary>
+            {hasWebGL ? (
+              <SceneBoundary name="Moon scene" onError={markFailed} fallback={<MoonFallback phase={lunarDetails.phase} />}>
+                <Suspense fallback={<MoonFallback phase={lunarDetails.phase} />}>
+                  <MoonVisualization lunarDetails={lunarDetails} onScene={markScene} onReady={markReady} />
+                </Suspense>
+              </SceneBoundary>
+            ) : (
+              <MoonFallback phase={lunarDetails.phase} />
+            )}
           </div>
 
           <div className="hero-phase-name">
@@ -443,7 +456,7 @@ function App() {
             <SkyPosition skyData={computedSkyData} locationName={location?.name} />
           )}
 
-          {hasOpenedDrawer && (
+          {hasOpenedDrawer && hasWebGL && (
             <SceneBoundary name="Orbital diagram">
               <Suspense fallback={null}>
                 <OrbitalView lunarDetails={lunarDetails} active={isDrawerOpen} distanceUnit={distanceUnit} />

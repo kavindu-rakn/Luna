@@ -455,6 +455,27 @@ ChatGPT brief. From them:
   ◐ next to the wordmark (1.75rem, 1.4rem at ≤480px). Precached by the service worker.
 - Loading screen: halo, logo shadow and progress bar moved from periwinkle to silver.
 
+### F10. No WebGL: blank Moon, stuck loader (found in owner testing, 2026-09-23). Status: **done**
+
+Owner test with `chrome --disable-webgl` (confirmed "WebGL: Disabled" in `chrome://gpu`): the
+loader sat at 72% until its 9s failsafe, no Moon appeared (neither 3D nor the 2D fallback), and
+the Deep Dive showed an empty orbital frame. **Not a redesign regression:** `SceneBoundary` and
+the fallback wiring are unchanged from master.
+
+Cause: React Three Fiber v9 creates its renderer inside an async function, so Three.js's
+"Error creating WebGL context" is an unhandled promise rejection (seen in the console as
+`Uncaught (in promise)`) that never reaches `SceneBoundary`.
+
+Fix: `src/utils/webgl.js` `canCreateWebGL()` probes once for a context (and releases it). App
+starts the loader as finished, renders `MoonFallback` directly, and skips mounting `OrbitalView`
+when it fails, so Three.js isn't even downloaded. Unit tests in `tests/webgl.test.js`. Verified
+with a temporary page that nulls `getContext('webgl*')` before the app starts: 2D Moon and no
+loader within 1s, 4 Deep Dive panels, no Three.js requests; with WebGL, the 3D Moon and orbital
+view are unchanged.
+
+Offline: **passed** (owner, `npm run preview`, service worker activated, DevTools Offline).
+Reduced motion: **passed** (owner).
+
 Still open: real-browser checks of **offline** (use
 `npm run preview` or the live site; the dev server has no service worker) and **WebGL
 fallback** (start Chrome with `--disable-webgl`; turning off graphics acceleration only
