@@ -476,7 +476,14 @@ view are unchanged.
 Offline: **passed** (owner, `npm run preview`, service worker activated, DevTools Offline).
 Reduced motion: **passed** (owner).
 
-Still open: real-browser checks of **offline** (use
-`npm run preview` or the live site; the dev server has no service worker) and **WebGL
-fallback** (start Chrome with `--disable-webgl`; turning off graphics acceleration only
-switches to software WebGL) are still pending. Reduced motion passed (owner, 2026-09-23).
+WebGL fallback: **passed** (owner, `chrome --disable-webgl` on `npm run preview`, after F10).
+
+## Status: complete (2026-09-23)
+
+All fixes F1–F10 are done, D1 is decided, and the runtime checks the brief requires (reduced
+motion, offline/PWA, WebGL fallback, touch) have passed. `redesign/luna` holds the redesign
+plus these fixes.
+
+How to repeat the runtime checks: offline needs `npm run build` + `npm run preview` (the dev
+server has no service worker). The WebGL fallback needs Chrome started with `--disable-webgl`
+(turning off graphics acceleration only switches to software WebGL); confirm in `chrome://gpu`.
