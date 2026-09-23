@@ -53,6 +53,31 @@ body {
   position: relative;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Mobile browsers flash a grey rectangle over anything tapped, square even on a
+     round button. Every control here draws its own hover, pressed and focus
+     states, so the browser's version only gets in the way. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The observatory itself is not a document to select. A long-press, or a mouse
+   drag that starts beside the Moon, used to select the Moon's canvas and paint it
+   over with a selection box like an image. Deep Dive's figures stay selectable,
+   so rise and set times can still be copied. */
+.app-header,
+.main-canvas-area,
+.lunar-timeline {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* The location search and the calendar's year field live inside the header, and
+   iOS Safari won't take typing into a field whose ancestor forbids selection */
+.app-header input,
+.app-header select,
+.app-header textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Accessibility screen reader only class */
@@ -2339,6 +2364,55 @@ h1, h2, h3, h4 {
 
   .calendar-close {
     margin-left: auto;
+  }
+}
+
+/* Portrait phones: the date sits between its arrows as one stepper,
+   « ‹ [Sep 27, 2026] › », and Today is a small chip centred beneath it. Stacked the
+   desktop way, a 44px Today pill sat under a 36px date pill, the secondary control
+   outweighing the primary one. The nav's own box steps aside (display: contents)
+   so its buttons join the date in one grid; tab order is unchanged. */
+@media (max-width: 768px) and (min-height: 561px) {
+  .date-controls {
+    display: grid;
+    grid-template-columns: 44px 44px auto 44px 44px;
+    grid-template-areas:
+      "prev-phase prev-day date next-day next-phase"
+      ".          .        today .      .";
+    align-items: center;
+    justify-items: center;
+    column-gap: 0.15rem;
+    row-gap: 0;
+  }
+
+  .date-nav {
+    display: contents;
+  }
+
+  .date-display-btn {
+    grid-area: date;
+    min-height: 40px;
+    margin-inline: 0.2rem;
+  }
+
+  .date-nav > :nth-child(1) { grid-area: prev-phase; }
+  .date-nav > :nth-child(2) { grid-area: prev-day; }
+  .date-nav > :nth-child(4) { grid-area: next-day; }
+  .date-nav > :nth-child(5) { grid-area: next-phase; }
+
+  /* Drawn small, as it is on desktop, while its tap area stays 44px tall */
+  .today-button {
+    grid-area: today;
+    position: relative;
+    min-height: 28px;
+    margin: 8px 0;
+    padding: 0.25rem 0.8rem;
+  }
+
+  .today-button::after {
+    content: "";
+    position: absolute;
+    inset: -8px -6px;
   }
 }
 
