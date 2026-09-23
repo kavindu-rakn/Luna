@@ -886,6 +886,7 @@ h1, h2, h3, h4 {
     right: 0;
     width: min(31rem, 100vw);
     height: 100vh;
+    height: 100dvh;
     padding: 2.5rem 2rem;
     border-left: 1px solid var(--border-medium);
     transform: translateX(100%);
@@ -1679,7 +1680,7 @@ h1, h2, h3, h4 {
 @media (max-width: 768px) {
   .calendar-panel {
     max-height: min(42rem, calc(100vh - 7rem));
-    max-height: min(42rem, calc(100dvh - 7rem));
+    max-height: min(42rem, calc(100dvh - 7.75rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
   }
 
   .calendar-panel .calendar-grid {
@@ -1712,7 +1713,7 @@ h1, h2, h3, h4 {
 .lunar-timeline {
   --timeline-line: rgba(185, 199, 235, 0.22);
   position: relative;
-  padding: 0.85rem 1.5rem;
+  padding: 0.85rem 1.5rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
 }
 
 .timeline-header {
@@ -1952,6 +1953,52 @@ h1, h2, h3, h4 {
   }
 }
 
+/* The desktop three-column header has too little utility space just above the
+   tablet breakpoint. Keep the controls in one row, but use the same icon-led
+   treatment as phones until the full desktop composition has room to breathe. */
+@media (min-width: 769px) and (max-width: 959px) {
+  .app-header-actions {
+    gap: 0.25rem;
+  }
+
+  .location-picker > .glass-button,
+  .deep-dive-trigger {
+    width: 36px;
+    min-width: 36px;
+    padding-inline: 0;
+  }
+
+  .location-picker > .glass-button {
+    gap: 0;
+  }
+
+  .location-trigger-label,
+  .deep-dive-trigger > span {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 959px) and (hover: none),
+       (min-width: 769px) and (max-width: 959px) and (pointer: coarse) {
+  .app-header-actions .icon-button,
+  .location-picker > .glass-button,
+  .deep-dive-trigger,
+  .data-drawer .drawer-close,
+  .modal-dialog .ghost-control-btn,
+  .location-panel .ghost-control-btn {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .orbital-explain {
+    flex-basis: 44px;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 @media (max-width: 480px) {
   .app-header {
     padding-inline: 0.7rem;
@@ -2005,13 +2052,13 @@ h1, h2, h3, h4 {
    height consume the entire observatory stage. */
 @media (max-height: 560px) {
   .main-canvas-area {
-    margin-top: 2.75rem;
+    margin-top: 6.5rem;
     padding-bottom: 0.25rem;
   }
 
   .moon-viz-wrapper {
-    height: min(calc(54vh - 60px), 420px);
-    height: min(calc(54dvh - 60px), 420px);
+    height: min(calc(46vh - 60px), 420px);
+    height: min(calc(46dvh - 60px), 420px);
     min-height: 0;
   }
 
@@ -2044,6 +2091,94 @@ h1, h2, h3, h4 {
 
   .moon-viz-wrapper {
     height: 100%;
+  }
+}
+
+/* Keep touch targets comfortable at any viewport; only the compact header sizing
+   is width-specific. The 320px calendar wraps Close rather than squeezing its
+   month and year controls. */
+@media (hover: none), (pointer: coarse) {
+  .app-header-actions .icon-button {
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .location-picker > .glass-button,
+  .deep-dive-trigger {
+    min-height: 44px;
+  }
+
+  .date-nav .ghost-control-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .today-button,
+  .segmented-option span,
+  .location-row,
+  .calendar-phase,
+  .privacy-actions .glass-button,
+  .data-drawer .drawer-close,
+  .modal-dialog .ghost-control-btn,
+  .update-prompt .ghost-control-btn,
+  .update-prompt .glass-button {
+    min-height: 44px;
+  }
+
+  .data-drawer .drawer-close,
+  .modal-dialog .ghost-control-btn {
+    min-width: 44px;
+  }
+
+  .location-panel .ghost-control-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .orbital-explain {
+    flex-basis: 44px;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .calendar-month-navigation .ghost-control-btn,
+  .calendar-close {
+    flex-basis: 44px;
+    width: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .calendar-phase {
+    padding-block: 0.45rem;
+  }
+}
+
+@media (max-width: 768px) and (hover: none),
+       (max-width: 768px) and (pointer: coarse) {
+  .location-picker > .glass-button,
+  .deep-dive-trigger {
+    width: 44px;
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 380px) and (hover: none),
+       (max-width: 380px) and (pointer: coarse) {
+  .calendar-header {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .calendar-month-navigation {
+    flex: 1 0 100%;
+    justify-content: center;
+  }
+
+  .calendar-close {
+    margin-left: auto;
   }
 }
 

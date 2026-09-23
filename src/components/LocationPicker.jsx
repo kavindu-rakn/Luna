@@ -153,7 +153,6 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
         aria-label={`Observing from ${location?.name || 'an unset location'}. Change location.`}
         style={{
           padding: '0.35rem 0.85rem',
-          minHeight: '32px',
           borderRadius: '16px',
           background: isOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
           border: isOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)',
@@ -273,7 +272,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                 type="button"
                 onClick={toggleSaved}
                 className="ghost-control-btn"
-                style={{ minWidth: '26px', minHeight: '26px', padding: 0 }}
+                style={{ padding: 0 }}
                 aria-label={isCurrentSaved ? 'Remove this location from saved places' : 'Save this location'}
                 title={isCurrentSaved ? 'Remove from saved' : 'Save this location'}
               >
@@ -307,7 +306,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                     type="button"
                     onClick={() => removeSaved(place)}
                     className="ghost-control-btn"
-                    style={{ minWidth: '26px', minHeight: '26px', padding: 0 }}
+                    style={{ padding: 0 }}
                     aria-label={`Remove ${place.name} from saved places`}
                   >
                     <X size={12} />

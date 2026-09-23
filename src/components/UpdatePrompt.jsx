@@ -77,7 +77,7 @@ const UpdatePrompt = () => {
           type="button"
           className="glass-button"
           onClick={() => updateServiceWorker(true)}
-          style={{ minHeight: '30px', padding: '0.25rem 0.75rem', fontSize: '0.78rem' }}
+          style={{ padding: '0.25rem 0.75rem', fontSize: '0.78rem' }}
         >
           Reload
         </button>
@@ -88,7 +88,7 @@ const UpdatePrompt = () => {
         className="ghost-control-btn"
         onClick={dismiss}
         aria-label="Dismiss"
-        style={{ minWidth: '28px', minHeight: '28px', padding: 0 }}
+        style={{ padding: 0 }}
       >
         <X size={14} />
       </button>

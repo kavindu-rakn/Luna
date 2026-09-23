@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 import '../utils/threeConsole';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 const MOON_TEXTURE_PATH = `${BASE_URL}/assets/textures/moon_1024.jpg`;
@@ -120,6 +121,7 @@ const useMoonScale = () => {
 
 const MoonMesh = ({ phase, onReady }) => {
   const scale = useMoonScale();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const moonRef = useRef();
   const isDragging = useRef(false);
   const previousPointer = useRef({ x: 0, y: 0 });
@@ -168,6 +170,14 @@ const MoonMesh = ({ phase, onReady }) => {
 
   useFrame(() => {
     if (!moonRef.current) return;
+
+    // Dragging remains direct and user-controlled. Only the residual spin after
+    // release is suppressed for viewers who ask the interface to reduce motion.
+    if (prefersReducedMotion) {
+      velocity.current.x = 0;
+      velocity.current.y = 0;
+      return;
+    }
 
     if (!isDragging.current) {
       // Apply smooth rotational inertia and decay
