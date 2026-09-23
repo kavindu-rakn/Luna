@@ -1782,7 +1782,10 @@ h1, h2, h3, h4 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 3.5rem;
+  /* Clears the header's lowest control (the date nav row, about 6rem below the
+     header's top at desktop sizes) with room to spare, so the Moon's limb never
+     meets it. The Moon then shrinks into whatever height remains. */
+  margin-top: calc(max(1rem, env(safe-area-inset-top, 0px)) + 6.5rem);
   padding: 0 max(1.5rem, env(safe-area-inset-right, 0px)) 0.75rem max(1.5rem, env(safe-area-inset-left, 0px));
 }
 
@@ -1792,6 +1795,7 @@ h1, h2, h3, h4 {
 
 .moon-container {
   width: 100%;
+  flex: 0 1 min(62vh, 720px);
   min-height: 0;
   display: flex;
   justify-content: center;
@@ -1806,8 +1810,8 @@ h1, h2, h3, h4 {
 /* Moon Viz Wrapper */
 .moon-viz-wrapper {
   width: 100%;
-  height: min(62vh, 720px);
-  min-height: 280px;
+  height: 100%;
+  min-height: 0;
   max-height: 720px;
   position: relative;
   display: flex;
@@ -1903,8 +1907,10 @@ h1, h2, h3, h4 {
     display: inline-block;
   }
 
+  /* The phone header stacks three rows: actions, date pill, nav. The nav row ends
+     about 9.25rem below the header's top with 44px touch targets. */
   .main-canvas-area {
-    margin-top: 9.5rem;
+    margin-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 9.75rem);
     justify-content: space-evenly;
     padding-inline: max(0.75rem, env(safe-area-inset-left, 0px)) max(0.75rem, env(safe-area-inset-right, 0px));
   }
@@ -1934,8 +1940,10 @@ h1, h2, h3, h4 {
 /* The desktop three-column header has too little utility space just above the
    tablet breakpoint. Keep the controls in one row, but use the same icon-led
    treatment as phones until the full desktop composition has room to breathe.
-   The labelled actions need about 1040px beside the centred date controls. */
-@media (min-width: 769px) and (max-width: 1039px) {
+   The labelled actions need about 1040px beside the centred date controls, and
+   about 1160px on short screens, where those controls spread into one row. */
+@media (min-width: 769px) and (max-width: 1039px),
+       (min-width: 769px) and (max-width: 1159px) and (max-height: 560px) {
   .app-header-actions {
     gap: 0.25rem;
   }
@@ -1958,7 +1966,9 @@ h1, h2, h3, h4 {
 }
 
 @media (min-width: 769px) and (max-width: 1039px) and (hover: none),
-       (min-width: 769px) and (max-width: 1039px) and (pointer: coarse) {
+       (min-width: 769px) and (max-width: 1039px) and (pointer: coarse),
+       (min-width: 769px) and (max-width: 1159px) and (max-height: 560px) and (hover: none),
+       (min-width: 769px) and (max-width: 1159px) and (max-height: 560px) and (pointer: coarse) {
   .app-header-actions .icon-button,
   .location-picker > .glass-button,
   .deep-dive-trigger,
@@ -2017,10 +2027,6 @@ h1, h2, h3, h4 {
     gap: 0;
   }
 
-  .main-canvas-area {
-    margin-top: 9rem;
-  }
-
   .hero-phase-name span {
     font-size: clamp(1.75rem, 8vw, 2.25rem);
   }
@@ -2029,20 +2035,34 @@ h1, h2, h3, h4 {
 /* Keep the Moon, phase title and scrubber in frame on landscape phones and
    short laptop windows instead of letting the visualization's desktop minimum
    height consume the entire observatory stage. */
+/* Short screens (landscape phones, squat windows) can't spare the height for the
+   date pill stacked over its nav, so they share one row, with the short date, and
+   the Moon gets the height back. That row ends about 2.75rem below the header's top. */
 @media (max-height: 560px) {
-  .main-canvas-area {
-    margin-top: 6.5rem;
-    padding-bottom: 0.25rem;
+  .date-controls {
+    flex-direction: row;
+    gap: 0.5rem;
   }
 
-  .moon-viz-wrapper {
-    height: min(calc(46vh - 60px), 420px);
-    height: min(calc(46dvh - 60px), 420px);
-    min-height: 0;
+  .date-text-desktop {
+    display: none;
+  }
+
+  .date-text-mobile {
+    display: inline-block;
+  }
+
+  .main-canvas-area {
+    margin-top: calc(max(1rem, env(safe-area-inset-top, 0px)) + 4rem);
+    padding-bottom: 0.25rem;
   }
 
   .hero-phase-name {
     margin-bottom: 0.4rem;
+  }
+
+  .hero-phase-name span {
+    font-size: clamp(1.6rem, 7vh, 2.15rem);
   }
 
   .lunar-timeline {
@@ -2058,9 +2078,11 @@ h1, h2, h3, h4 {
   }
 }
 
+/* Phone header on a landscape phone: the one-row date controls still sit on their
+   own row under the actions, ending about 7rem below the header's top... */
 @media (max-width: 768px) and (max-height: 560px) {
   .main-canvas-area {
-    margin-top: max(6.25rem, calc(env(safe-area-inset-top, 0px) + 6rem));
+    margin-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 7.75rem);
   }
 
   .moon-container {
@@ -2070,6 +2092,27 @@ h1, h2, h3, h4 {
 
   .moon-viz-wrapper {
     height: 100%;
+  }
+}
+
+/* ...unless the phone is wide enough (660px+) to fit brand, date controls and
+   actions in a single row, which leaves the Moon far more of the little height */
+@media (min-width: 660px) and (max-width: 768px) and (max-height: 560px) {
+  .app-header {
+    align-items: center;
+  }
+
+  .controls-panel {
+    position: static;
+  }
+
+  /* The row is tight at 660–700px; the nav's own 44px targets keep it tappable */
+  .today-button {
+    margin-inline: 0.25rem;
+  }
+
+  .main-canvas-area {
+    margin-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 4.5rem);
   }
 }
 
