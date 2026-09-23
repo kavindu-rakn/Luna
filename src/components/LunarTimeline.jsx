@@ -122,23 +122,8 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
         <div
           className="timeline-tooltip"
           style={{
-            position: 'absolute',
-            top: '-2.8rem',
             // Clamped so the tooltip stays inside the panel at either extreme
-            left: `clamp(7rem, calc(${hoverFraction * 100}% + 1.5rem), calc(100% - 7rem))`,
-            transform: 'translateX(-50%)',
-            
-            borderRadius: '10px',
-            padding: '0.4rem 0.75rem',
-            fontSize: '0.8rem',
-            color: 'var(--text-primary)',
-            whiteSpace: 'nowrap',
-            pointerEvents: 'none',
-            zIndex: 30,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            backdropFilter: 'blur(16px)'
+            left: `clamp(7rem, calc(${hoverFraction * 100}% + 1.5rem), calc(100% - 7rem))`
           }}
         >
           <MoonIcon phase={hovered.phase} size={15} />

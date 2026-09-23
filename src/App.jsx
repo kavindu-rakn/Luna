@@ -444,16 +444,7 @@ function App() {
             </SceneBoundary>
           )}
 
-          <footer
-            style={{
-              marginTop: '1.5rem',
-              marginBottom: '1rem',
-              textAlign: 'center',
-              color: 'var(--text-muted)',
-              fontSize: '0.75rem',
-              lineHeight: 1.5
-            }}
-          >
+          <footer className="drawer-footer">
             Moon and Sun positions from Meeus&rsquo; <em>Astronomical Algorithms</em> and SunCalc.
             <br />
             <button type="button" className="text-link" onClick={showPrivacy}>

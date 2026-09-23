@@ -135,12 +135,6 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
     });
   }, []);
 
-  const rowStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.55rem'
-  };
-
   return (
     <div className="location-picker">
       <button
@@ -219,7 +213,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
           </div>
 
           {/* Use my location */}
-          <button type="button" className="location-row" onClick={useMyLocation} disabled={isLocating} style={rowStyle}>
+          <button type="button" className="location-row" onClick={useMyLocation} disabled={isLocating}>
             {isLocating
               ? <Loader size={14} color="var(--accent-light)" />
               : <LocateFixed size={14} color="var(--accent-light)" />}
@@ -253,7 +247,6 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                   className="location-row"
                   onClick={() => applyPlace(place)}
                   title={place.detail}
-                  style={rowStyle}
                 >
                   <MapPin size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -295,7 +288,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                     type="button"
                     className="location-row"
                     onClick={() => applyPlace(place)}
-                    style={{ ...rowStyle, flex: 1 }}
+                    style={{ flex: 1 }}
                   >
                     <Star size={12} color="var(--accent-light)" fill="var(--accent-light)" style={{ flexShrink: 0 }} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
