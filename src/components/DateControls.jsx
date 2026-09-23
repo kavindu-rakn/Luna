@@ -359,9 +359,11 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
               );
             })}
 
-            {/* Trailing days, padding the matrix to a fixed six rows so the modal
-                keeps one height whether a month spans four rows or six */}
-            {Array.from({ length: Math.max(0, 42 - firstDayOfMonth - daysInMonth) }).map((_, i) => (
+            {/* Trailing days, finishing the month's last week only. A fixed six rows
+                kept the popup one height, but left a whole row of next month's days
+                under any month that fits in five. The month arrows sit at the top,
+                so they stay put under the pointer either way. */}
+            {Array.from({ length: (7 - ((firstDayOfMonth + daysInMonth) % 7)) % 7 }).map((_, i) => (
               <div
                 key={`next-${i}`}
                 className="calendar-day-outside"

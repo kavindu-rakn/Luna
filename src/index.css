@@ -126,11 +126,20 @@ h1, h2, h3, h4 {
   font-weight: 400;
 }
 
+/* Moonlight sliding slowly across the wordmark. Reduced motion holds it still. */
 .text-gradient {
-  background: linear-gradient(135deg, #f5f6fb 0%, #c9d3f5 58%, #8d9dd6 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #d5dcef 45%, #8d9dd6 80%, #ffffff 100%);
+  background-size: 250% 250%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* Controls use a single tactile language across the observatory. */
@@ -239,24 +248,30 @@ h1, h2, h3, h4 {
   pointer-events: auto;
 }
 
+/* Mark and wordmark are sized together from one font size, so they keep their
+   proportions at every width */
 .app-brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.16em;
   justify-self: start;
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
 }
 
-/* The app icon's crescent, cut out with its glow as transparency */
+/* The app icon's crescent, cut out with its glow as transparency. A little taller
+   than the capitals, as round shapes need to be to look the same size. The
+   crescent's lit side is its left, leaving the right of the box as dark disc, so
+   the gap is kept tight to look even beside the L. */
 .app-brand-mark {
   display: block;
   flex: none;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 0.86em;
+  height: 0.86em;
 }
 
 .hero-title {
   margin: 0;
-  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-size: 1em;
   font-weight: 650;
   line-height: 1;
   letter-spacing: -0.06em;
@@ -285,6 +300,11 @@ h1, h2, h3, h4 {
   font-style: italic;
   letter-spacing: 0.02em;
   white-space: nowrap;
+}
+
+/* The label says it all; the chart icon only appears where the label is hidden */
+.deep-dive-trigger > svg {
+  display: none;
 }
 
 .deep-dive-trigger.is-active {
@@ -1385,6 +1405,42 @@ h1, h2, h3, h4 {
   color: #fecaca;
 }
 
+/* Share confirmation: centred above the timeline, in the overlays' surface */
+.share-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-pill);
+  background: rgba(10, 16, 27, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-overlay);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 0.5rem);
+  transition: opacity 0.2s ease, transform 0.25s var(--ease-observe);
+}
+
+.share-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.share-toast svg {
+  flex: none;
+  color: var(--accent-light);
+}
+
 .update-prompt {
   max-width: min(22rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   padding: 0.65rem 0.75rem 0.65rem 0.9rem;
@@ -2035,6 +2091,10 @@ h1, h2, h3, h4 {
   .deep-dive-trigger > span {
     display: none;
   }
+
+  .deep-dive-trigger > svg {
+    display: block;
+  }
 }
 
 @media (min-width: 769px) and (max-width: 1039px) and (hover: none),
@@ -2066,15 +2126,6 @@ h1, h2, h3, h4 {
   }
 
   .app-brand {
-    gap: 0.3rem;
-  }
-
-  .app-brand-mark {
-    width: 1.4rem;
-    height: 1.4rem;
-  }
-
-  .hero-title {
     font-size: 1.5rem;
   }
 
@@ -2092,6 +2143,10 @@ h1, h2, h3, h4 {
   .location-trigger-label,
   .deep-dive-trigger > span {
     display: none;
+  }
+
+  .deep-dive-trigger > svg {
+    display: block;
   }
 
   .location-picker > .glass-button {
@@ -2263,6 +2318,10 @@ h1, h2, h3, h4 {
   .location-trigger-label,
   .deep-dive-trigger > span {
     display: none;
+  }
+
+  .deep-dive-trigger > svg {
+    display: block;
   }
 }
 

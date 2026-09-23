@@ -35,7 +35,7 @@ import { usePreferences } from './hooks/usePreferences';
 import { getLunarDetails, getSkyData, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
-import { X, BarChart3, Keyboard } from 'lucide-react';
+import { X, BarChart3, Lightbulb } from 'lucide-react';
 
 // Keys that controls like the timeline and the calendar grid use to move around
 const NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
@@ -360,7 +360,7 @@ function App() {
               aria-label="Keyboard shortcuts"
               title="Keyboard shortcuts (?)"
             >
-              <Keyboard size={15} color="var(--text-secondary)" />
+              <Lightbulb size={15} color="var(--text-secondary)" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -371,6 +371,7 @@ function App() {
               aria-controls="telemetry-drawer"
               aria-keyshortcuts="D"
             >
+              {/* Shown only where the label is hidden and the icon has to stand alone */}
               <BarChart3 size={14} aria-hidden="true" />
               <span>Deep Dive</span>
             </button>

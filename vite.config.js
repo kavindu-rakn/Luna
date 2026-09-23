@@ -94,6 +94,11 @@ export default defineConfig({
         // page downloaded it moments earlier and the install is served from the HTTP
         // cache. woff2 only; every browser with service workers reads it.
         globPatterns: ['**/*.{js,css,html,woff2,png,jpg,webmanifest}'],
+        // index.html asks for its icons with ?v=N, so browsers that cache icons by
+        // URL (Safari's touch-icon cache, above all) fetch a changed icon. The
+        // versioned requests still answer from the precache offline. Workbox's
+        // own defaults are kept alongside.
+        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^v$/],
         // The first cut precached 3.1 MB, much of it never used by the page at all.
         // These are left out rather than forced onto a first visit over mobile data:
         globIgnores: [

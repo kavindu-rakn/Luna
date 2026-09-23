@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Link2, Check } from 'lucide-react';
+import { Share2, Check, CircleAlert } from 'lucide-react';
 import { buildShareUrl } from '../utils/shareUrl';
 
 // The async Clipboard API needs a secure context and a user gesture, and some
@@ -32,7 +32,7 @@ const ShareButton = ({ date, location }) => {
   const flash = useCallback((next) => {
     setStatus(next);
     clearTimeout(resetTimer.current);
-    resetTimer.current = setTimeout(() => setStatus('idle'), 2200);
+    resetTimer.current = setTimeout(() => setStatus('idle'), 2600);
   }, []);
 
   const share = useCallback(async () => {
@@ -62,7 +62,7 @@ const ShareButton = ({ date, location }) => {
     ? 'Link copied'
     : status === 'failed'
       ? 'Could not copy the link'
-      : 'Copy a link to this view';
+      : 'Share a link to this view';
 
   return (
     <>
@@ -81,13 +81,26 @@ const ShareButton = ({ date, location }) => {
       >
         {status === 'copied'
           ? <Check size={14} color="var(--accent-light)" />
-          : <Link2 size={14} color={status === 'failed' ? '#fca5a5' : 'var(--text-secondary)'} />}
+          : <Share2 size={14} color={status === 'failed' ? '#fca5a5' : 'var(--text-secondary)'} />}
       </button>
 
-      {/* Announce the outcome; a changing icon alone says nothing to a screen reader */}
-      <span className="sr-only" aria-live="polite">
-        {status === 'copied' ? 'Link copied to clipboard' : status === 'failed' ? 'Could not copy the link' : ''}
-      </span>
+      {/* The tick on the button sits right under the cursor that clicked it, so say
+          it where it can be seen too. The same element is the live region that
+          announces it, and it stays mounted so a screen reader hears each change. */}
+      <div className={`share-toast${status === 'idle' ? '' : ' is-visible'}`} role="status" aria-live="polite">
+        {status === 'copied' && (
+          <>
+            <Check size={15} aria-hidden="true" />
+            <span>Link copied to clipboard</span>
+          </>
+        )}
+        {status === 'failed' && (
+          <>
+            <CircleAlert size={15} aria-hidden="true" />
+            <span>Could not copy the link</span>
+          </>
+        )}
+      </div>
     </>
   );
 };
