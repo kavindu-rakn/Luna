@@ -430,7 +430,7 @@ h1, h2, h3, h4 {
   color: var(--text-primary);
   font-size: 2.15rem;
   line-height: 1.05;
-  letter-spacing: -0.025em;
+  /* No letter-spacing, which would drop the Q-u ligature (see .hero-phase-name) */
 }
 
 .telemetry-exact-badge {
@@ -1860,7 +1860,8 @@ h1, h2, h3, h4 {
   color: var(--text-primary);
   line-height: 1.2;
   display: inline-block;
-  letter-spacing: -0.035em;
+  /* Leave letter-spacing at normal: any tracking switches off ligatures, and
+     Cormorant's long sweeping tail under "Quarter" is its Q-u ligature */
 }
 
 @media (max-width: 768px) {
