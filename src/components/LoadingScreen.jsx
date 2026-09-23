@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
-const LOGO_SRC = `${BASE_URL}/icon-192.png`; // 192px source for a 96px slot at 2x DPR
+const LOGO_SRC = `${BASE_URL}/luna-icon-192.png`; // 192px source for a 96px slot at 2x DPR
 
 // Progress follows the real load stages. The old bar tracked drei's texture
 // counter, which sat at 0% through the slowest part of startup (downloading and
