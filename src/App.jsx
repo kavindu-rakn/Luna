@@ -307,7 +307,14 @@ function App() {
         <header className="app-header">
           {/* Left: Brand / Title */}
           <div className="app-brand">
-            <span className="app-brand-mark" aria-hidden="true">◐</span>
+            <img
+              className="app-brand-mark"
+              src={`${import.meta.env.BASE_URL}brand-mark.png`}
+              alt=""
+              aria-hidden="true"
+              width="28"
+              height="28"
+            />
             <h1 className="text-gradient hero-title">
               Luna
             </h1>

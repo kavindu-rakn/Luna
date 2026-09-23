@@ -86,7 +86,7 @@ const LoadingScreen = ({ stage = 'shell' }) => {
           width: '500px',
           height: '500px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, var(--accent-glow) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(214, 222, 240, 0.1) 0%, transparent 70%)',
           animation: 'pulse-ring 4s ease-in-out infinite',
           pointerEvents: 'none'
         }}
@@ -119,7 +119,7 @@ const LoadingScreen = ({ stage = 'shell' }) => {
               position: 'absolute',
               inset: '-12px',
               borderRadius: '34px',
-              background: 'radial-gradient(circle, rgba(194, 207, 247, 0.24) 0%, transparent 70%)',
+              background: 'radial-gradient(circle, rgba(226, 232, 245, 0.22) 0%, transparent 70%)',
               filter: 'blur(8px)',
               animation: 'pulse-ring 3s ease-in-out infinite'
             }}
@@ -133,7 +133,7 @@ const LoadingScreen = ({ stage = 'shell' }) => {
               height: '96px',
               borderRadius: '24px',
               objectFit: 'cover',
-              boxShadow: '0 8px 32px var(--accent-glow), 0 0 0 1px rgba(255, 255, 255, 0.12)',
+              boxShadow: '0 8px 32px rgba(226, 232, 245, 0.16), 0 0 0 1px rgba(255, 255, 255, 0.12)',
               position: 'relative',
               zIndex: 2
             }}
@@ -186,8 +186,8 @@ const LoadingScreen = ({ stage = 'shell' }) => {
             style={{
               height: '100%',
               width: `${displayProgress}%`,
-              background: 'linear-gradient(90deg, #6e7fba, #aebbe6, #eef1f7)',
-              boxShadow: '0 0 12px var(--accent-light)',
+              background: 'linear-gradient(90deg, #7d8699, #c3cad8, #eef1f7)',
+              boxShadow: '0 0 12px rgba(238, 241, 247, 0.45)',
               borderRadius: '4px',
               transition: 'width 0.15s ease-out'
             }}

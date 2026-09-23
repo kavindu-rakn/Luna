@@ -111,7 +111,7 @@ Compare side by side with screenshots of the old drawer.
 
 ---
 
-### F3. Brand assets and wordmark mark. Priority: medium. Status: open, waiting on the owner's new assets
+### F3. Brand assets and wordmark mark. Priority: medium. Status: **done** (see "Brand assets" below)
 
 **Owner concern:** the UI moved from violet-navy to grey-black (owner prefers the new
 look), but the brand images are still violet.
@@ -442,7 +442,20 @@ and bundle budget passed after each.
 Known limit: at 568×320 (first-gen iPhone SE, landscape) the header needs two rows and
 the Moon is only about 20px. No layout of the current controls fits that height.
 
-Still open: **F3** (waiting on new brand assets). Real-browser checks of **offline** (use
+### Brand assets (F3)
+
+The owner generated a silver-on-near-black icon (1254×1254) and social card (1731×909) from the
+ChatGPT brief. From them:
+- `icon-512`, `icon-192`, `apple-touch-icon` (180): the full square, resized.
+- `favicon-32`: cropped to the glow so the crescent stays legible at 32px.
+- `icon-maskable-512`: logo shrunk to 72% on the icon's own background (3, 5, 10). At full size
+  the crescent's tips reached 41.6% from centre and would be clipped by circular masks.
+- `og-card` (1200×630): resized; the cache-busting query bumped to `?v=3`.
+- `brand-mark.png` (96px): the crescent with brightness as transparency, replacing the Unicode
+  ◐ next to the wordmark (1.75rem, 1.4rem at ≤480px). Precached by the service worker.
+- Loading screen: halo, logo shadow and progress bar moved from periwinkle to silver.
+
+Still open: real-browser checks of **offline** (use
 `npm run preview` or the live site; the dev server has no service worker) and **WebGL
 fallback** (start Chrome with `--disable-webgl`; turning off graphics acceleration only
 switches to software WebGL) are still pending. Reduced motion passed (owner, 2026-09-23).

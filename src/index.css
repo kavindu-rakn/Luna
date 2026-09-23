@@ -246,18 +246,12 @@ h1, h2, h3, h4 {
   justify-self: start;
 }
 
+/* The app icon's crescent, cut out with its glow as transparency */
 .app-brand-mark {
-  display: inline-grid;
-  place-items: center;
-  width: 1.2rem;
-  height: 1.2rem;
-  border: 1px solid rgba(194, 207, 247, 0.5);
-  border-radius: 50%;
-  color: var(--accent-light);
-  font-family: var(--font-serif);
-  font-size: 0.95rem;
-  line-height: 1;
-  transform: rotate(-25deg);
+  display: block;
+  flex: none;
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
 .hero-title {
@@ -1981,9 +1975,8 @@ h1, h2, h3, h4 {
   }
 
   .app-brand-mark {
-    width: 1rem;
-    height: 1rem;
-    font-size: 0.8rem;
+    width: 1.4rem;
+    height: 1.4rem;
   }
 
   .hero-title {
