@@ -246,7 +246,9 @@ h1, h2, h3, h4 {
   left: 0;
   right: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  /* Side columns never shrink below their content, so a crowded header pushes the
+     date controls off-centre rather than sliding the actions underneath them */
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   padding: 0 max(1.5rem, env(safe-area-inset-right, 0px)) 0 max(1.5rem, env(safe-area-inset-left, 0px));
   z-index: 30;
@@ -308,6 +310,7 @@ h1, h2, h3, h4 {
   font-size: 1.02rem;
   font-style: italic;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .deep-dive-trigger.is-active {
@@ -1868,30 +1871,6 @@ h1, h2, h3, h4 {
 }
 
 /* Responsive App Header */
-.app-header {
-  position: absolute;
-  top: max(1rem, env(safe-area-inset-top, 0px));
-  left: 0;
-  right: 0;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  padding: 0 max(1.5rem, env(safe-area-inset-right, 0px)) 0 max(1.5rem, env(safe-area-inset-left, 0px));
-  z-index: 30;
-  pointer-events: none;
-}
-
-.app-header > * {
-  pointer-events: auto;
-}
-
-.controls-panel {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  grid-column: 2;
-}
-
 .date-text-desktop {
   display: inline-block;
 }
@@ -1954,8 +1933,9 @@ h1, h2, h3, h4 {
 
 /* The desktop three-column header has too little utility space just above the
    tablet breakpoint. Keep the controls in one row, but use the same icon-led
-   treatment as phones until the full desktop composition has room to breathe. */
-@media (min-width: 769px) and (max-width: 959px) {
+   treatment as phones until the full desktop composition has room to breathe.
+   The labelled actions need about 1040px beside the centred date controls. */
+@media (min-width: 769px) and (max-width: 1039px) {
   .app-header-actions {
     gap: 0.25rem;
   }
@@ -1977,8 +1957,8 @@ h1, h2, h3, h4 {
   }
 }
 
-@media (min-width: 769px) and (max-width: 959px) and (hover: none),
-       (min-width: 769px) and (max-width: 959px) and (pointer: coarse) {
+@media (min-width: 769px) and (max-width: 1039px) and (hover: none),
+       (min-width: 769px) and (max-width: 1039px) and (pointer: coarse) {
   .app-header-actions .icon-button,
   .location-picker > .glass-button,
   .deep-dive-trigger,
@@ -2155,12 +2135,23 @@ h1, h2, h3, h4 {
   }
 }
 
+/* Square touch targets need their labels hidden, or the text wraps inside them */
 @media (max-width: 768px) and (hover: none),
        (max-width: 768px) and (pointer: coarse) {
   .location-picker > .glass-button,
   .deep-dive-trigger {
     width: 44px;
     min-width: 44px;
+    padding-inline: 0;
+  }
+
+  .location-picker > .glass-button {
+    gap: 0;
+  }
+
+  .location-trigger-label,
+  .deep-dive-trigger > span {
+    display: none;
   }
 }
 
