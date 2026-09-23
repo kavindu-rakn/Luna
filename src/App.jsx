@@ -407,9 +407,7 @@ function App() {
 
         {/* Bottom Bar: Timeline */}
         <div style={{ width: '100%', zIndex: 20 }}>
-          <div className="timeline-panel">
-            <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} />
-          </div>
+          <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} />
         </div>
       </main>
 

@@ -1,18 +1,21 @@
 import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import {
   getSynodicCycle,
-  getCycleFraction,
-  getDateAtCycleFraction,
+  getCyclePhasePosition,
+  getDateAtCyclePhase,
   getPhaseSummary,
   getAdjacentQuarterPhase
 } from '../utils/lunarCalc';
 import MoonIcon from './MoonIcon';
 
-
-
+// The track is measured by phase angle, not elapsed time, so the principal phases sit
+// on fixed marks: New Moon at both ends, First Quarter a quarter of the way, Full Moon
+// at the centre, Last Quarter at three quarters. By elapsed time they drifted a few
+// percent from cycle to cycle with the Moon's uneven orbital speed. That speed now
+// shows in the day ticks instead, which bunch where the Moon moves slowly.
 const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
-  const trackRef = useRef(null);
-  const [hoverFraction, setHoverFraction] = useState(null);
+  const railRef = useRef(null);
+  const [hoverPosition, setHoverPosition] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
 
@@ -25,11 +28,14 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
   // getSynodicCycle memoises internally, so a drag does not re-solve the cycle
   const cycle = useMemo(() => getSynodicCycle(currentDate), [currentDate]);
 
-  const currentFraction = getCycleFraction(cycle, currentDate);
+  const currentPosition = getCyclePhasePosition(cycle, currentDate);
 
-  const getFractionFromEvent = useCallback((e) => {
-    if (!trackRef.current) return null;
-    const rect = trackRef.current.getBoundingClientRect();
+  // Measured against the drawn rail, while the pointer is caught by the full-width
+  // track around it: a touch in the side margin clamps to that end of the cycle, so
+  // a thumb never has to reach the edge of the screen to get there.
+  const getPositionFromEvent = useCallback((e) => {
+    if (!railRef.current) return null;
+    const rect = railRef.current.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   }, []);
@@ -37,32 +43,32 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
   // The right end of the track is the next New Moon, which already belongs to the
   // next cycle. Landing on it rebuilt the track one cycle on, so a drag held past the
   // end kept jumping a month a frame. Stop a second short, as End does.
-  const scrubTo = useCallback((fraction) => {
+  const scrubTo = useCallback((position) => {
     const lastMs = cycle.startMs + cycle.durationMs - 1000;
-    const date = getDateAtCycleFraction(cycle, fraction);
+    const date = getDateAtCyclePhase(cycle, position);
     setCurrentDate(date.getTime() > lastMs ? new Date(lastMs) : date);
   }, [cycle, setCurrentDate]);
 
   const handlePointerDown = useCallback((e) => {
     setIsDragging(true);
-    trackRef.current?.setPointerCapture?.(e.pointerId);
-    const f = getFractionFromEvent(e);
-    if (f !== null) scrubTo(f);
-  }, [getFractionFromEvent, scrubTo]);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    const p = getPositionFromEvent(e);
+    if (p !== null) scrubTo(p);
+  }, [getPositionFromEvent, scrubTo]);
 
   const handlePointerMove = useCallback((e) => {
-    const f = getFractionFromEvent(e);
-    if (f === null) return;
-    setHoverFraction(f);
-    if (isDragging) scrubTo(f);
-  }, [getFractionFromEvent, isDragging, scrubTo]);
+    const p = getPositionFromEvent(e);
+    if (p === null) return;
+    setHoverPosition(p);
+    if (isDragging) scrubTo(p);
+  }, [getPositionFromEvent, isDragging, scrubTo]);
 
   const handlePointerUp = useCallback((e) => {
     setIsDragging(false);
-    trackRef.current?.releasePointerCapture?.(e.pointerId);
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
   }, []);
 
-  const handlePointerLeave = useCallback(() => setHoverFraction(null), []);
+  const handlePointerLeave = useCallback(() => setHoverPosition(null), []);
 
   // Keyboard: a day at a time, the cycle's ends, and with Shift the exact next or
   // previous principal phase. That is what Shift+arrow does everywhere else; here it
@@ -87,189 +93,126 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
   const formatShortDate = (date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone });
 
   const hovered = useMemo(() => {
-    if (hoverFraction === null) return null;
-    const date = getDateAtCycleFraction(cycle, hoverFraction);
+    if (hoverPosition === null) return null;
+    const date = getDateAtCyclePhase(cycle, hoverPosition);
     return { date, ...getPhaseSummary(date) };
-  }, [hoverFraction, cycle]);
+  }, [hoverPosition, cycle]);
 
   const currentSummary = useMemo(() => getPhaseSummary(currentDate), [currentDate]);
 
-  // The two bounding New Moons plus the three interior quarters, each at its solved
-  // instant. The spacing is uneven because the Moon's angular speed varies, and the
-  // timeline should show that rather than hide it behind an even grid.
+  // The two bounding New Moons and the three quarters, each on its fixed mark and
+  // labelled with the date it falls on this cycle
   const milestones = useMemo(() => ([
-    { name: 'New Moon', phase: 0, fraction: 0, date: cycle.start },
-    ...cycle.quarters,
-    { name: 'New Moon', phase: 1, fraction: 1, date: cycle.end }
+    { name: 'New Moon', phase: 0, position: 0, date: cycle.start },
+    ...cycle.quarters.map((q) => ({ ...q, position: q.phase })),
+    { name: 'New Moon', phase: 1, position: 1, date: cycle.end }
   ]), [cycle]);
 
+  // One tick per day from the opening New Moon, placed by the phase it reached
+  const ticks = useMemo(
+    () => cycle.ticks.map((tick) => ({ ...tick, position: getCyclePhasePosition(cycle, tick.date) })),
+    [cycle]
+  );
+
   return (
-    <div className="bottom-bar lunar-timeline">
-      {/* Header */}
+    <div className="lunar-timeline">
       <div className="timeline-header">
-        <h2 className="utility-label timeline-title" style={{ color: 'var(--text-muted)' }}>
+        <h2 className="utility-label timeline-title">
           Lunar Cycle &middot; {cycle.durationDays.toFixed(2)} days
         </h2>
-        {/* Right-aligned, so when a narrow screen wraps it onto two lines it still
-            lines up with the right end of the timeline below */}
-        <span className="utility-label timeline-hint" style={{ textAlign: 'right' }}>
+        <span className="utility-label timeline-hint">
           Drag / Scrub Timeline
         </span>
       </div>
 
-      {/* Floating hover tooltip */}
-      {hovered && (
-        <div
-          className="timeline-tooltip"
-          style={{
-            // Clamped so the tooltip stays inside the panel at either extreme
-            left: `clamp(7rem, calc(${hoverFraction * 100}% + 1.5rem), calc(100% - 7rem))`
-          }}
-        >
-          <MoonIcon phase={hovered.phase} size={15} />
-          <span className="font-serif" style={{ fontSize: '1.05rem', lineHeight: 1 }}>{hovered.name}</span>
-          <span style={{ color: 'var(--text-muted)' }}>{formatShortDate(hovered.date)}</span>
-          <span className="font-mono" style={{ color: 'var(--text-accent)', fontWeight: 600 }}>
-            {parseFloat(hovered.fraction).toFixed(0)}%
-          </span>
-        </div>
-      )}
-
-      {/* Interactive track */}
+      {/* Interactive track: full width, so its side margins catch a thumb too */}
       <div
-        className="timeline-track"
-        ref={trackRef}
+        className={`timeline-track${isDragging ? ' is-dragging' : ''}`}
         role="slider"
         tabIndex={0}
         aria-label="Position within the lunar cycle"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(currentFraction * 100)}
-        aria-valuetext={`${formatShortDate(currentDate)}, ${currentSummary.name}, ${Math.round(currentFraction * 100)} percent through the cycle`}
+        aria-valuenow={Math.round(currentPosition * 100)}
+        aria-valuetext={`${formatShortDate(currentDate)}, ${currentSummary.name}, ${Math.round(currentPosition * 100)} percent through the phase cycle`}
         onKeyDown={handleKeyDown}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '52px',
-          display: 'flex',
-          alignItems: 'center',
-          cursor: isDragging ? 'grabbing' : 'grab',
-          userSelect: 'none',
-          touchAction: 'none',
-          outline: 'none'
-        }}
       >
-        {/* Track line */}
-        <div
-          className="timeline-line"
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: 0,
-            right: 0,
-            height: '2px',
-            background: 'rgba(255,255,255,0.1)',
-            transform: 'translateY(-50%)'
-          }}
-        />
+        <div className="timeline-rail" ref={railRef}>
+          <div className="timeline-line" />
 
-        {/* Progress fill, which now genuinely travels from 0 to 100 across the cycle */}
-        <div
-          className="timeline-progress"
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: 0,
-            width: `${currentFraction * 100}%`,
-            height: '2px',
-            background: 'linear-gradient(90deg, var(--accent-primary), var(--accent-light))',
-            boxShadow: '0 0 10px var(--accent-glow)',
-            transform: 'translateY(-50%)',
-            transition: isDragging ? 'none' : 'width 0.3s ease'
-          }}
-        />
-
-        {/* Day ticks, placed by their true position in time */}
-        {cycle.ticks.map((tick, idx) => (
           <div
-            className="timeline-tick"
-            key={idx}
-            style={{
-              position: 'absolute',
-              left: `${tick.fraction * 100}%`,
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: isMobile ? '2px' : '4px',
-              height: isMobile ? '6px' : '4px',
-              borderRadius: isMobile ? '1px' : '50%',
-              background: `rgba(255,255,255, ${0.18 + tick.illumination * 0.55})`,
-              pointerEvents: 'none'
-            }}
+            className="timeline-progress"
+            style={{ width: `${currentPosition * 100}%` }}
           />
-        ))}
 
-        {/* Primary phases */}
-        {milestones.map((milestone, idx) => (
-          <div
-            className="timeline-milestone"
-            key={`milestone-${idx}`}
-            title={`${milestone.name} — ${formatShortDate(milestone.date)}`}
-            style={{
-              position: 'absolute',
-              left: `${milestone.fraction * 100}%`,
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 3,
-              pointerEvents: 'none'
-            }}
-          >
-            <MoonIcon phase={milestone.phase} size={16} />
+          {/* Day ticks, placed by the phase each day reached */}
+          {ticks.map((tick, idx) => (
+            <div
+              className="timeline-tick"
+              key={idx}
+              style={{
+                left: `${tick.position * 100}%`,
+                width: isMobile ? '2px' : '4px',
+                height: isMobile ? '6px' : '4px',
+                borderRadius: isMobile ? '1px' : '50%',
+                background: `rgba(255,255,255, ${0.18 + tick.illumination * 0.55})`
+              }}
+            />
+          ))}
+
+          {/* Principal phases, on their fixed marks */}
+          {milestones.map((milestone, idx) => (
+            <div
+              className="timeline-milestone"
+              key={`milestone-${idx}`}
+              title={`${milestone.name} — ${formatShortDate(milestone.date)}`}
+              style={{ left: `${milestone.position * 100}%` }}
+            >
+              <MoonIcon phase={milestone.phase} size={16} />
+            </div>
+          ))}
+
+          {/* Selected-position thumb */}
+          <div className="timeline-thumb" style={{ left: `${currentPosition * 100}%` }}>
+            <MoonIcon phase={currentSummary.phase} size={24} />
+            <div className="timeline-thumb-ring" />
           </div>
-        ))}
 
-        {/* Selected-position thumb */}
-        <div
-          className="timeline-thumb"
-          style={{
-            position: 'absolute',
-            left: `${currentFraction * 100}%`,
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 5,
-            filter: 'drop-shadow(0 0 10px var(--accent-light))',
-            transition: isDragging ? 'none' : 'left 0.3s ease',
-            pointerEvents: 'none'
-          }}
-        >
-          <MoonIcon phase={currentSummary.phase} size={24} />
-          <div
-            style={{
-              position: 'absolute',
-              top: '-3px',
-              left: '-3px',
-              right: '-3px',
-              bottom: '-3px',
-              borderRadius: '50%',
-              border: '1.5px solid var(--accent-light)',
-              opacity: 0.6,
-              animation: 'pulse-ring 2.4s ease-in-out infinite',
-              pointerEvents: 'none'
-            }}
-          />
+          {/* Readout for the point under the pointer, or under the finger mid-drag */}
+          {hovered && (
+            <div
+              className="timeline-tooltip"
+              style={{
+                // Clamped so the readout stays on screen at either end of the rail
+                left: `clamp(7rem, ${hoverPosition * 100}%, calc(100% - 7rem))`
+              }}
+            >
+              <MoonIcon phase={hovered.phase} size={15} />
+              <span className="font-serif timeline-tooltip-name">{hovered.name}</span>
+              <span className="timeline-tooltip-date">{formatShortDate(hovered.date)}</span>
+              <span className="font-mono timeline-tooltip-fraction">
+                {parseFloat(hovered.fraction).toFixed(0)}%
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* The cycle's own bounds, rather than a window that follows the selection */}
-      <div className="utility-label timeline-labels">
-        <span>{formatShortDate(cycle.start)}</span>
-        <span style={{ color: 'var(--text-accent)', fontWeight: 700 }}>
-          {formatShortDate(currentDate)}
-        </span>
-        <span>{formatShortDate(cycle.end)}</span>
+      {/* The date each principal phase falls on this cycle, under its mark */}
+      <div className="timeline-labels" aria-hidden="true">
+        {milestones.map((milestone, idx) => (
+          <span
+            key={`label-${idx}`}
+            className="utility-label timeline-label"
+            style={{ left: `${milestone.position * 100}%` }}
+          >
+            {formatShortDate(milestone.date)}
+          </span>
+        ))}
       </div>
     </div>
   );
