@@ -432,9 +432,9 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           <ChevronLeft size={16} />
         </button>
 
-        {/* Today: a centre dot between the arrows, as on a camera's shutter dial */}
+        {/* Today: a centre dot between the arrows, drawn just like them */}
         <button
-          className="glass-button today-button"
+          className="ghost-control-btn"
           title="Jump to Today (T)"
           onClick={onToday ?? (() => setCurrentDate(new Date()))}
           aria-label="Reset to Today"

@@ -993,16 +993,6 @@ h1, h2, h3, h4 {
   justify-content: space-between;
 }
 
-/* Round like the arrows around it, but filled, as the one that returns home */
-.today-button {
-  width: 38px;
-  min-width: 38px;
-  min-height: 38px;
-  padding: 0;
-  border-radius: 50%;
-  color: var(--text-secondary);
-}
-
 @media (max-width: 380px) {
   .date-text-desktop {
     font-size: 1rem;
@@ -2390,11 +2380,6 @@ h1, h2, h3, h4 {
     --header-row: 44px;
   }
 
-  .today-button {
-    width: 44px;
-    min-width: 44px;
-  }
-
   .app-header-actions .icon-button {
     width: 44px;
     min-width: 44px;
@@ -2411,7 +2396,6 @@ h1, h2, h3, h4 {
     min-height: 44px;
   }
 
-  .today-button,
   .segmented-option span,
   .location-row,
   .calendar-phase,
