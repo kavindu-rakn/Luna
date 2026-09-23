@@ -582,6 +582,43 @@ export const getDateAtCycleFraction = (cycle, fraction) => {
   return new Date(Math.round(cycle.startMs + clamped * cycle.durationMs));
 };
 
+// Where an instant sits in its cycle by phase angle rather than by elapsed time: 0 at
+// the opening New Moon, 0.25 at First Quarter, 0.5 at Full, 0.75 at Last Quarter, 1 at
+// the closing New Moon. The phases are defined by elongation, so on this scale they
+// land on the same marks in every cycle, whereas by elapsed time the Moon's uneven
+// orbital speed moves Full Moon anywhere from about 47% to 53% of the way through.
+export const getCyclePhasePosition = (cycle, date) => {
+  if (!cycle || !cycle.durationMs) return 0;
+  const ms = date instanceof Date ? date.getTime() : Number(date);
+  const elapsed = ms - cycle.startMs;
+  if (elapsed <= 0) return 0;
+  if (elapsed >= cycle.durationMs) return 1;
+  const phase = getMoonPhaseFraction(new Date(ms));
+  // A hair after the opening New Moon, or before the closing one, the solved instant
+  // and the elongation can straddle zero and read 0.9999 or 0.0001. Only a reading
+  // that far round counts as wrapped: Full Moon itself can come before the midpoint
+  // in time, at a phase just over 0.5.
+  if (elapsed < cycle.durationMs / 2) return phase > 0.9 ? 0 : phase;
+  return phase < 0.1 ? 1 : phase;
+};
+
+// The instant at a given phase position within a cycle. Elongation only increases
+// through a cycle, so bisection over the cycle's span always finds it, to the second.
+export const getDateAtCyclePhase = (cycle, position) => {
+  const target = Math.max(0, Math.min(1, position));
+  const endMs = cycle.startMs + cycle.durationMs;
+  if (target <= 0) return new Date(cycle.startMs);
+  if (target >= 1) return new Date(endMs);
+  let lo = cycle.startMs;
+  let hi = endMs;
+  while (hi - lo > 1000) {
+    const mid = (lo + hi) / 2;
+    if (getCyclePhasePosition(cycle, mid) < target) lo = mid;
+    else hi = mid;
+  }
+  return new Date(Math.round((lo + hi) / 2));
+};
+
 // ═══ TIMEZONE HELPERS ═══
 // Astronomy is computed for a LOCATION, so every time we display must be rendered
 // in that location's timezone, not in whatever timezone the viewer's browser sits in.

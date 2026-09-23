@@ -19,6 +19,8 @@ import {
   getSynodicCycle,
   getCycleFraction,
   getDateAtCycleFraction,
+  getCyclePhasePosition,
+  getDateAtCyclePhase,
   classifyPhase,
   toCompassBearing,
   toCompassDirection,
@@ -398,6 +400,58 @@ describe('phase classification and the timeline', () => {
     const cycle = getSynodicCycle(new Date('2026-09-19T12:00:00Z'));
     for (const f of [0, 0.13, 0.5, 0.77, 1]) {
       expect(getCycleFraction(cycle, getDateAtCycleFraction(cycle, f))).toBeCloseTo(f, 6);
+    }
+  });
+});
+
+describe('the timeline measured by phase angle', () => {
+  // Three years of cycles: by elapsed time their quarters wander a few percent
+  // either side of the even marks, so this is exactly where a fixed scale matters
+  const cycles = [];
+  let d = new Date('2025-01-01T00:00:00Z');
+  for (let i = 0; i < 37; i++) {
+    const c = getSynodicCycle(d);
+    cycles.push({ ...c, quarters: c.quarters.map((q) => ({ ...q })) });
+    d = new Date(c.startMs + c.durationMs + 3600000);
+  }
+
+  it('puts every quarter on the same mark in every cycle', () => {
+    for (const cycle of cycles) {
+      for (const q of cycle.quarters) {
+        // Within a minute of the mark; the scale is about 12 degrees a day
+        expect(Math.abs(getCyclePhasePosition(cycle, q.date) - q.phase)).toBeLessThan(0.0005);
+      }
+    }
+  });
+
+  it('finds the exact quarter instant from its mark', () => {
+    for (const cycle of cycles.slice(0, 6)) {
+      for (const q of cycle.quarters) {
+        expect(minutesBetween(getDateAtCyclePhase(cycle, q.phase), q.date)).toBeLessThan(2);
+      }
+    }
+  });
+
+  it('pins the ends to the bounding New Moons', () => {
+    const cycle = cycles[0];
+    expect(getCyclePhasePosition(cycle, cycle.start)).toBe(0);
+    expect(getCyclePhasePosition(cycle, cycle.end)).toBe(1);
+    // A second either side of a New Moon must not wrap to the far end of the track
+    expect(getCyclePhasePosition(cycle, cycle.startMs + 1000)).toBeLessThan(0.001);
+    expect(getCyclePhasePosition(cycle, cycle.startMs + cycle.durationMs - 1000)).toBeGreaterThan(0.999);
+    expect(getDateAtCyclePhase(cycle, 0).getTime()).toBe(cycle.startMs);
+    expect(getDateAtCyclePhase(cycle, 1).getTime()).toBe(cycle.startMs + cycle.durationMs);
+  });
+
+  it('round-trips a mark back to the same position and only ever moves forward', () => {
+    const cycle = cycles[4];
+    let previous = -1;
+    for (let i = 0; i <= 100; i++) {
+      const p = i / 100;
+      const at = getDateAtCyclePhase(cycle, p);
+      expect(getCyclePhasePosition(cycle, at)).toBeCloseTo(p, 4);
+      expect(at.getTime()).toBeGreaterThanOrEqual(previous);
+      previous = at.getTime();
     }
   });
 });
