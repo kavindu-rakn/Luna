@@ -52,25 +52,15 @@ const UpdatePrompt = () => {
     <div
       role="status"
       aria-live="polite"
+      className="update-prompt"
       style={{
         position: 'fixed',
-        right: '1rem',
+        right: 'max(1rem, env(safe-area-inset-right, 0px))',
         bottom: 'calc(8.5rem + env(safe-area-inset-bottom, 0px))',
         zIndex: 200,
         display: 'flex',
         alignItems: 'center',
         gap: '0.65rem',
-        maxWidth: 'min(22rem, calc(100vw - 2rem))',
-        padding: '0.65rem 0.75rem 0.65rem 0.9rem',
-        background: 'rgba(9, 12, 28, 0.96)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        border: '1px solid var(--border-medium)',
-        borderRadius: '14px',
-        boxShadow: '0 16px 40px rgba(0, 0, 0, 0.6)',
-        color: 'var(--text-primary)',
-        fontSize: '0.82rem',
-        fontFamily: 'var(--font-sans)',
         animation: 'fadeIn 0.25s ease-out'
       }}
     >
@@ -87,7 +77,7 @@ const UpdatePrompt = () => {
           type="button"
           className="glass-button"
           onClick={() => updateServiceWorker(true)}
-          style={{ minHeight: '30px', padding: '0.25rem 0.75rem', fontSize: '0.78rem' }}
+          style={{ padding: '0.25rem 0.75rem', fontSize: '0.78rem' }}
         >
           Reload
         </button>
@@ -98,7 +88,7 @@ const UpdatePrompt = () => {
         className="ghost-control-btn"
         onClick={dismiss}
         aria-label="Dismiss"
-        style={{ minWidth: '28px', minHeight: '28px', padding: 0 }}
+        style={{ padding: 0 }}
       >
         <X size={14} />
       </button>

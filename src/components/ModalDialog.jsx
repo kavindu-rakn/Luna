@@ -50,8 +50,6 @@ const ModalDialog = ({ isOpen, onClose, title, titleId, className = '', children
             background: 'var(--bg-surface-2)',
             border: '1px solid var(--border-medium)',
             borderRadius: '50%',
-            minWidth: '34px',
-            minHeight: '34px',
             padding: 0
           }}
         >

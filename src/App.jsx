@@ -8,6 +8,7 @@ import SkyPosition from './components/SkyPosition';
 import LoadingScreen from './components/LoadingScreen';
 import SceneBoundary from './components/SceneBoundary';
 import MoonIcon from './components/MoonIcon';
+import { canCreateWebGL } from './utils/webgl';
 
 // Three.js, fiber and drei are 60% of the bundle and nothing but these two scenes
 // needs them. Loading them on demand lets the header, date, phase name and
@@ -18,7 +19,7 @@ const OrbitalView = lazy(() => import('./components/OrbitalView'));
 // Shown while the 3D Moon loads, and in its place if WebGL is unavailable: a flat
 // Moon drawn at the right phase, so the view is never simply empty.
 const MoonFallback = ({ phase }) => (
-  <div className="moon-viz-wrapper" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  <div className="moon-viz-wrapper moon-viz-fallback">
     <div className="moon-fallback-disc">
       <MoonIcon phase={phase} size={200} style={{ width: '100%', height: '100%' }} />
     </div>
@@ -74,9 +75,17 @@ function App() {
   const [preferences, setPreference] = usePreferences();
   const { clock, distanceUnit } = preferences;
 
+  // Without WebGL the 3D scenes fail asynchronously, out of SceneBoundary's reach,
+  // so decide up front: the flat Moon and no orbit diagram, and no Three.js download
+  const [hasWebGL] = useState(canCreateWebGL);
+  useEffect(() => {
+    if (!hasWebGL) console.warn('WebGL unavailable, showing the 2D Moon and hiding the orbit diagram');
+  }, [hasWebGL]);
+
   // shell -> scene -> ready, or failed. Drives the loading screen from what has
-  // actually arrived rather than from a texture byte counter.
-  const [loadStage, setLoadStage] = useState('shell');
+  // actually arrived rather than from a texture byte counter. Without WebGL there
+  // is nothing to wait for, so it starts out finished.
+  const [loadStage, setLoadStage] = useState(hasWebGL ? 'shell' : 'failed');
   const markScene = useCallback(() => setLoadStage((s) => (s === 'shell' ? 'scene' : s)), []);
   const markReady = useCallback(() => setLoadStage('ready'), []);
   const markFailed = useCallback(() => setLoadStage((s) => (s === 'ready' ? s : 'failed')), []);
@@ -302,21 +311,20 @@ function App() {
       <main
         ref={mainViewRef}
         className={`main-view-container ${isDrawerOpen ? 'drawer-open' : ''}`}
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          position: 'relative',
-          zIndex: 10
-        }}
       >
         {/* Header Bar */}
         <header className="app-header">
           {/* Left: Brand / Title */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <h1 className="text-gradient hero-title" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)', margin: 0, lineHeight: 1 }}>
+          <div className="app-brand">
+            <img
+              className="app-brand-mark"
+              src={`${import.meta.env.BASE_URL}brand-mark.png`}
+              alt=""
+              aria-hidden="true"
+              width="28"
+              height="28"
+            />
+            <h1 className="text-gradient hero-title">
               Luna
             </h1>
           </div>
@@ -335,7 +343,7 @@ function App() {
           </div>
 
           {/* Right: Location & Deep Dive */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="app-header-actions">
             <LocationPicker
               location={location}
               setLocation={chooseLocation}
@@ -347,62 +355,30 @@ function App() {
             {/* Hidden on touch-only devices, which have no keyboard to use it with */}
             <button
               type="button"
-              className="glass-button shortcuts-trigger"
+              className="glass-button icon-button shortcuts-trigger"
               onClick={() => setIsShortcutsOpen(true)}
               aria-label="Keyboard shortcuts"
               title="Keyboard shortcuts (?)"
-              style={{
-                padding: 0,
-                minHeight: '32px',
-                minWidth: '32px',
-                width: '32px',
-                borderRadius: '50%',
-                background: 'var(--bg-surface-1)',
-                border: '1px solid var(--border-subtle)'
-              }}
             >
               <Keyboard size={15} color="var(--text-secondary)" />
             </button>
             <button
-              className="glass-button"
+              type="button"
+              className={`glass-button deep-dive-trigger ${isDrawerOpen ? 'is-active' : ''}`}
               onClick={() => setIsDrawerOpen(prev => !prev)}
-              style={{
-                padding: '0.35rem 1.05rem',
-                minHeight: '32px',
-                borderRadius: '16px',
-                background: isDrawerOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
-                border: isDrawerOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)',
-                boxShadow: isDrawerOpen ? '0 0 16px var(--accent-glow)' : 'none',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
               aria-label="Toggle telemetry details"
               aria-expanded={isDrawerOpen}
               aria-controls="telemetry-drawer"
               aria-keyshortcuts="D"
             >
-              <span
-                style={{
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: '1.05rem',
-                  fontWeight: 500,
-                  fontStyle: 'italic',
-                  letterSpacing: '0.04em',
-                  color: 'var(--text-primary)',
-                  lineHeight: 1
-                }}
-              >
-                Deep Dive
-              </span>
+              <BarChart3 size={14} aria-hidden="true" />
+              <span>Deep Dive</span>
             </button>
           </div>
         </header>
 
         {/* Center Canvas Area: 3D Moon & Hero Phase Name */}
-        <div className="main-canvas-area">
+        <div className="main-canvas-area observatory-stage">
           {/* One accessible name for whichever Moon is showing, 3D or the 2D stand-in.
               Dragging to rotate is exploration, not information: the phase and
               illumination it shows are all available as text. */}
@@ -411,11 +387,15 @@ function App() {
             role="img"
             aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated`}
           >
-            <SceneBoundary name="Moon scene" onError={markFailed} fallback={<MoonFallback phase={lunarDetails.phase} />}>
-              <Suspense fallback={<MoonFallback phase={lunarDetails.phase} />}>
-                <MoonVisualization lunarDetails={lunarDetails} onScene={markScene} onReady={markReady} />
-              </Suspense>
-            </SceneBoundary>
+            {hasWebGL ? (
+              <SceneBoundary name="Moon scene" onError={markFailed} fallback={<MoonFallback phase={lunarDetails.phase} />}>
+                <Suspense fallback={<MoonFallback phase={lunarDetails.phase} />}>
+                  <MoonVisualization lunarDetails={lunarDetails} onScene={markScene} onReady={markReady} />
+                </Suspense>
+              </SceneBoundary>
+            ) : (
+              <MoonFallback phase={lunarDetails.phase} />
+            )}
           </div>
 
           <div className="hero-phase-name">
@@ -427,7 +407,7 @@ function App() {
 
         {/* Bottom Bar: Timeline */}
         <div style={{ width: '100%', zIndex: 20 }}>
-          <div className="timeline-panel" style={{ width: '100%' }}>
+          <div className="timeline-panel">
             <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} />
           </div>
         </div>
@@ -441,42 +421,24 @@ function App() {
         aria-labelledby="telemetry-heading"
       >
         {/* Mobile Drag Indicator Handle */}
-        <div
-          style={{
-            width: '40px',
-            height: '4px',
-            background: 'rgba(255, 255, 255, 0.25)',
-            borderRadius: '2px',
-            margin: '0 auto 1rem auto',
-            display: 'block'
-          }}
-        />
+        <div className="drawer-handle" aria-hidden="true" />
 
         {/* Drawer Header & Close Button */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="drawer-header">
+          <div className="drawer-heading">
             <BarChart3 size={16} color="var(--accent-light)" />
             <h2
               id="telemetry-heading"
               ref={drawerHeadingRef}
               tabIndex={-1}
-              className="utility-label"
-              style={{ color: 'var(--text-accent)', fontSize: '0.8rem', margin: 0, outline: 'none' }}
+              className="utility-label drawer-title"
             >
               Astronomical Telemetry
             </h2>
           </div>
           <button
             onClick={() => setIsDrawerOpen(false)}
-            className="ghost-control-btn"
-            style={{
-              background: 'var(--bg-surface-2)',
-              border: '1px solid var(--border-medium)',
-              borderRadius: '50%',
-              minWidth: '36px',
-              minHeight: '36px',
-              padding: 0
-            }}
+            className="ghost-control-btn drawer-close"
             aria-label="Close details (Esc)"
           >
             <X size={16} />
@@ -487,14 +449,14 @@ function App() {
         <DisplayPreferences preferences={preferences} setPreference={setPreference} />
 
         {/* Telemetry Cards Stack */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="telemetry-content">
           <LunarData lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
 
           {computedSkyData && (
             <SkyPosition skyData={computedSkyData} locationName={location?.name} />
           )}
 
-          {hasOpenedDrawer && (
+          {hasOpenedDrawer && hasWebGL && (
             <SceneBoundary name="Orbital diagram">
               <Suspense fallback={null}>
                 <OrbitalView lunarDetails={lunarDetails} active={isDrawerOpen} distanceUnit={distanceUnit} />
@@ -502,16 +464,7 @@ function App() {
             </SceneBoundary>
           )}
 
-          <footer
-            style={{
-              marginTop: '1.5rem',
-              marginBottom: '1rem',
-              textAlign: 'center',
-              color: 'var(--text-muted)',
-              fontSize: '0.75rem',
-              lineHeight: 1.5
-            }}
-          >
+          <footer className="drawer-footer">
             Moon and Sun positions from Meeus&rsquo; <em>Astronomical Algorithms</em> and SunCalc.
             <br />
             <button type="button" className="text-link" onClick={showPrivacy}>

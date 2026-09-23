@@ -40,13 +40,13 @@ class ErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div style={{ padding: '2rem', textAlign: 'center', color: '#f8fafc', background: '#04060d', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#818cf8' }}>Something went wrong loading Luna</h2>
+          <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--accent-light)' }}>Something went wrong loading Luna</h2>
           <pre style={{ maxWidth: '600px', background: '#0d1022', padding: '1rem', borderRadius: '8px', color: '#f87171', fontSize: '0.85rem', overflowX: 'auto', textAlign: 'left' }}>
             {this.state.error?.toString()}
           </pre>
           <button
             onClick={() => window.location.reload()}
-            style={{ marginTop: '1.5rem', padding: '0.5rem 1.25rem', background: '#6366f1', color: '#ffffff', border: 'none', borderRadius: '20px', cursor: 'pointer', fontWeight: 600 }}
+            style={{ marginTop: '1.5rem', padding: '0.5rem 1.25rem', background: 'var(--accent-strong)', color: '#ffffff', border: 'none', borderRadius: '20px', cursor: 'pointer', fontWeight: 600 }}
           >
             Reload Application
           </button>

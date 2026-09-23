@@ -51,7 +51,7 @@ const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
   const areaPath = `${pathD} L ${points[points.length - 1].x},${horizonY} L ${points[0].x},${horizonY} Z`;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+    <svg className="sky-altitude-chart" viewBox={`0 0 ${width} ${height}`}>
       <defs>
         {/* Day/Night Zone Gradients */}
         <linearGradient id="lunaArcGradient" x1="0" y1="0" x2="0" y2="1">
@@ -79,19 +79,27 @@ const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
         strokeWidth="1.25"
         strokeDasharray="4,4"
       />
+
+      {/* Curve Path */}
+      <path d={pathD} fill="none" stroke="url(#lunaCurveGradient)" strokeWidth="2.5" />
+
+      {/* Drawn over the curve, with a halo in the panel's colour, because a Moon
+          rising or setting late in the day crosses the horizon right where it sits */}
       <text
-        x={width - padding.right + 6}
+        x={width - padding.right - 4}
         y={horizonY + 3}
+        textAnchor="end"
         fill="var(--text-muted)"
+        stroke="rgb(13, 18, 27)"
+        strokeWidth="4"
+        strokeLinejoin="round"
+        paintOrder="stroke"
         fontSize="10"
         fontFamily="var(--font-sans)"
         fontWeight="600"
       >
         0° Horizon
       </text>
-
-      {/* Curve Path */}
-      <path d={pathD} fill="none" stroke="url(#lunaCurveGradient)" strokeWidth="2.5" />
 
       {/* 4-Hour Time Ticks on X-Axis */}
       {points.filter((_, i) => i % 8 === 0).map((p, i) => (
@@ -148,18 +156,18 @@ const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
 };
 
 const StatItem = ({ icon, label, value, subValue, highlight = false }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', alignItems: 'center', textAlign: 'center' }}>
-    <div style={{ color: highlight ? 'var(--text-accent)' : 'var(--text-muted)', marginBottom: '0.1rem' }}>
+  <div className={`sky-stat${highlight ? ' is-highlighted' : ''}`}>
+    <div className="sky-stat-icon" aria-hidden="true">
       {icon}
     </div>
-    <div className="utility-label" style={{ marginBottom: '0.15rem' }}>
+    <div className="utility-label sky-stat-label">
       {label}
     </div>
-    <div className="font-mono" style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.1 }}>
+    <div className="font-mono sky-stat-value">
       {value}
     </div>
     {subValue && (
-      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+      <div className="sky-stat-note">
         {subValue}
       </div>
     )}
@@ -172,26 +180,28 @@ const SkyPosition = ({ skyData, locationName }) => {
   if (!skyData) return null;
 
   return (
-    <div ref={cardRef} className="glass-panel" style={{ width: '100%', padding: '1.5rem' }}>
+    <section ref={cardRef} className="telemetry-section sky-position-panel">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Moon size={16} color="var(--accent-light)" />
-          <h3 className="utility-label" style={{ margin: 0 }}>
+      <div className="sky-position-header">
+        <div className="sky-position-heading">
+          <Moon size={16} aria-hidden="true" />
+          <h3 className="utility-label">
             24-Hour Sky Transit & Ephemeris
           </h3>
         </div>
 
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-accent)' }}>
-          <MapPin size={12} /> {locationName || 'Location'}
+        <div className="sky-position-context">
+          <span className="sky-position-location">
+            <MapPin size={12} aria-hidden="true" /> {locationName || 'Location'}
+          </span>
           {skyData.timeZoneLabel && (
-            <span style={{ color: 'var(--text-muted)' }}>· {skyData.timeZoneLabel}</span>
+            <span className="sky-position-timezone">· {skyData.timeZoneLabel}</span>
           )}
-        </span>
+        </div>
       </div>
 
       {/* Altitude Horizon Curve */}
-      <div style={{ marginBottom: '1.25rem' }}>
+      <div className="sky-position-chart-wrap">
         <AltitudeArc
           altitudePoints={skyData.altitudePoints}
           currentFraction={skyData.currentFraction}
@@ -200,15 +210,7 @@ const SkyPosition = ({ skyData, locationName }) => {
       </div>
 
       {/* Observational Ephemeris Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-          gap: '1rem',
-          paddingTop: '0.75rem',
-          borderTop: '1px solid var(--border-subtle)'
-        }}
-      >
+      <div className="sky-ephemeris-grid">
         <StatItem
           icon={<ArrowUp size={15} />}
           label="Moonrise"
@@ -240,11 +242,11 @@ const SkyPosition = ({ skyData, locationName }) => {
 
       {/* Times belong to the observing location, not to the viewer's device */}
       {skyData.timeZone && (
-        <div style={{ marginTop: '0.85rem', fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+        <div className="sky-position-timezone-note">
           All times shown in {skyData.timeZone} ({skyData.timeZoneLabel})
         </div>
       )}
-    </div>
+    </section>
   );
 };
 

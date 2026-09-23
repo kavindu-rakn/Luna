@@ -68,15 +68,12 @@ const ShareButton = ({ date, location }) => {
     <>
       <button
         type="button"
-        className="glass-button"
+        className="glass-button icon-button"
         onClick={share}
         aria-label={label}
         title={label}
         style={{
           padding: 0,
-          minHeight: '32px',
-          minWidth: '32px',
-          width: '32px',
           borderRadius: '50%',
           background: status === 'copied' ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
           border: status === 'copied' ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)'
