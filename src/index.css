@@ -248,7 +248,7 @@ h1, h2, h3, h4 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  padding: 0 1.5rem;
+  padding: 0 max(1.5rem, env(safe-area-inset-right, 0px)) 0 max(1.5rem, env(safe-area-inset-left, 0px));
   z-index: 30;
   pointer-events: none;
 }
@@ -887,7 +887,7 @@ h1, h2, h3, h4 {
     width: min(31rem, 100vw);
     height: 100vh;
     height: 100dvh;
-    padding: 2.5rem 2rem;
+    padding: 2.5rem max(2rem, env(safe-area-inset-right, 0px)) 2.5rem max(2rem, env(safe-area-inset-left, 0px));
     border-left: 1px solid var(--border-medium);
     transform: translateX(100%);
   }
@@ -922,9 +922,8 @@ h1, h2, h3, h4 {
     height: min(85dvh, calc(100dvh - 1rem));
     border-top: 1px solid var(--border-medium);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    padding: 1.25rem;
+    padding: 1.25rem max(1.25rem, env(safe-area-inset-right, 0px)) calc(1.5rem + env(safe-area-inset-bottom, 0px)) max(1.25rem, env(safe-area-inset-left, 0px));
     transform: translateY(100%);
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   .data-drawer.is-open {
@@ -1267,8 +1266,8 @@ h1, h2, h3, h4 {
   margin: auto;
   /* Draws the scrollbar of a long dialog dark, rather than the default light one */
   color-scheme: dark;
-  width: min(36rem, calc(100vw - 2rem));
-  max-height: min(42rem, calc(100dvh - 2rem));
+  width: min(36rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  max-height: min(42rem, calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
   overflow: auto;
   padding: 1.35rem;
   border: 1px solid var(--border-medium);
@@ -1425,7 +1424,7 @@ h1, h2, h3, h4 {
 }
 
 .update-prompt {
-  max-width: min(22rem, calc(100vw - 2rem));
+  max-width: min(22rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   padding: 0.65rem 0.75rem 0.65rem 0.9rem;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-md);
@@ -1466,7 +1465,7 @@ h1, h2, h3, h4 {
   position: absolute;
   top: 2.75rem;
   right: 0;
-  width: min(21rem, calc(100vw - 2rem));
+  width: min(21rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   padding: 0.85rem;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-md);
@@ -1531,7 +1530,7 @@ h1, h2, h3, h4 {
   left: 50%;
   translate: -50% 0;
   z-index: 100;
-  width: min(22rem, calc(100vw - 1.5rem));
+  width: min(22rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   padding: 1.1rem;
   max-height: min(42rem, calc(100vh - 6rem));
   max-height: min(42rem, calc(100dvh - 6rem));
@@ -1672,7 +1671,7 @@ h1, h2, h3, h4 {
 
 @media (max-width: 380px) {
   .calendar-panel {
-    width: calc(100vw - 1rem);
+    width: calc(100vw - 1rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
     padding: 0.75rem;
   }
 }
@@ -1713,7 +1712,7 @@ h1, h2, h3, h4 {
 .lunar-timeline {
   --timeline-line: rgba(185, 199, 235, 0.22);
   position: relative;
-  padding: 0.85rem 1.5rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  padding: 0.85rem max(1.5rem, env(safe-area-inset-right, 0px)) calc(0.85rem + env(safe-area-inset-bottom, 0px)) max(1.5rem, env(safe-area-inset-left, 0px));
 }
 
 .timeline-header {
@@ -1755,7 +1754,7 @@ h1, h2, h3, h4 {
 
 @media (max-width: 640px) {
   .lunar-timeline {
-    padding-inline: 0.8rem;
+    padding-inline: max(0.8rem, env(safe-area-inset-left, 0px)) max(0.8rem, env(safe-area-inset-right, 0px));
   }
 
   .timeline-header {
@@ -1781,7 +1780,7 @@ h1, h2, h3, h4 {
   align-items: center;
   justify-content: center;
   margin-top: 3.5rem;
-  padding: 0 1.5rem 0.75rem;
+  padding: 0 max(1.5rem, env(safe-area-inset-right, 0px)) 0.75rem max(1.5rem, env(safe-area-inset-left, 0px));
 }
 
 .observatory-stage {
@@ -1871,13 +1870,13 @@ h1, h2, h3, h4 {
 /* Responsive App Header */
 .app-header {
   position: absolute;
-  top: 1rem;
+  top: max(1rem, env(safe-area-inset-top, 0px));
   left: 0;
   right: 0;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  padding: 0 1.5rem;
+  padding: 0 max(1.5rem, env(safe-area-inset-right, 0px)) 0 max(1.5rem, env(safe-area-inset-left, 0px));
   z-index: 30;
   pointer-events: none;
 }
@@ -1906,7 +1905,7 @@ h1, h2, h3, h4 {
     justify-content: space-between;
     align-items: flex-start;
     top: max(0.75rem, env(safe-area-inset-top, 0px));
-    padding: 0 1rem;
+    padding: 0 max(1rem, env(safe-area-inset-right, 0px)) 0 max(1rem, env(safe-area-inset-left, 0px));
   }
 
   .controls-panel {
@@ -1928,7 +1927,7 @@ h1, h2, h3, h4 {
   .main-canvas-area {
     margin-top: 9.5rem;
     justify-content: space-evenly;
-    padding-inline: 0.75rem;
+    padding-inline: max(0.75rem, env(safe-area-inset-left, 0px)) max(0.75rem, env(safe-area-inset-right, 0px));
   }
 
   .moon-container {
@@ -2001,7 +2000,7 @@ h1, h2, h3, h4 {
 
 @media (max-width: 480px) {
   .app-header {
-    padding-inline: 0.7rem;
+    padding-inline: max(0.7rem, env(safe-area-inset-left, 0px)) max(0.7rem, env(safe-area-inset-right, 0px));
   }
 
   .app-brand {

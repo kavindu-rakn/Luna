@@ -55,7 +55,7 @@ const UpdatePrompt = () => {
       className="update-prompt"
       style={{
         position: 'fixed',
-        right: '1rem',
+        right: 'max(1rem, env(safe-area-inset-right, 0px))',
         bottom: 'calc(8.5rem + env(safe-area-inset-bottom, 0px))',
         zIndex: 200,
         display: 'flex',
