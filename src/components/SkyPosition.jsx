@@ -79,20 +79,27 @@ const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
         strokeWidth="1.25"
         strokeDasharray="4,4"
       />
+
+      {/* Curve Path */}
+      <path d={pathD} fill="none" stroke="url(#lunaCurveGradient)" strokeWidth="2.5" />
+
+      {/* Drawn over the curve, with a halo in the panel's colour, because a Moon
+          rising or setting late in the day crosses the horizon right where it sits */}
       <text
         x={width - padding.right - 4}
         y={horizonY + 3}
         textAnchor="end"
         fill="var(--text-muted)"
+        stroke="rgb(13, 18, 27)"
+        strokeWidth="4"
+        strokeLinejoin="round"
+        paintOrder="stroke"
         fontSize="10"
         fontFamily="var(--font-sans)"
         fontWeight="600"
       >
         0° Horizon
       </text>
-
-      {/* Curve Path */}
-      <path d={pathD} fill="none" stroke="url(#lunaCurveGradient)" strokeWidth="2.5" />
 
       {/* 4-Hour Time Ticks on X-Axis */}
       {points.filter((_, i) => i % 8 === 0).map((p, i) => (
