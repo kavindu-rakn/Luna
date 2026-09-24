@@ -61,23 +61,27 @@ body {
 
 /* The observatory itself is not a document to select. A long-press, or a mouse
    drag that starts beside the Moon, used to select the Moon's canvas and paint it
-   over with a selection box like an image. Deep Dive's figures stay selectable,
-   so rise and set times can still be copied. */
-.app-header,
-.main-canvas-area,
-.lunar-timeline {
+   over with a selection box like an image. It is switched off for the whole page,
+   not just the header and stage: the header lets taps through the gaps between
+   its controls, so on iOS a long-press there reached the page behind and selected
+   all of it. Deep Dive and the dialogs stay selectable, so rise and set times can
+   still be copied. */
+body {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
 }
 
-/* The location search and the calendar's year field live inside the header, and
-   iOS Safari won't take typing into a field whose ancestor forbids selection */
-.app-header input,
-.app-header select,
-.app-header textarea {
+/* Text fields too: iOS Safari won't take typing into a field whose ancestor
+   forbids selection */
+.data-drawer,
+.modal-dialog,
+input,
+select,
+textarea {
   -webkit-user-select: text;
   user-select: text;
+  -webkit-touch-callout: default;
 }
 
 /* Accessibility screen reader only class */
@@ -186,15 +190,24 @@ h1, h2, h3, h4 {
   min-height: 38px;
 }
 
-.glass-button:hover {
-  background: var(--bg-surface-elevated);
-  border-color: var(--border-highlight);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px -14px var(--accent-glow);
+/* Hover styles only where there is a pointer to hover with. A touch screen keeps
+   :hover on whatever was tapped last, so a tapped button stayed lit until the next
+   tap elsewhere. A tap shows :active instead: lit the moment the finger lands,
+   fading out as it lifts. */
+@media (hover: hover) {
+  .glass-button:hover {
+    background: var(--bg-surface-elevated);
+    border-color: var(--border-highlight);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px -14px var(--accent-glow);
+  }
 }
 
 .glass-button:active {
+  background: var(--bg-surface-elevated);
+  border-color: var(--border-highlight);
   transform: translateY(0);
+  transition-duration: 0s;
 }
 
 .glass-button:focus-visible {
@@ -216,17 +229,27 @@ h1, h2, h3, h4 {
   min-width: 38px;
   min-height: 38px;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-observe);
+  /* Drawn on its own layer from the start. Otherwise the hover's scale moves it
+     onto one only while hovered, and a button sitting on a half pixel snaps to a
+     whole one, so its icon jumps sideways as the pointer arrives. */
+  will-change: transform;
 }
 
-.ghost-control-btn:hover {
-  color: var(--text-primary);
-  background: rgba(206, 218, 244, 0.1);
-  border-color: var(--border-subtle);
-  transform: scale(1.04);
+@media (hover: hover) {
+  .ghost-control-btn:hover {
+    color: var(--text-primary);
+    background: rgba(206, 218, 244, 0.1);
+    border-color: var(--border-subtle);
+    transform: scale(1.04);
+  }
 }
 
 .ghost-control-btn:active {
+  color: var(--text-primary);
+  background: rgba(206, 218, 244, 0.14);
+  border-color: var(--border-subtle);
   transform: scale(0.95);
+  transition-duration: 0s, 0s, 0s, 0.2s;
 }
 
 .ghost-control-btn:focus-visible {
@@ -957,13 +980,20 @@ h1, h2, h3, h4 {
 }
 
 /* Date control cluster: the full date as a pill, and its five controls spread
-   evenly across exactly the pill's width beneath it */
+   evenly across exactly the pill's width beneath it. The width is fixed, not
+   fitted to the date: the longest date Luna shows ("Wednesday, September 29,
+   2088") sets under 13em of Cormorant at this size, so every date fits, and
+   neither the pill nor the controls shift as the date's length changes. The
+   button sizes leave whole-pixel gaps at each width (24px here, 14px with 48px
+   touch targets), so no control lands on a half pixel. */
 .date-controls {
+  --date-width: 18.5rem;
+  --date-button: 40px;
   position: relative;
   display: grid;
   justify-items: stretch;
-  width: max-content;
-  gap: 0.35rem;
+  width: var(--date-width);
+  gap: 0.4rem;
 }
 
 .date-display-btn {
@@ -993,7 +1023,19 @@ h1, h2, h3, h4 {
   justify-content: space-between;
 }
 
+.date-nav .ghost-control-btn {
+  width: var(--date-button);
+  height: var(--date-button);
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+
 @media (max-width: 380px) {
+  .date-controls {
+    --date-width: 17.25rem;
+  }
+
   .date-text-desktop {
     font-size: 1rem;
   }
@@ -1080,8 +1122,10 @@ h1, h2, h3, h4 {
   transition: color 0.25s ease;
 }
 
-.segmented-option input:hover:not(:checked) + span {
-  color: var(--text-primary);
+@media (hover: hover) {
+  .segmented-option input:hover:not(:checked) + span {
+    color: var(--text-primary);
+  }
 }
 
 .segmented-option input:checked + span {
@@ -1110,9 +1154,11 @@ h1, h2, h3, h4 {
   cursor: pointer;
 }
 
-.calendar-select:hover {
-  border-color: var(--border-medium);
-  background-color: rgba(255, 255, 255, 0.05);
+@media (hover: hover) {
+  .calendar-select:hover {
+    border-color: var(--border-medium);
+    background-color: rgba(255, 255, 255, 0.05);
+  }
 }
 
 .calendar-select:focus-visible {
@@ -1240,8 +1286,15 @@ h1, h2, h3, h4 {
   transition: background 0.15s ease;
 }
 
-.calendar-phase:hover {
+@media (hover: hover) {
+  .calendar-phase:hover {
+    background: rgba(255, 255, 255, 0.07);
+  }
+}
+
+.calendar-phase:active {
   background: rgba(255, 255, 255, 0.07);
+  transition-duration: 0s;
 }
 
 .calendar-phase:focus-visible {
@@ -1269,8 +1322,10 @@ h1, h2, h3, h4 {
   cursor: pointer;
 }
 
-.text-link:hover {
-  color: var(--text-primary);
+@media (hover: hover) {
+  .text-link:hover {
+    color: var(--text-primary);
+  }
 }
 
 .text-link:focus-visible {
@@ -1568,9 +1623,17 @@ h1, h2, h3, h4 {
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
-.location-row:hover:not(:disabled) {
+@media (hover: hover) {
+  .location-row:hover:not(:disabled) {
+    background: rgba(194, 207, 247, 0.09);
+    border-color: var(--border-subtle);
+  }
+}
+
+.location-row:active:not(:disabled) {
   background: rgba(194, 207, 247, 0.09);
   border-color: var(--border-subtle);
+  transition-duration: 0s;
 }
 
 .location-row:focus-visible {
@@ -1693,8 +1756,15 @@ h1, h2, h3, h4 {
   transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.calendar-day:hover:not(.is-selected) {
+@media (hover: hover) {
+  .calendar-day:hover:not(.is-selected) {
+    background: rgba(217, 228, 255, 0.1);
+  }
+}
+
+.calendar-day:active:not(.is-selected) {
   background: rgba(217, 228, 255, 0.1);
+  transition-duration: 0s;
 }
 
 .calendar-day.is-today:not(.is-selected) {
@@ -1710,8 +1780,10 @@ h1, h2, h3, h4 {
   box-shadow: 0 0 12px var(--accent-glow);
 }
 
-.calendar-day.is-selected:hover {
-  background: var(--accent-strong);
+@media (hover: hover) {
+  .calendar-day.is-selected:hover {
+    background: var(--accent-strong);
+  }
 }
 
 .calendar-day:focus-visible {
@@ -2304,6 +2376,10 @@ h1, h2, h3, h4 {
     gap: 0.5rem;
   }
 
+  .date-display-btn {
+    width: 8rem;
+  }
+
   .date-nav {
     gap: 0.1rem;
   }
@@ -2391,9 +2467,8 @@ h1, h2, h3, h4 {
     min-height: 44px;
   }
 
-  .date-nav .ghost-control-btn {
-    min-width: 44px;
-    min-height: 44px;
+  .date-controls {
+    --date-button: 48px;
   }
 
   .segmented-option span,
@@ -2434,6 +2509,15 @@ h1, h2, h3, h4 {
 
   .calendar-phase {
     padding-block: 0.45rem;
+  }
+}
+
+/* On short screens the controls share one row with the pill, which has no room
+   for 48px each */
+@media (max-height: 560px) and (hover: none),
+       (max-height: 560px) and (pointer: coarse) {
+  .date-controls {
+    --date-button: 44px;
   }
 }
 
