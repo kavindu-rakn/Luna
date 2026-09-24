@@ -229,6 +229,10 @@ h1, h2, h3, h4 {
   min-width: 38px;
   min-height: 38px;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-observe);
+  /* Drawn on its own layer from the start. Otherwise the hover's scale moves it
+     onto one only while hovered, and a button sitting on a half pixel snaps to a
+     whole one, so its icon jumps sideways as the pointer arrives. */
+  will-change: transform;
 }
 
 @media (hover: hover) {
@@ -979,10 +983,12 @@ h1, h2, h3, h4 {
    evenly across exactly the pill's width beneath it. The width is fixed, not
    fitted to the date: the longest date Luna shows ("Wednesday, September 29,
    2088") sets under 13em of Cormorant at this size, so every date fits, and
-   neither the pill nor the controls shift as the date's length changes. */
+   neither the pill nor the controls shift as the date's length changes. The
+   button sizes leave whole-pixel gaps at each width (24px here, 14px with 48px
+   touch targets), so no control lands on a half pixel. */
 .date-controls {
   --date-width: 18.5rem;
-  --date-button: 38px;
+  --date-button: 40px;
   position: relative;
   display: grid;
   justify-items: stretch;
