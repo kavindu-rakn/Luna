@@ -147,7 +147,6 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
         aria-label={`Observing from ${location?.name || 'an unset location'}. Change location.`}
         style={{
           padding: '0.35rem 0.85rem',
-          borderRadius: '16px',
           background: isOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
           border: isOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)',
           gap: '0.4rem',
