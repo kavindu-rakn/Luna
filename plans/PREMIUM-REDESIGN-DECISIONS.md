@@ -258,10 +258,23 @@ when the page opens.
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Foundation: Vercel, measurement, static shell, no loader, fonts, GSAP after paint, audit bugs | In progress |
+| 0 | Foundation: Vercel, measurement, static shell, no loader, fonts, GSAP after paint, audit bugs | In review: waiting on the Vercel project, then measured there and the Pages cutover |
 | 1 | The Moon and the sky: renderer, lunar shader, textures, libration and orientation, real stars, tilt | Not started |
 | 2 | Design language: tokens, controls, icons, header and menu, cursor, sound engine, idle fade, copy | Not started |
 | 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, final performance pass, domain | Not started |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
+
+### Phase 0 notes
+
+- Local Lighthouse, 5 runs each against `vite preview` under the same conditions: mobile
+  44 → 55, desktop 76 → 89; first paint 3.7 → 2.5 s, largest paint 4.9 → 4.1 s, blocking time
+  2.4 → 1.9 s, layout shift 0.021 → 0. This machine is noisy (master alone swung from 52 to 44
+  on mobile within the day), and `vite preview` serves uncompressed files, so only same-run
+  comparisons mean anything. Vercel numbers come next.
+- What's left on mobile is main-thread work: fiber and three.js starting up (with the
+  software WebGL Lighthouse uses, creating a context alone cost 1.5 s), the texture's pole
+  blending, and React's first render. Phase 1's worker renderer is aimed at exactly this.
+- Tried and reverted: loading the app from the inline script after first paint. It only
+  moved the app's start-up into the window Lighthouse counts as blocking time.
