@@ -4,8 +4,8 @@ import Starfield from './components/Starfield';
 import LunarTimeline from './components/LunarTimeline';
 import CustomCursor from './components/CustomCursor';
 import SceneBoundary from './components/SceneBoundary';
-import MoonIcon from './components/MoonIcon';
-import { canCreateWebGL } from './utils/webgl';
+import MoonDisc from './components/MoonDisc';
+import { hasWebGLApi } from './utils/webgl';
 
 // Three.js, fiber and drei are 60% of the bundle and nothing but the 3D Moon needs
 // them. Loading them on demand lets the whole shell paint first.
@@ -17,13 +17,13 @@ const MoonVisualization = lazy(() => import('./components/MoonVisualization'));
 const loadDeepDive = () => import('./components/DeepDiveContent');
 const DeepDiveContent = lazy(loadDeepDive);
 
-// A flat Moon drawn at the right phase. It is what the prerendered page shows
+// A photographic flat Moon at the right phase. It is what the prerendered page shows
 // first, it holds the stage while the 3D Moon loads, and it stays if WebGL is
 // unavailable, so the view is never simply empty. The 3D Moon fades in over it.
 const MoonFallback = ({ phase, hidden }) => (
   <div className={`moon-viz-wrapper moon-viz-fallback${hidden ? ' is-hidden' : ''}`} aria-hidden="true">
     <div className="moon-fallback-disc">
-      <MoonIcon phase={phase} size={200} style={{ width: '100%', height: '100%' }} />
+      <MoonDisc phase={phase} />
     </div>
   </div>
 );
@@ -80,9 +80,11 @@ function App({ prerender = false }) {
   const [preferences, setPreference] = usePreferences();
   const { clock } = preferences;
 
-  // Without WebGL the 3D scenes fail asynchronously, out of SceneBoundary's reach,
-  // so decide up front: the flat Moon and no orbit diagram, and no Three.js download
-  const [hasWebGL] = useState(() => !prerender && canCreateWebGL());
+  // A browser with no WebGL API gets the flat Moon and no Three.js download. One
+  // whose context can't be created (disabled, blocklisted) finds out when the 3D
+  // Moon tries: it never draws a frame, so the flat Moon simply stays, and the
+  // orbit diagram waits for a Moon that did draw.
+  const [hasWebGL] = useState(() => !prerender && hasWebGLApi());
   useEffect(() => {
     if (!hasWebGL) console.warn('WebGL unavailable, showing the 2D Moon and hiding the orbit diagram');
   }, [hasWebGL]);
@@ -101,25 +103,26 @@ function App({ prerender = false }) {
   const [hasOpenedDrawer, setHasOpenedDrawer] = useState(false);
   if (isDrawerOpen && !hasOpenedDrawer) setHasOpenedDrawer(true);
 
-  // Deep Dive's panels are mounted once the page has settled, hidden, so opening
-  // the drawer never waits on a download. Waiting for the Moon (or eight seconds)
-  // keeps their work out of the way of the first paint and the 3D scene.
-  const [deepDiveWarm, setDeepDiveWarm] = useState(false);
-  useEffect(() => {
-    if (prerender || deepDiveWarm || !(moonReady || loadStage === 'failed')) return undefined;
-    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
-    const cancel = window.cancelIdleCallback || clearTimeout;
-    const handle = idle(() => {
-      loadDeepDive().then(() => setDeepDiveWarm(true), () => {});
-    }, { timeout: 4000 });
-    return () => cancel(handle);
-  }, [prerender, deepDiveWarm, moonReady, loadStage]);
+  // Deep Dive's panels are downloaded once the page has settled, so opening the
+  // drawer never waits on the network, but only mounted the first time it opens:
+  // mounting them is real work, and the drawer's slide-in covers it. Waiting for
+  // the Moon (or eight seconds) keeps the download out of the way of the first
+  // paint and the 3D scene.
+  const [isSettled, setIsSettled] = useState(false);
+  if (!isSettled && (moonReady || loadStage === 'failed')) setIsSettled(true);
   useEffect(() => {
     if (prerender) return undefined;
-    const timer = setTimeout(() => setDeepDiveWarm(true), 8000);
+    const timer = setTimeout(() => setIsSettled(true), 8000);
     return () => clearTimeout(timer);
   }, [prerender]);
-  const mountDeepDive = !prerender && (hasOpenedDrawer || deepDiveWarm);
+  useEffect(() => {
+    if (prerender || !isSettled) return undefined;
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
+    const cancel = window.cancelIdleCallback || clearTimeout;
+    const handle = idle(() => { loadDeepDive().catch(() => {}); }, { timeout: 4000 });
+    return () => cancel(handle);
+  }, [prerender, isSettled]);
+  const mountDeepDive = !prerender && hasOpenedDrawer;
 
   const containerRef = useRef();
   const mainViewRef = useRef();
@@ -422,6 +425,7 @@ function App({ prerender = false }) {
                     isReady={moonReady}
                     onScene={markScene}
                     onReady={markReady}
+                    onFail={markFailed}
                   />
                 </Suspense>
               </SceneBoundary>
@@ -482,7 +486,7 @@ function App({ prerender = false }) {
               preferences={preferences}
               setPreference={setPreference}
               isOpen={isDrawerOpen}
-              showOrbit={hasOpenedDrawer && hasWebGL}
+              showOrbit={hasOpenedDrawer && moonReady}
               onShowPrivacy={showPrivacy}
             />
           </Suspense>

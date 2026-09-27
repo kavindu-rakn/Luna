@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState, useEffect } from 'react';
+import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
@@ -258,8 +258,33 @@ const MoonMesh = ({ phase, onReady }) => {
   );
 };
 
-const MoonVisualization = ({ lunarDetails, isReady, onScene, onReady }) => {
+const GL_ATTRIBUTES = { antialias: true, alpha: true, powerPreference: 'high-performance' };
+let warnedNoWebGL = false;
+
+const MoonVisualization = ({ lunarDetails, isReady, onScene, onReady, onFail }) => {
   const { phase, fraction } = lunarDetails;
+
+  // The renderer, made on fiber's own canvas. Where no WebGL 2 context can be had
+  // (disabled, blocklisted, too old: three.js needs WebGL 2), say so and hand fiber
+  // a renderer that never arrives. The canvas then stays empty and transparent and
+  // the flat Moon underneath stays, with nothing thrown and nothing in the console,
+  // and without the separate test context Luna used to create at start-up.
+  const createRenderer = useCallback((defaults) => {
+    let context;
+    try {
+      context = defaults.canvas.getContext('webgl2', GL_ATTRIBUTES);
+    } catch {
+      context = null;
+    }
+    if (!context) {
+      // Fiber asks again as it re-configures; one warning is enough
+      if (!warnedNoWebGL) console.warn('WebGL 2 unavailable, keeping the flat Moon');
+      warnedNoWebGL = true;
+      onFail?.();
+      return new Promise(() => {});
+    }
+    return new THREE.WebGLRenderer({ ...defaults, ...GL_ATTRIBUTES, context });
+  }, [onFail]);
 
   // This module only runs once its chunk has arrived, so mounting is the signal
   useEffect(() => {
@@ -299,7 +324,7 @@ const MoonVisualization = ({ lunarDetails, isReady, onScene, onReady }) => {
         <Canvas
           camera={{ position: [0, 0, CAMERA_Z], fov: CAMERA_FOV }}
           dpr={[1, 2]}
-          gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+          gl={createRenderer}
         >
           {/* Nothing while the texture loads: the flat Moon underneath holds the stage */}
           <React.Suspense fallback={null}>

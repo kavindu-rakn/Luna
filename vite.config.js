@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, minifySync, runnerImport } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -70,8 +71,16 @@ const lunaShell = () => {
             }
           }
         })
+        // The flat Moon's photograph goes inline, so the first frame paints it
+        // without waiting on another request. It is that frame's largest paint.
+        const disc = fs.readFileSync(fileURLToPath(new URL('./public/moon-disc.webp', import.meta.url)))
         const shell = module.renderShell()
+          .replaceAll(`href="${config.base}moon-disc.webp"`, `href="data:image/webp;base64,${disc.toString('base64')}"`)
 
+        // The app's own module script stays as Vite writes it. Loading it from here
+        // after the first paint was tried: it only moved the app's start-up work
+        // into the window Lighthouse counts as blocking time, and the largest paint
+        // didn't move.
         const script = minifySync('paint-now.js', `(${paintNow.toString()})(window,document)`).code.trim()
         const hash = createHash('sha256').update(script).digest('base64')
 

@@ -66,10 +66,10 @@ if (!threeChunk) {
   notes.push(`3D chunk ${threeChunk}: ${size.toFixed(1)} KB raw, loaded on demand`);
 }
 
-// 3. The document does not preload it
+// 3. The document does not preload it, by tag or from its start-up script
 const preloads = [...html.matchAll(/rel="modulepreload"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
-if (preloads.some((href) => THREE_CHUNK.test(href))) {
-  failures.push('index.html modulepreloads the three-vendor chunk, so the browser fetches it on first load');
+if (preloads.some((href) => THREE_CHUNK.test(href)) || THREE_CHUNK.test(html)) {
+  failures.push('index.html preloads the three-vendor chunk, so the browser fetches it on first load');
 }
 
 // 4. The entry does not import it statically. Only a dynamic import() keeps it lazy.
@@ -88,7 +88,7 @@ if (!/<div id="root"><[^>]/.test(html) || !html.includes('class="hero-phase-name
 
 // 6. Every inline script is allowed by its hash in the CSP
 const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? '';
-for (const [, body] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+for (const [, body] of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
   const hash = crypto.createHash('sha256').update(body).digest('base64');
   if (!csp.includes(`'sha256-${hash}'`)) {
     failures.push(`an inline script (sha256-${hash}) is not allowed by the CSP, so browsers will refuse to run it`);

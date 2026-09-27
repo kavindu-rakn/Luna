@@ -87,16 +87,15 @@ export function paintNow(win, doc) {
   var moon = doc.querySelector('.moon-container');
   if (moon) moon.setAttribute('aria-label', 'The Moon: ' + name + ', ' + (fraction * 100).toFixed(1) + ' percent illuminated');
 
-  // The terminator, drawn exactly as MoonIcon draws it
+  // The terminator, drawn exactly as litPath (src/utils/moonPath.js) draws it
   var path = doc.querySelector('.moon-viz-fallback svg path');
   var svg = path && path.ownerSVGElement;
   if (path && svg) {
     var size = +svg.getAttribute('width') || 200;
     var r = size / 2;
-    var lit = phase <= 0.5 ? phase * 2 : 2 - phase * 2;
     var waxing = phase <= 0.5;
-    var rx = Math.max(0.01, Math.abs(lit * 2 - 1) * (r - 0.5));
-    var inner = lit > 0.5 ? (waxing ? 1 : 0) : (waxing ? 0 : 1);
+    var rx = Math.max(0.01, Math.abs(Math.cos(phase * 2 * Math.PI)) * (r - 0.5));
+    var inner = phase > 0.25 && phase < 0.75 ? (waxing ? 1 : 0) : (waxing ? 0 : 1);
     path.setAttribute('d', 'M ' + r + ',0.5 A ' + (r - 0.5) + ',' + (r - 0.5) + ' 0 0 ' + (waxing ? 1 : 0) + ' ' +
       r + ',' + (size - 0.5) + ' A ' + rx + ',' + (r - 0.5) + ' 0 0 ' + inner + ' ' + r + ',0.5 Z');
   }
