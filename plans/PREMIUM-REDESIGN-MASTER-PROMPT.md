@@ -152,7 +152,7 @@ Roughly the value that scores 0.99 on each of Lighthouse's mobile curves:
 ### 3.3 Budgets
 
 - Nothing but the HTML (with inlined CSS, the shell markup and one small inline script) and
-  two preloaded font files may block the first paint.
+  the preloaded first-frame fonts may block the first paint.
 - Entry JavaScript (gzip): 90 KB, enforced by `scripts/check-bundle.js`.
 - three.js, the scene, GSAP, Deep Dive, the calendar, the sound engine and the star catalogue
   all load after first paint or on first use.
@@ -256,12 +256,14 @@ There is no loading screen. The intro (Phase 5) plays over the real page.
 
 ### 4.5 Hosting
 
-- `vercel.json` sets the build and response headers: the full content security policy as a
-  real header (including `frame-ancestors 'none'`), `X-Content-Type-Options: nosniff`,
+- `vercel.json` sets the build and response headers: `frame-ancestors 'none'` and
+  `X-Frame-Options` (both only work as headers), `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin`, a `Permissions-Policy` allowing
   geolocation, accelerometer and gyroscope for this origin only, `Cache-Control: public,
   max-age=31536000, immutable` for hashed files under `/assets/`, and `no-cache` for
-  `index.html`, `sw.js` and the manifest. The CSP `<meta>` tag stays as a second layer.
+  `index.html`, `sw.js` and the manifest. The rest of the content security policy stays in the
+  `<meta>` tag the build writes, because it carries the inline script's hash, which changes
+  with every edit to that script. Keep `public/_headers` in step for other hosts.
 - `scripts/site-url.js` already resolves Vercel's production URL; production must build with
   base `/`.
 - **GitHub Pages cutover**, once Vercel serves production and the owner confirms:
@@ -316,9 +318,9 @@ Values can be tuned in Phase 2, but the roles can't: one warm colour, one meanin
 - Outfit, JetBrains Mono, Cormorant 700 and italics are removed.
 - Scale: 12, 13, 15, 17, 20, 24, 32, 44, 60, with the hero phase name on a `clamp()`.
 - Sentence case everywhere (B5). No tracked uppercase labels.
-- Preload exactly two files for first paint (Cormorant 600 Latin, Inter Latin), with
-  metric-matched fallback faces (`size-adjust`, `ascent-override`) so the swap doesn't shift
-  layout.
+- Preload only the files the first frame is set in: Cormorant 400 and 600 Latin (the phase
+  name, the date, the wordmark). If the swap from the fallback face shows up as layout shift,
+  add metric-matched fallback faces (`size-adjust`, `ascent-override`).
 
 ### 5.3 Space and shape
 
@@ -505,7 +507,7 @@ Goal: host on Vercel, measure properly, paint before JavaScript, and fix the aud
   renders first, injected into `dist/index.html`, with the hashed inline "now" script. The
   loading screen is removed; the 2D Moon holds the stage until the 3D Moon's first frame, then
   cross-fades.
-- CSS inlined into the HTML; the two first-paint fonts preloaded with metric-matched fallbacks.
+- CSS inlined into the HTML; the first-frame fonts preloaded.
 - Fonts trimmed (B3): Outfit, JetBrains Mono, Cormorant 700 and italics removed; monospace
   numbers become tabular Inter.
 - GSAP and the Deep Dive contents load after first paint (idle prefetch, so opening Deep Dive
