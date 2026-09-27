@@ -13,7 +13,7 @@ import MoonIcon from './MoonIcon';
 // at the centre, Last Quarter at three quarters. By elapsed time they drifted a few
 // percent from cycle to cycle with the Moon's uneven orbital speed. That speed now
 // shows in the day ticks instead, which bunch where the Moon moves slowly.
-const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
+const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false }) => {
   const railRef = useRef(null);
   const [hoverPosition, setHoverPosition] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -176,7 +176,8 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone }) => {
           {/* Selected-position thumb */}
           <div className="timeline-thumb" style={{ left: `${currentPosition * 100}%` }}>
             <MoonIcon phase={currentSummary.phase} size={24} />
-            <div className="timeline-thumb-ring" />
+            {/* The pulse means "now", so it only runs while the view follows the clock */}
+            {isLive && <div className="timeline-thumb-ring" />}
           </div>
 
           {/* Readout for the point under the pointer, or under the finger mid-drag */}

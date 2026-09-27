@@ -250,7 +250,7 @@ graph TD
 * **3D Graphics:** Three.js, React Three Fiber (`@react-three/fiber`), Drei (`@react-three/drei`)
 * **Motion & Physics:** GSAP (`@gsap/react`), custom spring momentum decay
 * **Ephemeris Calculations:** Meeus periodic-term series (lunar longitude & distance, solar longitude), SunCalc (topocentric altitude/azimuth), golden-section and bisection root finding
-* **Typography:** *Cormorant Garamond* (Serif), *Outfit* (Heading), *Inter* (Sans), *JetBrains Mono* (Tabular Numeric)
+* **Typography:** *Cormorant Garamond* (phase names, dates, wordmark), *Inter* (everything else, with tabular figures)
 * **Icons:** Lucide React
 
 ---
@@ -309,7 +309,7 @@ Luna is a static site: `npm run build` writes everything to `dist/`, and any sta
 
 Set `SITE_URL` for a custom domain, including a custom domain on GitHub Pages, which serves from the root rather than from `/Luna/`. The Node version comes from `.nvmrc` and `engines` in `package.json`, which these hosts read.
 
-GitHub Pages cannot send response headers, so the content security policy is embedded in the page. On Netlify and Cloudflare Pages, `public/_headers` adds the ones a page cannot set for itself, including clickjacking protection.
+The content security policy is embedded in the page, since it carries the hash of the one inline script and GitHub Pages cannot send headers at all. On Vercel, `vercel.json` adds the headers a page cannot set for itself, including clickjacking protection, plus long-lived caching for hashed files; `public/_headers` does the same on Netlify and Cloudflare Pages.
 
 ### Tests
 
@@ -334,9 +334,11 @@ turn and the suite must fail. All eight are caught.
 npm run build && npm run check:bundle
 ```
 
-Three.js, fiber and drei are about 60% of Luna's JavaScript, but only the two 3D scenes need them, so they load on demand behind the loading screen. The first-paint chunk is **111 KB gzipped**, down from 354 KB.
+The page paints before any JavaScript arrives. The build renders the app's first frame to HTML with the stylesheet inlined, and a 2 KB inline script brings its date, phase and flat Moon up to today before the first paint. The live app then replaces it, and the 3D Moon fades in over the flat one once its texture is drawn. There is no loading screen.
 
-CI fails the build if that chunk crosses 130 KB, if the 3D engine is preloaded by the document, or if the entry imports it statically. That last case is not hypothetical: a chunking change once pulled React into the 3D chunk, which made the entry look *smaller* while forcing all of Three.js back onto the critical path.
+Three.js, fiber and drei are about 60% of Luna's JavaScript, but only the 3D scenes need them, so they load on demand after the first paint, as do Deep Dive's panels and GSAP. The entry chunk is **82 KB gzipped**, down from 354 KB.
+
+CI fails the build if that chunk crosses 90 KB, if the prerendered first frame is missing, if the content security policy doesn't allow the inline script by its hash, if the 3D engine is preloaded by the document, or if the entry imports it statically. That last case is not hypothetical: a chunking change once pulled React into the 3D chunk, which made the entry look *smaller* while forcing all of Three.js back onto the critical path.
 
 If WebGL is unavailable or a scene fails to download, that scene gives way to a 2D Moon drawn at the correct phase and everything else keeps working.
 

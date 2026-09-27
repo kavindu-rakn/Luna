@@ -258,16 +258,7 @@ const MoonMesh = ({ phase, onReady }) => {
   );
 };
 
-const FallbackSphere = () => {
-  const scale = useMoonScale();
-  return (
-    <Sphere args={[MOON_RADIUS * scale, 32, 32]}>
-      <meshStandardMaterial color="#2d3047" roughness={0.9} />
-    </Sphere>
-  );
-};
-
-const MoonVisualization = ({ lunarDetails, onScene, onReady }) => {
+const MoonVisualization = ({ lunarDetails, isReady, onScene, onReady }) => {
   const { phase, fraction } = lunarDetails;
 
   // This module only runs once its chunk has arrived, so mounting is the signal
@@ -291,7 +282,8 @@ const MoonVisualization = ({ lunarDetails, onScene, onReady }) => {
   const glowSize = isMobile ? '300px' : '440px';
 
   return (
-    <div className="moon-viz-wrapper">
+    // Transparent until the textured Moon is drawn, then faded in over the flat one
+    <div className={`moon-viz-wrapper moon-3d${isReady ? ' is-ready' : ''}`}>
       {/* Background Radial Glow */}
       <div
         className="moon-aura"
@@ -309,7 +301,8 @@ const MoonVisualization = ({ lunarDetails, onScene, onReady }) => {
           dpr={[1, 2]}
           gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         >
-          <React.Suspense fallback={<FallbackSphere />}>
+          {/* Nothing while the texture loads: the flat Moon underneath holds the stage */}
+          <React.Suspense fallback={null}>
             <MoonMesh
               phase={phase}
               onReady={onReady}
