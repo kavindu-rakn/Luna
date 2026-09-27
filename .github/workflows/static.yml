@@ -63,13 +63,24 @@ jobs:
       - name: First-paint budget
         run: npm run check:bundle
 
+      # Luna is moving to Vercel. Once the new address is confirmed working, set the
+      # repository variable PAGES_REDIRECT_TO to it (e.g. https://luna-kvn.vercel.app/)
+      # and this site becomes a forwarding address instead: shared links land on the
+      # same view there, and installed copies retire their offline cache and follow.
+      # Unset, Pages keeps serving the app as before.
+      - name: Build the redirect site
+        if: vars.PAGES_REDIRECT_TO != ''
+        env:
+          TARGET: ${{ vars.PAGES_REDIRECT_TO }}
+        run: node scripts/pages-redirect.mjs "$TARGET" pages-redirect
+
       - name: Setup Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: './dist'
+          path: ${{ vars.PAGES_REDIRECT_TO != '' && './pages-redirect' || './dist' }}
 
       - name: Deploy to GitHub Pages
         id: deployment
