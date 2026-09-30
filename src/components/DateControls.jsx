@@ -221,8 +221,9 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           setIsCalendarOpen(!isCalendarOpen);
         }}
         className={`glass-button date-display-btn ${isCalendarOpen ? 'is-open' : ''}`}
+        // No aria-label: the button is named by the date it shows, so voice control
+        // users can say what they see. The title still describes what it does.
         title="Click to open calendar (or press T for Today)"
-        aria-label="Current Date. Click to open calendar."
         aria-expanded={isCalendarOpen}
       >
         <span className="font-serif date-text-desktop">

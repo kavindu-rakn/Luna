@@ -1,7 +1,11 @@
-import { defineConfig } from 'vite'
+import { createHash } from 'node:crypto'
+import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { defineConfig, minifySync, runnerImport } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { resolveSiteUrl } from './scripts/site-url.js'
+import { paintNow } from './src/shell/paintNow.js'
 import pkg from './package.json' with { type: 'json' }
 
 // Where this build will be published, and so the path its files are served from.
@@ -9,22 +13,22 @@ import pkg from './package.json' with { type: 'json' }
 // for SITE_URL and the hosts recognised automatically.
 const SITE_URL = resolveSiteUrl(process.env, pkg.homepage)
 
-// GitHub Pages cannot set response headers, so the policy has to ride in the
-// document. It is injected at build time only: in dev it would block Vite's HMR
-// websocket and the module graph it serves from source.
+// The policy rides in the document as a <meta> tag, so it holds on any host. It is
+// injected at build time only: in dev it would block Vite's HMR websocket and the
+// module graph it serves from source. The one inline script, the shell's
+// paintNow, is allowed by its hash, which changes whenever the script does.
 //
 // frame-ancestors is deliberately absent: browsers ignore it when it arrives via
 // <meta>, and leaving it in only logs a console error. Clickjacking protection
-// needs a real response header; public/_headers sends it on hosts that read that
-// file (Netlify, Cloudflare Pages). GitHub Pages cannot send headers at all.
-const CONTENT_SECURITY_POLICY = [
+// needs a real response header, which vercel.json sends.
+const contentSecurityPolicy = (scriptHashes) => [
   "default-src 'self'",
   "base-uri 'none'",
   "object-src 'none'",
   "form-action 'none'",
-  "script-src 'self'",
+  ["script-src 'self'", ...scriptHashes.map((hash) => `'sha256-${hash}'`)].join(' '),
   // React writes element.style through the CSSOM, which CSP does not govern, but
-  // Three.js and drei inject <style> elements at runtime.
+  // the inlined stylesheet, Three.js and drei all need inline <style>.
   "style-src 'self' 'unsafe-inline'",
   // drei/troika embeds a fallback font as a data: URI inside the bundle
   "font-src 'self' data:",
@@ -37,16 +41,78 @@ const CONTENT_SECURITY_POLICY = [
   "manifest-src 'self'"
 ].join('; ')
 
-const injectCsp = () => ({
-  name: 'luna-inject-csp',
-  apply: 'build',
-  transformIndexHtml(html) {
-    return html.replace(
-      '<head>',
-      `<head>\n    <meta http-equiv="Content-Security-Policy" content="${CONTENT_SECURITY_POLICY}" />`
-    )
+// Paint before JavaScript. The build renders the app's first frame to HTML (see
+// src/entry-server.jsx) and puts it in the page, with a small inline script that
+// brings the date, phase and Moon up to today before the first paint, and the
+// stylesheet inlined so nothing blocks rendering. The fonts that first frame sets
+// in are preloaded. main.jsx then replaces the markup with the live app.
+const lunaShell = () => {
+  let config
+  return {
+    name: 'luna-shell',
+    apply: 'build',
+    configResolved(resolved) {
+      config = resolved
+    },
+    transformIndexHtml: {
+      order: 'post',
+      async handler(html, ctx) {
+        const { module } = await runnerImport(fileURLToPath(new URL('./src/entry-server.jsx', import.meta.url)), {
+          configFile: false,
+          root: config.root,
+          base: config.base,
+          mode: config.mode,
+          logLevel: 'error',
+          plugins: [react()],
+          resolve: {
+            alias: {
+              // The PWA plugin's virtual module only exists in the real build
+              'virtual:pwa-register/react': fileURLToPath(new URL('./src/shell/pwaRegisterStub.js', import.meta.url))
+            }
+          }
+        })
+        // The flat Moon's photograph goes inline, so the first frame paints it
+        // without waiting on another request. It is that frame's largest paint.
+        const disc = fs.readFileSync(fileURLToPath(new URL('./public/moon-disc.webp', import.meta.url)))
+        const shell = module.renderShell()
+          .replaceAll(`href="${config.base}moon-disc.webp"`, `href="data:image/webp;base64,${disc.toString('base64')}"`)
+
+        // The app's own module script stays as Vite writes it. Loading it from here
+        // after the first paint was tried: it only moved the app's start-up work
+        // into the window Lighthouse counts as blocking time, and the largest paint
+        // didn't move.
+        const script = minifySync('paint-now.js', `(${paintNow.toString()})(window,document)`).code.trim()
+        const hash = createHash('sha256').update(script).digest('base64')
+
+        html = html.replace('<div id="root"></div>', `<div id="root">${shell}</div>\n    <script>${script}</script>`)
+        html = html.replace(
+          '<meta charset="UTF-8" />',
+          `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${contentSecurityPolicy([hash])}" />`
+        )
+
+        // One stylesheet, inlined: a separate file would hold up the first paint
+        // for another round trip. It is dropped from the output, so the service
+        // worker doesn't precache a file nothing asks for.
+        html = html.replace(/<link rel="stylesheet"[^>]*?href="([^"]+\.css)"[^>]*>/g, (tag, href) => {
+          const fileName = href.startsWith(config.base) ? href.slice(config.base.length) : href.replace(/^\//, '')
+          const asset = ctx.bundle?.[fileName]
+          if (!asset || asset.type !== 'asset') return tag
+          const css = typeof asset.source === 'string' ? asset.source : Buffer.from(asset.source).toString('utf8')
+          delete ctx.bundle[fileName]
+          return `<style>${css}</style>`
+        })
+
+        // The serif the phase name, date and wordmark are set in. Inter is left to
+        // load on its own: at the sizes it appears in the first frame, a moment in
+        // a fallback face costs nothing.
+        const fonts = Object.keys(ctx.bundle ?? {})
+          .filter((file) => /cormorant-garamond-latin-(400|600)-normal-[\w-]+\.woff2$/.test(file))
+          .map((file) => `<link rel="preload" as="font" type="font/woff2" href="${config.base}${file}" crossorigin>`)
+        return html.replace('</head>', `  ${fonts.join('\n    ')}\n  </head>`)
+      }
+    }
   }
-})
+}
 
 // Social cards need absolute URLs, so index.html carries __SITE_URL__ placeholders,
 // filled in here for dev and builds alike
@@ -59,7 +125,7 @@ export default defineConfig({
   base: SITE_URL.pathname,
   plugins: [
     react(),
-    injectCsp(),
+    lunaShell(),
     injectSiteUrl(),
     VitePWA({
       // A new version waits for the viewer to accept it (see UpdatePrompt). The

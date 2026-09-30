@@ -1,38 +1,31 @@
-import { describe, it, expect, vi } from 'vitest';
-import { canCreateWebGL } from '../src/utils/webgl.js';
+import { describe, it, expect } from 'vitest';
+import { hasWebGLApi } from '../src/utils/webgl.js';
 
-// A canvas whose getContext answers from a table, as a browser would per context type
-const fakeCanvas = (contexts) => ({
-  getContext: vi.fn((type) => contexts[type] ?? null)
-});
-
-describe('canCreateWebGL', () => {
-  it('accepts WebGL 2', () => {
-    const loseContext = vi.fn();
-    const gl = { getExtension: () => ({ loseContext }) };
-    expect(canCreateWebGL(() => fakeCanvas({ webgl2: gl }))).toBe(true);
+describe('hasWebGLApi', () => {
+  it('accepts a browser with WebGL 2', () => {
+    expect(hasWebGLApi({ WebGL2RenderingContext: function WebGL2RenderingContext() {} })).toBe(true);
   });
 
-  it('falls back to WebGL 1 when WebGL 2 is missing', () => {
-    const gl = { getExtension: () => null };
-    const canvas = fakeCanvas({ webgl: gl });
-    expect(canCreateWebGL(() => canvas)).toBe(true);
-    expect(canvas.getContext).toHaveBeenCalledWith('webgl');
+  it('accepts a browser with only WebGL 1', () => {
+    expect(hasWebGLApi({ WebGLRenderingContext: function WebGLRenderingContext() {} })).toBe(true);
   });
 
-  it('releases the probe context so it does not count against the browser limit', () => {
-    const loseContext = vi.fn();
-    const gl = { getExtension: (name) => (name === 'WEBGL_lose_context' ? { loseContext } : null) };
-    canCreateWebGL(() => fakeCanvas({ webgl2: gl }));
-    expect(loseContext).toHaveBeenCalledOnce();
+  it('rejects a browser with no WebGL API', () => {
+    expect(hasWebGLApi({})).toBe(false);
   });
 
-  it('rejects a browser with WebGL disabled', () => {
-    expect(canCreateWebGL(() => fakeCanvas({}))).toBe(false);
+  it('rejects the build-time prerender, which has no window', () => {
+    expect(hasWebGLApi(undefined)).toBe(false);
+    expect(hasWebGLApi(null)).toBe(false);
   });
 
-  it('rejects rather than throws when probing fails', () => {
-    const canvas = { getContext: () => { throw new Error('blocked'); } };
-    expect(canCreateWebGL(() => canvas)).toBe(false);
+  it('never creates a context to find out', () => {
+    let created = false;
+    const scope = {
+      WebGLRenderingContext: function WebGLRenderingContext() { created = true; },
+      document: { createElement: () => { created = true; return {}; } }
+    };
+    hasWebGLApi(scope);
+    expect(created).toBe(false);
   });
 });

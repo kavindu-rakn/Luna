@@ -1,27 +1,29 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
-import LunarData from './components/LunarData';
 import DateControls from './components/DateControls';
 import Starfield from './components/Starfield';
 import LunarTimeline from './components/LunarTimeline';
 import CustomCursor from './components/CustomCursor';
-import SkyPosition from './components/SkyPosition';
-import LoadingScreen from './components/LoadingScreen';
 import SceneBoundary from './components/SceneBoundary';
-import MoonIcon from './components/MoonIcon';
-import { canCreateWebGL } from './utils/webgl';
+import MoonDisc from './components/MoonDisc';
+import { hasWebGLApi } from './utils/webgl';
 
-// Three.js, fiber and drei are 60% of the bundle and nothing but these two scenes
-// needs them. Loading them on demand lets the header, date, phase name and
-// timeline paint after roughly half the JavaScript.
+// Three.js, fiber and drei are 60% of the bundle and nothing but the 3D Moon needs
+// them. Loading them on demand lets the whole shell paint first.
 const MoonVisualization = lazy(() => import('./components/MoonVisualization'));
-const OrbitalView = lazy(() => import('./components/OrbitalView'));
 
-// Shown while the 3D Moon loads, and in its place if WebGL is unavailable: a flat
-// Moon drawn at the right phase, so the view is never simply empty.
-const MoonFallback = ({ phase }) => (
-  <div className="moon-viz-wrapper moon-viz-fallback">
+// Deep Dive's panels, and GSAP with them, are only needed once the drawer opens.
+// They load after first paint and are mounted, hidden, once the page is idle, so
+// the drawer still opens instantly.
+const loadDeepDive = () => import('./components/DeepDiveContent');
+const DeepDiveContent = lazy(loadDeepDive);
+
+// A photographic flat Moon at the right phase. It is what the prerendered page shows
+// first, it holds the stage while the 3D Moon loads, and it stays if WebGL is
+// unavailable, so the view is never simply empty. The 3D Moon fades in over it.
+const MoonFallback = ({ phase, hidden }) => (
+  <div className={`moon-viz-wrapper moon-viz-fallback${hidden ? ' is-hidden' : ''}`} aria-hidden="true">
     <div className="moon-fallback-disc">
-      <MoonIcon phase={phase} size={200} style={{ width: '100%', height: '100%' }} />
+      <MoonDisc phase={phase} />
     </div>
   </div>
 );
@@ -30,9 +32,8 @@ import ShareButton from './components/ShareButton';
 import UpdatePrompt from './components/UpdatePrompt';
 import ShortcutsDialog from './components/ShortcutsDialog';
 import PrivacyDialog from './components/PrivacyDialog';
-import DisplayPreferences from './components/DisplayPreferences';
 import { usePreferences } from './hooks/usePreferences';
-import { getLunarDetails, getSkyData, getAdjacentQuarterPhase } from './utils/lunarCalc';
+import { getLunarDetails, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
 import { X, BarChart3, Lightbulb } from 'lucide-react';
@@ -40,7 +41,11 @@ import { X, BarChart3, Lightbulb } from 'lucide-react';
 // Keys that controls like the timeline and the calendar grid use to move around
 const NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
 
-function App() {
+// `prerender` is set only by the build, which renders the app to HTML once so the
+// page can paint before any JavaScript arrives. That render leaves out everything
+// that needs a browser or would only be hidden anyway: the 3D Moon, Deep Dive's
+// panels, the dialogs and the service worker.
+function App({ prerender = false }) {
   // Read once. A link someone sent opens exactly the view they were looking at.
   const [shared] = useState(() => readSharedState());
 
@@ -73,27 +78,51 @@ function App() {
   // 12- or 24-hour clock, km or miles. How this viewer reads, not what they are
   // looking at, so these stay on the device and out of the URL.
   const [preferences, setPreference] = usePreferences();
-  const { clock, distanceUnit } = preferences;
+  const { clock } = preferences;
 
-  // Without WebGL the 3D scenes fail asynchronously, out of SceneBoundary's reach,
-  // so decide up front: the flat Moon and no orbit diagram, and no Three.js download
-  const [hasWebGL] = useState(canCreateWebGL);
+  // A browser with no WebGL API gets the flat Moon and no Three.js download. One
+  // whose context can't be created (disabled, blocklisted) finds out when the 3D
+  // Moon tries: it never draws a frame, so the flat Moon simply stays, and the
+  // orbit diagram waits for a Moon that did draw.
+  const [hasWebGL] = useState(() => !prerender && hasWebGLApi());
   useEffect(() => {
     if (!hasWebGL) console.warn('WebGL unavailable, showing the 2D Moon and hiding the orbit diagram');
   }, [hasWebGL]);
 
-  // shell -> scene -> ready, or failed. Drives the loading screen from what has
-  // actually arrived rather than from a texture byte counter. Without WebGL there
-  // is nothing to wait for, so it starts out finished.
+  // shell -> scene -> ready, or failed. The 3D Moon fades in over the flat one only
+  // once its texture is drawn, so the stage never shows an untextured sphere.
+  // Without WebGL there is nothing to wait for, so it starts out finished.
   const [loadStage, setLoadStage] = useState(hasWebGL ? 'shell' : 'failed');
   const markScene = useCallback(() => setLoadStage((s) => (s === 'shell' ? 'scene' : s)), []);
   const markReady = useCallback(() => setLoadStage('ready'), []);
   const markFailed = useCallback(() => setLoadStage((s) => (s === 'ready' ? s : 'failed')), []);
+  const moonReady = loadStage === 'ready';
 
   // The orbit diagram loads the first time the drawer opens and stays mounted
   // after, so closing the drawer does not make its contents jump mid-slide.
   const [hasOpenedDrawer, setHasOpenedDrawer] = useState(false);
   if (isDrawerOpen && !hasOpenedDrawer) setHasOpenedDrawer(true);
+
+  // Deep Dive's panels are downloaded once the page has settled, so opening the
+  // drawer never waits on the network, but only mounted the first time it opens:
+  // mounting them is real work, and the drawer's slide-in covers it. Waiting for
+  // the Moon (or eight seconds) keeps the download out of the way of the first
+  // paint and the 3D scene.
+  const [isSettled, setIsSettled] = useState(false);
+  if (!isSettled && (moonReady || loadStage === 'failed')) setIsSettled(true);
+  useEffect(() => {
+    if (prerender) return undefined;
+    const timer = setTimeout(() => setIsSettled(true), 8000);
+    return () => clearTimeout(timer);
+  }, [prerender]);
+  useEffect(() => {
+    if (prerender || !isSettled) return undefined;
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
+    const cancel = window.cancelIdleCallback || clearTimeout;
+    const handle = idle(() => { loadDeepDive().catch(() => {}); }, { timeout: 4000 });
+    return () => cancel(handle);
+  }, [prerender, isSettled]);
+  const mountDeepDive = !prerender && hasOpenedDrawer;
 
   const containerRef = useRef();
   const mainViewRef = useRef();
@@ -252,12 +281,9 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isCalendarOpen, isLocationOpen, isShortcutsOpen, isPrivacyOpen, selectDate, goLive]);
 
-  // Derive lunar details and 24-hour sky transit data
+  // Derive lunar details. The 24-hour sky data is worked out inside Deep Dive,
+  // which is the only place it is shown.
   const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone, clock), [currentDate, location, clock]);
-  const computedSkyData = useMemo(() => {
-    if (location) return getSkyData(currentDate, location.lat, location.lon, location.timeZone, clock);
-    return null;
-  }, [currentDate, location, clock]);
 
   // What a screen reader hears when the view changes. It names the date and place,
   // which the old announcement left out, and waits for the view to settle: a drag
@@ -292,28 +318,30 @@ function App() {
       <div className="nebula" aria-hidden="true" />
       <div className="vignette" aria-hidden="true" />
 
-      {/* Cinematic Asset Loading Screen */}
-      <LoadingScreen stage={loadStage} />
+      {!prerender && (
+        <>
+          {/* Offline readiness and update notices from the service worker */}
+          <UpdatePrompt />
 
-      {/* Offline readiness and update notices from the service worker */}
-      <UpdatePrompt />
+          {/* Every keyboard shortcut, on ? or the keyboard button */}
+          <ShortcutsDialog isOpen={isShortcutsOpen} onClose={closeShortcuts} />
 
-      {/* Every keyboard shortcut, on ? or the keyboard button */}
-      <ShortcutsDialog isOpen={isShortcutsOpen} onClose={closeShortcuts} />
+          {/* What is sent, what stays on the device, and a way to forget it */}
+          <PrivacyDialog isOpen={isPrivacyOpen} onClose={closePrivacy} />
 
-      {/* What is sent, what stays on the device, and a way to forget it */}
-      <PrivacyDialog isOpen={isPrivacyOpen} onClose={closePrivacy} />
-
-      {/* Custom Particle Comet Cursor */}
-      <CustomCursor />
+          {/* Custom Particle Comet Cursor */}
+          <CustomCursor />
+        </>
+      )}
 
       {/* ═══ MAIN APPLICATION VIEWPORT ═══ */}
       <main
         ref={mainViewRef}
         className={`main-view-container ${isDrawerOpen ? 'drawer-open' : ''}`}
       >
-        {/* Header Bar */}
-        <header className="app-header">
+        {/* Header Bar. Raised while one of its popovers is open, so the calendar or
+            the location picker opens above the Deep Dive sheet, not beneath it. */}
+        <header className={`app-header${isCalendarOpen || isLocationOpen ? ' has-popover' : ''}`}>
           {/* Left: Brand / Title */}
           <div className="app-brand">
             <img
@@ -388,14 +416,19 @@ function App() {
             role="img"
             aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated`}
           >
-            {hasWebGL ? (
-              <SceneBoundary name="Moon scene" onError={markFailed} fallback={<MoonFallback phase={lunarDetails.phase} />}>
-                <Suspense fallback={<MoonFallback phase={lunarDetails.phase} />}>
-                  <MoonVisualization lunarDetails={lunarDetails} onScene={markScene} onReady={markReady} />
+            <MoonFallback phase={lunarDetails.phase} hidden={moonReady} />
+            {hasWebGL && (
+              <SceneBoundary name="Moon scene" onError={markFailed} fallback={null}>
+                <Suspense fallback={null}>
+                  <MoonVisualization
+                    lunarDetails={lunarDetails}
+                    isReady={moonReady}
+                    onScene={markScene}
+                    onReady={markReady}
+                    onFail={markFailed}
+                  />
                 </Suspense>
               </SceneBoundary>
-            ) : (
-              <MoonFallback phase={lunarDetails.phase} />
             )}
           </div>
 
@@ -408,7 +441,7 @@ function App() {
 
         {/* Bottom Bar: Timeline */}
         <div style={{ width: '100%', zIndex: 20 }}>
-          <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} />
+          <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} isLive={isLive} />
         </div>
       </main>
 
@@ -444,33 +477,20 @@ function App() {
           </button>
         </div>
 
-        {/* Every time and distance on this panel follows these */}
-        <DisplayPreferences preferences={preferences} setPreference={setPreference} />
-
-        {/* Telemetry Cards Stack */}
-        <div className="telemetry-content">
-          <LunarData lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
-
-          {computedSkyData && (
-            <SkyPosition skyData={computedSkyData} locationName={location?.name} />
-          )}
-
-          {hasOpenedDrawer && hasWebGL && (
-            <SceneBoundary name="Orbital diagram">
-              <Suspense fallback={null}>
-                <OrbitalView lunarDetails={lunarDetails} active={isDrawerOpen} distanceUnit={distanceUnit} />
-              </Suspense>
-            </SceneBoundary>
-          )}
-
-          <footer className="drawer-footer">
-            Moon and Sun positions from Meeus&rsquo; <em>Astronomical Algorithms</em> and SunCalc.
-            <br />
-            <button type="button" className="text-link" onClick={showPrivacy}>
-              Privacy
-            </button>
-          </footer>
-        </div>
+        {mountDeepDive && (
+          <Suspense fallback={null}>
+            <DeepDiveContent
+              currentDate={currentDate}
+              location={location}
+              lunarDetails={lunarDetails}
+              preferences={preferences}
+              setPreference={setPreference}
+              isOpen={isDrawerOpen}
+              showOrbit={hasOpenedDrawer && moonReady}
+              onShowPrivacy={showPrivacy}
+            />
+          </Suspense>
+        )}
       </aside>
     </div>
   );

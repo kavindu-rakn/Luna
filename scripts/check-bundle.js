@@ -1,7 +1,7 @@
 // First-paint budget. Run after `vite build`; exits non-zero on a regression.
 //
 // Three.js, fiber and drei are about 60% of Luna's JavaScript and are only needed
-// by the two 3D scenes, so they load lazily behind the loading screen. That split
+// by the two 3D scenes, so they load lazily after the first paint. That split
 // is easy to lose without noticing, and in ways a size check alone would miss:
 //
 //   - one eager `import ... from 'three'` anywhere in the shell folds the whole
@@ -11,13 +11,19 @@
 //     Three.js before it can run. This happened once, while renaming a chunk.
 //
 // So this checks the entry's size and also that nothing loads the 3D chunk eagerly.
+//
+// It also checks the page paints before any JavaScript: the prerendered shell is
+// in the HTML, and the CSP allows every inline script by hash. If the hash went
+// stale, the shell would still show, but on the day of the build rather than today.
 
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
 
 const DIST = 'dist';
-const ENTRY_GZIP_BUDGET_KB = 130;
+
+const ENTRY_GZIP_BUDGET_KB = 90;
 const THREE_CHUNK = /three-vendor-[\w-]+\.js/;
 
 const failures = [];
@@ -60,10 +66,10 @@ if (!threeChunk) {
   notes.push(`3D chunk ${threeChunk}: ${size.toFixed(1)} KB raw, loaded on demand`);
 }
 
-// 3. The document does not preload it
+// 3. The document does not preload it, by tag or from its start-up script
 const preloads = [...html.matchAll(/rel="modulepreload"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
-if (preloads.some((href) => THREE_CHUNK.test(href))) {
-  failures.push('index.html modulepreloads the three-vendor chunk, so the browser fetches it on first load');
+if (preloads.some((href) => THREE_CHUNK.test(href)) || THREE_CHUNK.test(html)) {
+  failures.push('index.html preloads the three-vendor chunk, so the browser fetches it on first load');
 }
 
 // 4. The entry does not import it statically. Only a dynamic import() keeps it lazy.
@@ -71,6 +77,22 @@ const staticImport = entryText.match(/(?:^|[;\s}])import\s*[^('"]*?from\s*["']\.
   || entryText.match(/from\s*["']\.\/(three-vendor-[\w-]+\.js)["']/);
 if (staticImport) {
   failures.push(`the entry chunk statically imports ${staticImport[1]}; Three.js is back on the critical path`);
+}
+
+// 5. The first frame is in the HTML, not waiting on the bundle
+if (!/<div id="root"><[^>]/.test(html) || !html.includes('class="hero-phase-name"')) {
+  failures.push('index.html has no prerendered shell: the page would paint nothing until JavaScript runs');
+} else {
+  notes.push('prerendered shell present');
+}
+
+// 6. Every inline script is allowed by its hash in the CSP
+const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? '';
+for (const [, body] of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+  const hash = crypto.createHash('sha256').update(body).digest('base64');
+  if (!csp.includes(`'sha256-${hash}'`)) {
+    failures.push(`an inline script (sha256-${hash}) is not allowed by the CSP, so browsers will refuse to run it`);
+  }
 }
 
 for (const line of notes) console.log(`  ${line}`);

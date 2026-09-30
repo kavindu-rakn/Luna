@@ -1,6 +1,8 @@
 # Response headers, for hosts that read this file (Netlify, Cloudflare Pages).
-# GitHub Pages ignores it and cannot send headers at all, which is why the content
-# security policy is also embedded in the page as a <meta> tag.
+# Vercel, where Luna is hosted, takes the same headers from vercel.json instead;
+# keep the two in step. GitHub Pages ignores both and cannot send headers at all,
+# which is why the content security policy is also embedded in the page as a
+# <meta> tag.
 #
 # frame-ancestors and X-Frame-Options stop other sites framing Luna (clickjacking);
 # both only work as real headers. Geolocation stays available to this site alone,
