@@ -168,6 +168,11 @@ const MoonMesh = ({ phase, onReady }) => {
     }
   }, []);
 
+  // The Canvas renders on demand (frameloop="demand"): a frame is drawn only when
+  // something changes. Prop changes (the phase moving the sun) ask for one on their
+  // own; a drag and the spin that follows it ask here.
+  const invalidate = useThree((state) => state.invalidate);
+
   useFrame(() => {
     if (!moonRef.current) return;
 
@@ -188,6 +193,15 @@ const MoonMesh = ({ phase, onReady }) => {
 
       // Full natural tilt range (+/- 75 deg) to view polar regions cleanly
       moonRef.current.rotation.x = Math.max(-1.3, Math.min(1.3, moonRef.current.rotation.x));
+
+      // Keep drawing while the spin is visible (2e-4 rad a frame is about a hundredth
+      // of a degree), then stop for good
+      if (Math.abs(velocity.current.x) > 2e-4 || Math.abs(velocity.current.y) > 2e-4) {
+        invalidate();
+      } else {
+        velocity.current.x = 0;
+        velocity.current.y = 0;
+      }
     }
   });
 
@@ -244,12 +258,16 @@ const MoonMesh = ({ phase, onReady }) => {
           moonRef.current.rotation.x = Math.max(-1.3, Math.min(1.3, moonRef.current.rotation.x + velocity.current.y));
 
           previousPointer.current = { x: e.clientX, y: e.clientY };
+          invalidate();
         }}
         onPointerUp={() => {
           isDragging.current = false;
+          // Let go: the spin carries on from here, one frame asking for the next
+          invalidate();
         }}
         onPointerLeave={() => {
           isDragging.current = false;
+          invalidate();
         }}
       >
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
@@ -321,10 +339,14 @@ const MoonVisualization = ({ lunarDetails, isReady, onScene, onReady, onFail }) 
 
       {/* Three.js R3F Canvas Container */}
       <div className="moon-canvas">
+        {/* Rendered on demand: nothing about the Moon moves on its own, so drawing
+            sixty frames a second at rest only burned battery, and with software
+            WebGL (PageSpeed, blocklisted GPUs) kept the main thread busy forever */}
         <Canvas
           camera={{ position: [0, 0, CAMERA_Z], fov: CAMERA_FOV }}
           dpr={[1, 2]}
           gl={createRenderer}
+          frameloop="demand"
         >
           {/* Nothing while the texture loads: the flat Moon underneath holds the stage */}
           <React.Suspense fallback={null}>
