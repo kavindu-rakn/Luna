@@ -513,6 +513,10 @@ Goal: host on Vercel, measure properly, paint before JavaScript, and fix the aud
 - GSAP and the Deep Dive contents load after first paint (idle prefetch, so opening Deep Dive
   stays instant).
 - The wordmark shimmer stops (B2); the timeline thumb pulses only while live (H3).
+- Added once measured on Vercel: nothing redraws at rest. The current Moon renders on demand,
+  the starfield redraws about fifteen times a second while still, and the cursor trail stops
+  when the mouse does. PageSpeed renders WebGL in software, so every-frame drawing cost
+  seconds of blocking time. Phase 1 replaces all three.
 - Audit bugs: popovers opening under the Deep Dive sheet; km/mi clipped at 360 px; the date
   button's accessible name.
 - GitHub Pages cutover (§4.5) once the owner confirms Vercel production works: a follow-up

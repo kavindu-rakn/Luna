@@ -258,7 +258,7 @@ when the page opens.
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Foundation: Vercel, measurement, static shell, no loader, fonts, GSAP after paint, audit bugs | In review: waiting on the Vercel project, then measured there and the Pages cutover |
+| 0 | Foundation: Vercel, measurement, static shell, no loader, fonts, GSAP after paint, audit bugs, render on demand | In review (PR #51): owner checks on phones, then merge and the Pages cutover |
 | 1 | The Moon and the sky: renderer, lunar shader, textures, libration and orientation, real stars, tilt | Not started |
 | 2 | Design language: tokens, controls, icons, header and menu, cursor, sound engine, idle fade, copy | Not started |
 | 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
@@ -272,7 +272,18 @@ when the page opens.
   44 → 55, desktop 76 → 89; first paint 3.7 → 2.5 s, largest paint 4.9 → 4.1 s, blocking time
   2.4 → 1.9 s, layout shift 0.021 → 0. This machine is noisy (master alone swung from 52 to 44
   on mobile within the day), and `vite preview` serves uncompressed files, so only same-run
-  comparisons mean anything. Vercel numbers come next.
+  comparisons mean anything.
+- Vercel project `luna-kvn` created on 5 Oct 2026; production is https://luna-kvn.vercel.app.
+  Vercel Authentication is off for this project (owner's choice), so previews open without a
+  login. Previews always score SEO 60 and Best Practices 92: Vercel sends `x-robots-tag:
+  noindex` and injects its comment toolbar, which our CSP blocks. Production has neither.
+- PageSpeed Insights on master as served by Vercel: mobile 56, desktop 60. Desktop
+  blocking time was 4.1 s although first and largest paint were 0.4 s: its servers render
+  WebGL in software, and the Moon, starfield and cursor trail redrew every frame forever.
+  Hence the render-on-demand step added to this phase.
+- Lighthouse medians on the Vercel preview (3 runs, this machine), before and after
+  rendering on demand: mobile 66 → 78 (first paint 1.3 s, largest paint 2.0 s, speed index
+  2.3 s, blocking time 0.77 s), desktop 100 → 99–100 (blocking time ~50–75 ms).
 - What's left on mobile is main-thread work: fiber and three.js starting up (with the
   software WebGL Lighthouse uses, creating a context alone cost 1.5 s), the texture's pole
   blending, and React's first render. Phase 1's worker renderer is aimed at exactly this.
