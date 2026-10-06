@@ -7,9 +7,9 @@ const QUERY = '(prefers-reduced-motion: reduce)';
  *
  * A CSS media block can neutralise declarative animation, but Luna drives a great
  * deal of motion from JavaScript that CSS cannot reach: a 38-particle cursor trail
- * on requestAnimationFrame, a twinkling parallax starfield on a 2D canvas, a
- * drifting orbital camera and a spinning Earth inside useFrame, and GSAP counters.
- * Those need to consult the preference directly.
+ * on requestAnimationFrame, a twinkling parallax starfield on a 2D canvas, the 3D
+ * Moon's spin and libration nod in its worker, and GSAP counters. Those need to
+ * consult the preference directly.
  */
 export const usePrefersReducedMotion = () => {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(

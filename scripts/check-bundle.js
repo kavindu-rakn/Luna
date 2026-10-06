@@ -1,8 +1,9 @@
 // First-paint budget. Run after `vite build`; exits non-zero on a regression.
 //
-// Three.js, fiber and drei are about 60% of Luna's JavaScript and are only needed
-// by the two 3D scenes, so they load lazily after the first paint. That split
-// is easy to lose without noticing, and in ways a size check alone would miss:
+// Three.js is most of Luna's JavaScript and only the 3D Moon needs it, so it loads
+// after the first paint: inside the scene's worker, or as its own chunk where the
+// scene has to run on the main thread. That split is easy to lose without
+// noticing, and in ways a size check alone would miss:
 //
 //   - one eager `import ... from 'three'` anywhere in the shell folds the whole
 //     engine back into the entry chunk
@@ -64,6 +65,16 @@ if (!threeChunk) {
 } else {
   const size = fs.statSync(path.join(DIST, 'assets', threeChunk)).size / 1024;
   notes.push(`3D chunk ${threeChunk}: ${size.toFixed(1)} KB raw, loaded on demand`);
+}
+
+// 2b. The scene's worker was emitted. Without it every browser would run three.js
+//     on the main thread, where Lighthouse counts every millisecond of it.
+const workerChunk = assets.find((file) => /^worker-[\w-]+\.js$/.test(file));
+if (!workerChunk) {
+  failures.push('no scene worker was emitted; the 3D Moon would run on the main thread everywhere');
+} else {
+  const size = fs.statSync(path.join(DIST, 'assets', workerChunk)).size / 1024;
+  notes.push(`scene worker ${workerChunk}: ${size.toFixed(1)} KB raw, runs off the main thread`);
 }
 
 // 3. The document does not preload it, by tag or from its start-up script

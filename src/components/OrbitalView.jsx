@@ -1,139 +1,39 @@
-import React, { useRef, useMemo, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useTexture, Sphere, Line } from '@react-three/drei';
-import * as THREE from 'three';
-import '../utils/threeConsole';
+import React, { useState } from 'react';
 import { HelpCircle } from 'lucide-react';
-import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { MEAN_MOON_DISTANCE } from '../utils/lunarCalc';
 import { formatDistance } from '../utils/units';
 
-const BASE_URL = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
-const EARTH_TEXTURE = `${BASE_URL}/assets/textures/earth_atmos_2048.jpg`;
-const MOON_TEXTURE = `${BASE_URL}/assets/textures/moon_1024.jpg`;
+// The diagram's own coordinates: Earth in the middle, sunlight from the right
+const WIDTH = 400;
+const HEIGHT = 240;
+const EARTH = { x: WIDTH / 2, y: HEIGHT / 2, r: 15 };
+const ORBIT_R = 92;
+const MOON_R = 7;
 
-// Earth radius & rotation
-const Earth = () => {
-  const earthRef = useRef();
-  const earthTexture = useTexture(EARTH_TEXTURE);
-  const prefersReducedMotion = usePrefersReducedMotion();
+// A disc lit on its right half, the side facing the Sun. Seen from above, the lit
+// half of Earth and of the Moon always faces the Sun, wherever the Moon is.
+const HalfLit = ({ x, y, r, day, night }) => (
+  <g>
+    <circle cx={x} cy={y} r={r} fill={night} />
+    <path d={`M ${x} ${y - r} A ${r} ${r} 0 0 1 ${x} ${y + r} Z`} fill={day} />
+  </g>
+);
 
-  useFrame(() => {
-    if (prefersReducedMotion) return;
-    if (earthRef.current) {
-      earthRef.current.rotation.y += 0.002;
-    }
-  });
-
-  return (
-    <Sphere ref={earthRef} args={[0.95, 48, 48]} position={[0, 0, 0]}>
-      <meshStandardMaterial
-        map={earthTexture}
-        roughness={0.7}
-        metalness={0.08}
-      />
-    </Sphere>
-  );
-};
-
-// Orbiting Moon with exact synodic position along fitted orbit
-const ORBIT_RADIUS = 3.3;
-
-const OrbitalMoon = ({ phase }) => {
-  const moonRef = useRef();
-  const moonTexture = useTexture(MOON_TEXTURE);
-
-  const orbitalAngle = phase * Math.PI * 2;
-
-  const moonPos = useMemo(() => [
-    Math.cos(orbitalAngle) * ORBIT_RADIUS,
-    0,
-    Math.sin(orbitalAngle) * ORBIT_RADIUS
-  ], [orbitalAngle]);
-
-  return (
-    <group position={moonPos}>
-      <Sphere ref={moonRef} args={[0.3, 32, 32]}>
-        <meshStandardMaterial
-          map={moonTexture}
-          roughness={0.9}
-          metalness={0.04}
-        />
-      </Sphere>
-
-      {/* Subtle position halo */}
-      <mesh position={[0, 0, 0]}>
-        <sphereGeometry args={[0.38, 16, 16]} />
-        <meshBasicMaterial color="#a5b4fc" transparent opacity={0.12} />
-      </mesh>
-    </group>
-  );
-};
-
-// Orbital path ring fully contained in viewport
-const OrbitPath = () => {
-  const points = useMemo(() => {
-    const pts = [];
-    const segments = 96;
-    for (let i = 0; i <= segments; i++) {
-      const angle = (i / segments) * Math.PI * 2;
-      pts.push(new THREE.Vector3(
-        Math.cos(angle) * ORBIT_RADIUS,
-        0,
-        Math.sin(angle) * ORBIT_RADIUS
-      ));
-    }
-    return pts;
-  }, []);
-
-  return (
-    <Line
-      points={points}
-      color="#8d9dd6"
-      lineWidth={1.2}
-      transparent
-      opacity={0.45}
-    />
-  );
-};
-
-// Fixed Parallel Sunlight from +X (Right)
-const SunLighting = () => {
-  return (
-    <>
-      <directionalLight position={[15, 0, 0]} intensity={3.5} color="#ffffff" />
-      <ambientLight intensity={0.08} color="#474f7a" />
-    </>
-  );
-};
-
-// Cinematic angle looking at orbital plane
-const CameraRig = () => {
-  const prefersReducedMotion = usePrefersReducedMotion();
-
-  useFrame(({ camera, clock }) => {
-    if (prefersReducedMotion) {
-      // Hold one vantage point instead of drifting around the orbital plane
-      camera.position.set(0, 7.8, 6.2);
-      camera.lookAt(0, 0, 0);
-      return;
-    }
-    const t = clock.getElapsedTime() * 0.03;
-    camera.position.x = Math.sin(t) * 0.8;
-    camera.position.y = 7.8 + Math.cos(t * 0.5) * 0.3;
-    camera.position.z = 6.2 + Math.cos(t) * 0.6;
-    camera.lookAt(0, 0, 0);
-  });
-  return null;
-};
-
-const OrbitalView = ({ lunarDetails, active = true, distanceUnit = 'km' }) => {
+// The Earth-Moon system from above Earth's north pole, as a flat diagram. It used
+// to be a second WebGL scene with a 512 KB Earth texture and its own render loop;
+// this says the same thing, crisply, at any size (decision E8).
+const OrbitalView = ({ lunarDetails, distanceUnit = 'km' }) => {
   const { phase, name, fraction, distanceKm } = lunarDetails;
   const [showExplanation, setShowExplanation] = useState(false);
 
+  // The Moon's angle east of the Sun (its elongation) is its place on the orbit:
+  // New Moon between Earth and the Sun, Full Moon on the far side. The Moon goes
+  // round anticlockwise seen from the north; screen y runs down.
+  const angle = phase * 2 * Math.PI;
+  const moon = { x: EARTH.x + ORBIT_R * Math.cos(angle), y: EARTH.y - ORBIT_R * Math.sin(angle) };
+
   return (
     <section className="telemetry-section orbital-card">
-      {/* Card Header */}
       <div className="orbital-header">
         <h3 className="utility-label orbital-title">
           Earth–Moon Orbital Geometry
@@ -143,6 +43,7 @@ const OrbitalView = ({ lunarDetails, active = true, distanceUnit = 'km' }) => {
           className="ghost-control-btn orbital-explain"
           title="Explain orbital view"
           aria-label="Toggle Orbital View Explanation"
+          aria-expanded={showExplanation}
         >
           <HelpCircle size={14} />
         </button>
@@ -150,25 +51,36 @@ const OrbitalView = ({ lunarDetails, active = true, distanceUnit = 'km' }) => {
 
       {showExplanation && (
         <div className="orbital-explanation">
-          <strong>Astronomical Context:</strong> Sunlight arrives from the right side (+X). As the Moon revolves around Earth, the illuminated portion visible from Earth produces the lunar phase cycle.
+          <strong>Astronomical Context:</strong> Seen from above Earth&rsquo;s north pole, sunlight arrives from the right. As the Moon revolves around Earth, the illuminated portion visible from Earth produces the lunar phase cycle.
         </div>
       )}
 
-      {/* 3D Orbit View Canvas (100% Unobstructed) */}
       <div className="orbital-canvas-wrap">
-        {/* frameloop never while the drawer is shut: the diagram used to redraw at
-            60fps behind a closed drawer for the life of the page */}
-        <Canvas camera={{ position: [0, 8, 6.5], fov: 42 }} dpr={[1, 2]} frameloop={active ? 'always' : 'never'}>
-          <React.Suspense fallback={null}>
-            <SunLighting />
-            <Earth />
-            <OrbitalMoon phase={phase} />
-            <OrbitPath />
-            <CameraRig />
-          </React.Suspense>
-        </Canvas>
+        <svg
+          className="orbital-diagram"
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label={`The Moon's place in its orbit, seen from above Earth's north pole with sunlight from the right: ${name}.`}
+        >
+          {/* Sunlight: faint parallel rays from the right */}
+          <g stroke="rgba(255, 236, 196, 0.16)" strokeWidth="1" strokeLinecap="round">
+            {[-72, -36, 0, 36, 72].map((dy) => (
+              <line key={dy} x1={WIDTH - 12} y1={EARTH.y + dy} x2={WIDTH - 58} y2={EARTH.y + dy} />
+            ))}
+          </g>
 
-        {/* Sunlight Direction Indicator Badge */}
+          {/* The orbit, and the line from Earth to the Moon */}
+          <circle cx={EARTH.x} cy={EARTH.y} r={ORBIT_R} fill="none" stroke="rgba(141, 157, 214, 0.45)" strokeWidth="1" />
+          <line x1={EARTH.x} y1={EARTH.y} x2={moon.x} y2={moon.y} stroke="rgba(165, 180, 252, 0.28)" strokeWidth="1" strokeDasharray="2 4" />
+
+          <HalfLit x={EARTH.x} y={EARTH.y} r={EARTH.r} day="#6f8fc7" night="#162238" />
+
+          {/* A soft halo marks the Moon's place */}
+          <circle cx={moon.x} cy={moon.y} r={MOON_R + 6} fill="rgba(165, 180, 252, 0.1)" />
+          <HalfLit x={moon.x} y={moon.y} r={MOON_R} day="#e6e9f2" night="#2a2f3d" />
+        </svg>
+
         <div className="orbital-sunlight" aria-hidden="true">
           ☀ Sunlight from Right
         </div>

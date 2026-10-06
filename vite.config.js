@@ -178,21 +178,7 @@ export default defineConfig({
           '**/*-cyrillic-ext-*.woff2',
           '**/*-greek-*.woff2',
           '**/*-greek-ext-*.woff2',
-          '**/*-vietnamese-*.woff2',
-          // only the orbit diagram uses this; cached on first use instead, below
-          'assets/textures/earth_atmos_2048.jpg'
-        ],
-        runtimeCaching: [
-          {
-            // The Earth texture is cached the first time the drawer opens, so the
-            // orbit diagram works offline for anyone who has seen it once
-            urlPattern: ({ url }) => url.pathname.endsWith('/earth_atmos_2048.jpg'),
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'luna-textures',
-              expiration: { maxEntries: 4 }
-            }
-          }
+          '**/*-vietnamese-*.woff2'
         ],
         // Hashed filenames make old precache entries unreachable after an update
         cleanupOutdatedCaches: true,
@@ -208,20 +194,26 @@ export default defineConfig({
       }
     })
   ],
+  // The scene's worker (src/scene/worker.js) is a module worker. Its bundle holds
+  // three.js, which it loads and runs off the main thread.
+  worker: {
+    format: 'es'
+  },
   build: {
-    // The 3D vendor chunk is Three.js itself, around 885 KB, and it is meant to be
-    // large: it loads lazily behind the loading screen. Keeping the warning at the
-    // default would fire on every build for a known, intended chunk and teach
-    // people to ignore it. The chunk that actually gates first paint has its own
-    // budget, enforced by scripts/check-bundle.mjs in CI.
-    chunkSizeWarningLimit: 950,
+    // The 3D chunks are three.js itself, around 600 KB, once in the scene's worker
+    // and once for the main thread where workers can't draw. They are meant to be
+    // large and load after first paint. Keeping the warning at the default would
+    // fire on every build for known, intended chunks and teach people to ignore it.
+    // The chunk that actually gates first paint has its own budget, enforced by
+    // scripts/check-bundle.js in CI.
+    chunkSizeWarningLimit: 800,
     rolldownOptions: {
       output: {
         // Name the 3D chunk for what it is. This touches only the file name, never
         // which modules go where: an earlier attempt used a codeSplitting group,
         // which by default also swallows each module's dependencies, pulled React
-        // in alongside fiber, and left the entry statically importing all of
-        // Three.js again. Composition stays with rolldown's automatic split.
+        // in with it, and left the entry statically importing all of three.js
+        // again. Composition stays with rolldown's automatic split.
         chunkFileNames: (chunk) =>
           chunk.moduleIds?.some((id) => /node_modules[\\/]three[\\/]/.test(id))
             ? 'assets/three-vendor-[hash].js'

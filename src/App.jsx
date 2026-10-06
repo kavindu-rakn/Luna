@@ -6,10 +6,12 @@ import CustomCursor from './components/CustomCursor';
 import SceneBoundary from './components/SceneBoundary';
 import MoonDisc from './components/MoonDisc';
 import { hasWebGLApi } from './utils/webgl';
+import { getMoonView } from './utils/moonView';
 
-// Three.js, fiber and drei are 60% of the bundle and nothing but the 3D Moon needs
-// them. Loading them on demand lets the whole shell paint first.
-const MoonVisualization = lazy(() => import('./components/MoonVisualization'));
+// The 3D Moon's component starts the scene; three.js itself loads inside the
+// scene's worker (or on the main thread where workers can't draw WebGL). Even the
+// component waits for first paint, so the entry stays within its budget.
+const MoonScene = lazy(() => import('./components/MoonScene'));
 
 // Deep Dive's panels, and GSAP with them, are only needed once the drawer opens.
 // They load after first paint and are mounted, hidden, once the page is idle, so
@@ -20,10 +22,10 @@ const DeepDiveContent = lazy(loadDeepDive);
 // A photographic flat Moon at the right phase. It is what the prerendered page shows
 // first, it holds the stage while the 3D Moon loads, and it stays if WebGL is
 // unavailable, so the view is never simply empty. The 3D Moon fades in over it.
-const MoonFallback = ({ phase, hidden }) => (
+const MoonFallback = ({ view, hidden }) => (
   <div className={`moon-viz-wrapper moon-viz-fallback${hidden ? ' is-hidden' : ''}`} aria-hidden="true">
     <div className="moon-fallback-disc">
-      <MoonDisc phase={phase} />
+      <MoonDisc view={view} />
     </div>
   </div>
 );
@@ -82,11 +84,10 @@ function App({ prerender = false }) {
 
   // A browser with no WebGL API gets the flat Moon and no Three.js download. One
   // whose context can't be created (disabled, blocklisted) finds out when the 3D
-  // Moon tries: it never draws a frame, so the flat Moon simply stays, and the
-  // orbit diagram waits for a Moon that did draw.
+  // Moon tries: it never draws a frame, so the flat Moon simply stays.
   const [hasWebGL] = useState(() => !prerender && hasWebGLApi());
   useEffect(() => {
-    if (!hasWebGL) console.warn('WebGL unavailable, showing the 2D Moon and hiding the orbit diagram');
+    if (!hasWebGL) console.warn('WebGL unavailable, showing the 2D Moon');
   }, [hasWebGL]);
 
   // shell -> scene -> ready, or failed. The 3D Moon fades in over the flat one only
@@ -96,9 +97,11 @@ function App({ prerender = false }) {
   const markScene = useCallback(() => setLoadStage((s) => (s === 'shell' ? 'scene' : s)), []);
   const markReady = useCallback(() => setLoadStage('ready'), []);
   const markFailed = useCallback(() => setLoadStage((s) => (s === 'ready' ? s : 'failed')), []);
+  // A lost WebGL context brings the flat Moon back until the scene draws again
+  const markLost = useCallback(() => setLoadStage('scene'), []);
   const moonReady = loadStage === 'ready';
 
-  // The orbit diagram loads the first time the drawer opens and stays mounted
+  // Deep Dive's contents mount the first time the drawer opens and stay mounted
   // after, so closing the drawer does not make its contents jump mid-slide.
   const [hasOpenedDrawer, setHasOpenedDrawer] = useState(false);
   if (isDrawerOpen && !hasOpenedDrawer) setHasOpenedDrawer(true);
@@ -285,6 +288,10 @@ function App({ prerender = false }) {
   // which is the only place it is shown.
   const lunarDetails = useMemo(() => getLunarDetails(currentDate, location?.lat, location?.lon, location?.timeZone, clock), [currentDate, location, clock]);
 
+  // How the Moon stands in this observer's sky: its tilt, libration and lighting,
+  // for the 3D Moon and the flat one alike
+  const moonView = useMemo(() => getMoonView(currentDate, location?.lat ?? 0, location?.lon ?? 0), [currentDate, location]);
+
   // What a screen reader hears when the view changes. It names the date and place,
   // which the old announcement left out, and waits for the view to settle: a drag
   // across the timeline would otherwise queue an announcement for every step.
@@ -416,16 +423,18 @@ function App({ prerender = false }) {
             role="img"
             aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated`}
           >
-            <MoonFallback phase={lunarDetails.phase} hidden={moonReady} />
+            <MoonFallback view={moonView} hidden={moonReady} />
             {hasWebGL && (
               <SceneBoundary name="Moon scene" onError={markFailed} fallback={null}>
                 <Suspense fallback={null}>
-                  <MoonVisualization
-                    lunarDetails={lunarDetails}
+                  <MoonScene
+                    view={moonView}
+                    fraction={lunarDetails.fraction}
                     isReady={moonReady}
                     onScene={markScene}
                     onReady={markReady}
                     onFail={markFailed}
+                    onLost={markLost}
                   />
                 </Suspense>
               </SceneBoundary>
@@ -485,8 +494,6 @@ function App({ prerender = false }) {
               lunarDetails={lunarDetails}
               preferences={preferences}
               setPreference={setPreference}
-              isOpen={isDrawerOpen}
-              showOrbit={hasOpenedDrawer && moonReady}
               onShowPrivacy={showPrivacy}
             />
           </Suspense>

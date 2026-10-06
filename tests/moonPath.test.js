@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   litPath, shadePhases, earthshine, SHADE_STEPS, SHADE_HEADROOM, SHADE_TOE
 } from '../src/utils/moonPath';
+import { getMoonView } from '../src/utils/moonView';
 import { paintNow } from '../src/shell/paintNow';
 
 // Read the terminator's half-width and the arc flags back out of a lit path
@@ -106,18 +107,40 @@ describe('earthshine', () => {
 });
 
 describe('the shell script', () => {
-  it('draws the 2D Moon just as the app does', () => {
+  const element = () => ({ setAttribute(name, value) { this[name] = value; } });
+  const paint = (search) => {
     const svg = { getAttribute: () => '200' };
-    const paths = Array.from({ length: SHADE_STEPS }, () => ({ ownerSVGElement: svg, setAttribute(name, value) { this[name] = value; } }));
-    const night = { setAttribute(name, value) { this[name] = value; } };
+    const paths = Array.from({ length: SHADE_STEPS }, () => ({ ...element(), ownerSVGElement: svg }));
+    const parts = { use: element(), 'mask g': element(), image: element() };
     const doc = {
-      querySelector: (selector) => (selector.endsWith('use') ? night : null),
+      querySelector: (selector) => Object.entries(parts).find(([key]) => selector.endsWith(key))?.[1] ?? null,
       querySelectorAll: (selector) => (selector.endsWith('path') ? paths : [])
     };
-    const win = { location: { search: '?d=2026-10-14T18:00Z' }, localStorage: { getItem: () => null } };
+    const win = { location: { search }, localStorage: { getItem: () => null } };
     paintNow(win, doc);
-    const { phase } = paintNow(win, null);
-    expect(paths.map((path) => path.d)).toEqual(shadePhases(phase).map((shifted) => litPath(shifted, 200)));
-    expect(night.opacity).toBe(earthshine(phase).toFixed(4));
+    return { paths, parts, view: paintNow(win, null).view };
+  };
+  const angle = (transform) => Number(/rotate\((-?[\d.]+) 100 100\)/.exec(transform)[1]);
+  const angleBetween = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
+
+  it('draws the 2D Moon the way MoonDisc does', () => {
+    const { paths, parts, view } = paint('?d=2026-10-14T18:00Z');
+    expect(paths.map((path) => path.d)).toEqual(shadePhases(view.litPhase).map((shifted) => litPath(shifted, 200)));
+    expect(parts.use.opacity).toBe(earthshine(view.litPhase).toFixed(4));
+    expect(angleBetween(angle(parts['mask g'].transform), 270 - view.limbAngle)).toBeLessThan(0.01);
+    expect(angleBetween(angle(parts.image.transform), -view.poleAngle)).toBeLessThan(0.01);
+  });
+
+  it('turns it within a degree or so of where the app will', () => {
+    const places = [[51.4769, -0.0005], [6.93, 79.85], [-33.87, 151.21]];
+    for (const [lat, lon] of places) {
+      for (const iso of ['2026-10-14T18:00Z', '2026-10-18T15:00Z', '2026-10-22T03:00Z', '2026-11-05T06:00Z']) {
+        const { view } = paint(`?d=${iso}&at=${lat},${lon}`);
+        const app = getMoonView(new Date(iso.replace('Z', ':00Z')), lat, lon);
+        expect(Math.abs(view.litPhase - app.litPhase) * 360).toBeLessThan(1.2);
+        expect(angleBetween(view.poleAngle, app.poleAngle)).toBeLessThan(1);
+        expect(angleBetween(view.limbAngle, app.limbAngle)).toBeLessThan(2);
+      }
+    }
   });
 });
