@@ -217,8 +217,14 @@ There is no loading screen. The intro (Phase 5) plays over the real page.
 - **Quality tiers**, chosen at start and lowered if frames run long:
   - high: 4K colour + normal map, glow, full star catalogue, device pixel ratio up to 2
   - medium: 2K colour + normal map, glow, full catalogue, ratio up to 2
-  - low (older iPhones, low-memory Android, software rendering): 2K colour, analytic glow
-    only, bright stars only, ratio 1.5
+  - low (older iPhones, low-memory Android, software rendering): 2K colour + normal map,
+    analytic glow only, bright stars only, ratio 1.5. As built in 1b, the low tier keeps the
+    normal map: the 2025 colour map is albedo only, so without relief a crescent showed no
+    craters at all, and the map is 663 KB. The older iPhones are recognised by their route:
+    their Safari can't draw WebGL in a worker, so they reach the scene on the main thread.
+  - KTX2 decodes in the scene's worker only. On the main thread the scene loads JPEG
+    textures instead: three.js's Basis transcoder evaluates code as it starts, which the
+    page's CSP forbids, and its workers inherit that policy there.
 - Shader compilation uses `renderer.compileAsync` so the parallel-compile extension keeps it
   off the critical path where available. Texture uploads are staged, one per frame.
 - Context loss is handled: re-create resources, never a blank Moon.

@@ -62,7 +62,8 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 
 ### 3D Photographic Lunar Sphere
 * **As It Stands in Your Sky:** The disc is turned as it appears from the chosen place and time, zenith up (the parallactic angle and the tilt of the Moon's axis), lit from the Sun's true direction, and nodding with the real libration of the moment, so a month of scrubbing shows the edges come and go.
-* **Lunar Light:** A Lommel-Seeliger reflectance, the way lunar dust scatters light, so a crescent keeps its true width and the full Moon is evenly bright to its edge.
+* **NASA Imagery:** The colour of NASA's Lunar Reconnaissance Orbiter (the 2025 CGI Moon Kit) with relief from LOLA laser altimetry, so craters and mountains catch the light along the terminator and flatten towards full, as on the real Moon. GPU-compressed KTX2 textures: 2K everywhere, 4K on large screens.
+* **Lunar Light:** A shader of its own: Lommel-Seeliger reflectance, the way lunar dust scatters light, so a crescent keeps its true width and the full Moon is evenly bright to its edge, a small opposition surge near full, faint earthshine around thin crescents, and a soft glow off the lit limb.
 * **360° Free Drag & Inertia:** Drag to turn the Moon with momentum; the turn stays as an offset on the true orientation, and a double-click or double-tap springs it back.
 * **Off the Main Thread:** The scene is plain three.js in a Web Worker drawing to an OffscreenCanvas where the browser supports it, and on the main thread elsewhere. It draws only when something changes.
 
@@ -203,10 +204,10 @@ Every parameter is treated as untrusted and validated on its own, so a malformed
 <a id="offline"></a>
 ## | | | O F F L I N E
 
-Luna is an installable app and works with no connection. Every calculation already runs on the device, so after one visit the app, the 3D engine and the Moon texture are cached, and it opens on a hillside with no signal.
+Luna is an installable app and works with no connection. Every calculation already runs on the device, so after one visit the app, the 3D engine and the 2K Moon textures are cached, and it opens on a hillside with no signal.
 
 * **What works offline:** everything except searching for a new place. Saved places still work, since their timezone is resolved locally from the coordinates. Shared links open too.
-* **What stays out of the cache:** the share-card image, install icons and font subsets for scripts the UI does not use, which trims the first-visit download from 3.1 MB to 1.9 MB. The Earth texture is cached the first time the drawer opens.
+* **What stays out of the cache:** the share-card image, install icons and font subsets for scripts the UI does not use. The 4K Moon texture, for large screens, and the image textures, for browsers that can't decode KTX2, are cached the first time they are used.
 * **Updates never interrupt you.** A new version installs in the background and waits. A notice offers to reload; until you do, you keep a complete and consistent copy of the version you are using.
 
 ---
@@ -349,6 +350,8 @@ If WebGL is unavailable or the scene fails to download, the 2D Moon stays, drawn
 ## | | | L I C E N S E
 
 Released under the [MIT License](./LICENSE). © 2026 Kavindu Ranathunga.
+
+Moon textures from NASA's Scientific Visualization Studio, [CGI Moon Kit](https://svs.gsfc.nasa.gov/4720) (LRO colour and LOLA elevation), in the public domain. They are rebuilt with `node scripts/textures/build.mjs`.
 
 ---
 
