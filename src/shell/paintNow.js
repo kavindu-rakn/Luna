@@ -87,17 +87,27 @@ export function paintNow(win, doc) {
   var moon = doc.querySelector('.moon-container');
   if (moon) moon.setAttribute('aria-label', 'The Moon: ' + name + ', ' + (fraction * 100).toFixed(1) + ' percent illuminated');
 
-  // The terminator, drawn exactly as litPath (src/utils/moonPath.js) draws it
-  var path = doc.querySelector('.moon-viz-fallback svg path');
-  var svg = path && path.ownerSVGElement;
-  if (path && svg) {
+  // The 2D Moon: earthshine on the night side, as earthshine sets it, and the lit
+  // part in its shading steps, as shadePhases and litPath draw them
+  // (src/utils/moonPath.js)
+  var night = doc.querySelector('.moon-viz-fallback svg use');
+  if (night) night.setAttribute('opacity', ((1 + Math.cos(elongation * rad)) / 2).toFixed(4));
+  var paths = doc.querySelectorAll('.moon-viz-fallback svg path');
+  var svg = paths.length && paths[0].ownerSVGElement;
+  if (svg) {
     var size = +svg.getAttribute('width') || 200;
     var r = size / 2;
     var waxing = phase <= 0.5;
-    var rx = Math.max(0.01, Math.abs(Math.cos(phase * 2 * Math.PI)) * (r - 0.5));
-    var inner = phase > 0.25 && phase < 0.75 ? (waxing ? 1 : 0) : (waxing ? 0 : 1);
-    path.setAttribute('d', 'M ' + r + ',0.5 A ' + (r - 0.5) + ',' + (r - 0.5) + ' 0 0 ' + (waxing ? 1 : 0) + ' ' +
-      r + ',' + (size - 0.5) + ' A ' + rx + ',' + (r - 0.5) + ' 0 0 ' + inner + ' ' + r + ',0.5 Z');
+    var E = (waxing ? phase : 1 - phase) * 2 * Math.PI;
+    for (var step = 0; step < paths.length; step++) {
+      var t = step ? 1.193 * Math.pow(0.1 + 0.9 * (step + 0.5) / paths.length, 2) : 0;
+      var delta = Math.atan2(t * Math.sin(E), 2 - t + t * Math.cos(E)) / (2 * Math.PI);
+      var p = waxing ? phase - delta : phase + delta;
+      var rx = +Math.max(0.01, Math.abs(Math.cos(p * 2 * Math.PI)) * (r - 0.5)).toFixed(2);
+      var inner = p > 0.25 && p < 0.75 ? (waxing ? 1 : 0) : (waxing ? 0 : 1);
+      paths[step].setAttribute('d', 'M ' + r + ',0.5 A ' + (r - 0.5) + ',' + (r - 0.5) + ' 0 0 ' + (waxing ? 1 : 0) + ' ' +
+        r + ',' + (size - 0.5) + ' A ' + rx + ',' + (r - 0.5) + ' 0 0 ' + inner + ' ' + r + ',0.5 Z');
+    }
   }
   return null;
 }

@@ -2156,11 +2156,11 @@ h1, h2, h3, h4 {
 }
 
 /* The flat Moon: the first frame, the stand-in while the 3D one loads, and the
-   Moon itself without WebGL. MoonVisualization's useMoonScale fills 87.6% of the
-   canvas height, or 80% of its width on a narrow one; this matches it, so the 3D
-   Moon fades in exactly over the flat one. */
+   Moon itself without WebGL. MoonVisualization's useMoonScale sizes the 3D Moon's
+   outline to 92% of the canvas height, or 83% of its width on a narrow one; these
+   are the same numbers, so the 3D Moon fades in exactly over the flat one. */
 .moon-fallback-disc {
-  width: min(87.6cqh, 80cqw);
+  width: min(92cqh, 83cqw);
   aspect-ratio: 1;
 }
 
@@ -2227,6 +2227,10 @@ h1, h2, h3, h4 {
   height: 100%;
   position: relative;
   z-index: 1;
+  /* One finger on the Moon turns the Moon. Without this, Android Chrome claimed
+     the swipe as a page pan a few pixels in and cancelled the drag, so a full
+     turn took many swipes. Two fingers still pinch-zoom the page. */
+  touch-action: pinch-zoom;
 }
 
 /* Hero Phase Name */

@@ -289,3 +289,18 @@ when the page opens.
   blending, and React's first render. Phase 1's worker renderer is aimed at exactly this.
 - Tried and reverted: loading the app from the inline script after first paint. It only
   moved the app's start-up into the window Lighthouse counts as blocking time.
+- The owner's phone check (6 Oct 2026) found two things on the preview:
+  - A visible jump from the flat Moon to the 3D one, on desktop, iOS and Android. The
+    old close camera (5.8 units, 40° lens) drew the sphere's outline about 5% larger
+    than the flat Moon and hid part of a crescent's lit edge, and Lambert shading thinned
+    the crescent further. The flat Moon had a hard terminator, a grey night side and a
+    dimmer bright limb. Now the camera stands 300 units off, the sphere reflects by the
+    Lommel-Seeliger law, and the flat Moon is shaded in 32 steps along the same law, with
+    an earthshine filter fitted to the 3D Moon's night side. Measured flat against 3D
+    along the disc's middle at five phases: the same size, and brightness within about 5%
+    (10-20% on a crescent's bright limb).
+  - Spinning the Moon took many swipes on Android. Chrome claimed the swipe as a page pan
+    and cancelled the drag after a couple of moves (reproduced with emulated touch). The
+    canvas now sets `touch-action: pinch-zoom` and captures the pointer, and the spin on
+    release comes from speed, timed by the events themselves, so 120 Hz and 60 Hz flicks
+    at the same speed leave the same spin.

@@ -103,20 +103,61 @@ function processSeamlessMoonTexture(rawTexture) {
 const EARTHSHINE_MAX = 0.55;
 const EARTHSHINE_COLOR = '#9fb0e0';
 
-const CAMERA_Z = 5.8;
-const CAMERA_FOV = 40; // vertical, in degrees
+// The Moon's surface doesn't scatter light like matte paint. Under the standard
+// (Lambert) model brightness falls with the sun's angle, so the lit side dimmed
+// steadily towards the terminator and a crescent looked far thinner than its lit
+// area, and thinner than the photographed flat Moon it fades in over. Lunar dust
+// follows the Lommel-Seeliger law instead, brightness ∝ cos i / (cos i + cos e),
+// which stays bright almost to the terminator and makes the full Moon look evenly
+// lit to its edge, as the real one does. This swaps it in for direct light in
+// three.js's standard material, scaled to match Lambert where both face the
+// viewer. It is decision F2 in its simplest form; Phase 1's own shader replaces it.
+const LAMBERT_DIRECT = 'vec3 irradiance = dotNL * directLight.color;';
+const lunarReflectance = (shader) => {
+  const chunk = THREE.ShaderChunk.lights_physical_pars_fragment;
+  if (!chunk.includes(LAMBERT_DIRECT)) return; // a three.js update moved it: keep Lambert
+  shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <lights_physical_pars_fragment>',
+    chunk.replace(LAMBERT_DIRECT, `float dotNV = saturate( dot( geometryNormal, geometryViewDir ) );
+	vec3 irradiance = ( 2.0 * dotNL / max( dotNL + dotNV, 1e-4 ) ) * directLight.color;`)
+  );
+};
+
+// The camera stands far off with a narrow lens. It used to stand 5.8 units away with
+// a 40° lens, close enough to see well under half the sphere: a crescent's lit edge
+// wrapped round out of view, so it looked thinner than its true lit fraction, and
+// the outline looked larger than the Moon. From Earth the Moon is seen as good as
+// face-on, which is also how the flat Moon's photograph is projected. This keeps the
+// old framing (the same height of the scene in view) from 300 units away. Nearer,
+// perspective still enlarged the middle of the disc against its edge: from 60 units
+// a crescent's terminator sat 3px off the flat Moon's, on a phone-sized disc.
+const CAMERA_Z = 300;
+const VISIBLE_HEIGHT = 2 * 5.8 * Math.tan((40 * Math.PI) / 360);
+const CAMERA_FOV = (2 * Math.atan(VISIBLE_HEIGHT / 2 / CAMERA_Z) * 180) / Math.PI; // vertical, in degrees
 const MOON_RADIUS = 1.85;
 
-// Size the Moon to its canvas rather than by a fixed factor. On a wide canvas it fills
-// 87.6% of the height, exactly the size it has always had on desktop. On a narrow
-// portrait phone the width is what runs out, so there it fills 80% of the width. The
-// old fixed 0.8 scale left a small Moon adrift in empty space on phones.
+// Size the Moon to its canvas rather than by a fixed factor: its outline fills 92%
+// of the canvas height, or 83% of the width on a narrow portrait phone, where the
+// width runs out first. The old fixed 0.8 scale left a small Moon adrift in empty
+// space on phones. The flat Moon's CSS (.moon-fallback-disc: min(92cqh, 83cqw))
+// uses the same two numbers, so the 3D Moon fades in exactly over it.
+//
+// What is sized is the outline as the camera sees it, where the sight lines graze
+// the sphere, which is a little wider than the sphere itself. From the old close
+// camera that difference made the 3D Moon 4-6% larger than the flat one; from 300
+// units it is a fraction of a pixel, but it costs nothing to keep exact.
+const OUTLINE_OF_HEIGHT = 0.92;
+const OUTLINE_OF_WIDTH = 0.83;
+
 const useMoonScale = () => {
   const { size } = useThree();
-  const visibleHeight = 2 * CAMERA_Z * Math.tan((CAMERA_FOV * Math.PI) / 360);
+  const visibleHeight = VISIBLE_HEIGHT;
   const visibleWidth = visibleHeight * (size.width / Math.max(1, size.height));
-  const diameter = Math.min(0.876 * visibleHeight, 0.8 * visibleWidth);
-  return diameter / (2 * MOON_RADIUS);
+  // The outline's radius, measured in the plane through the Moon's centre
+  const outline = Math.min(OUTLINE_OF_HEIGHT * visibleHeight, OUTLINE_OF_WIDTH * visibleWidth) / 2;
+  // The sphere whose outline lands exactly there
+  const radius = outline / Math.sqrt(1 + (outline / CAMERA_Z) ** 2);
+  return radius / MOON_RADIUS;
 };
 
 const MoonMesh = ({ phase, onReady }) => {
@@ -125,6 +166,7 @@ const MoonMesh = ({ phase, onReady }) => {
   const moonRef = useRef();
   const isDragging = useRef(false);
   const previousPointer = useRef({ x: 0, y: 0 });
+  const lastMoveAt = useRef(0);
   const velocity = useRef({ x: 0, y: 0 });
 
   // Load raw texture using Drei's Suspense-integrated useTexture hook
@@ -172,6 +214,21 @@ const MoonMesh = ({ phase, onReady }) => {
   // something changes. Prop changes (the phase moving the sun) ask for one on their
   // own; a drag and the spin that follows it ask here.
   const invalidate = useThree((state) => state.invalidate);
+
+  const endDrag = (e) => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    e?.target?.releasePointerCapture?.(e.pointerId);
+    // A finger that came to rest before lifting shouldn't fling the Moon
+    if (eventTime(e) - lastMoveAt.current > 80) {
+      velocity.current.x = 0;
+      velocity.current.y = 0;
+    }
+    velocity.current.x = Math.max(-MAX_SPIN, Math.min(MAX_SPIN, velocity.current.x));
+    velocity.current.y = Math.max(-MAX_SPIN, Math.min(MAX_SPIN, velocity.current.y));
+    // Let go: the spin carries on from here, one frame asking for the next
+    invalidate();
+  };
 
   useFrame(() => {
     if (!moonRef.current) return;
@@ -233,6 +290,7 @@ const MoonMesh = ({ phase, onReady }) => {
             map={colorMap}
             roughness={0.92}
             metalness={0.04}
+            onBeforeCompile={lunarReflectance}
           />
         </Sphere>
       </group>
@@ -245,36 +303,53 @@ const MoonMesh = ({ phase, onReady }) => {
           e.stopPropagation();
           isDragging.current = true;
           previousPointer.current = { x: e.clientX, y: e.clientY };
+          lastMoveAt.current = eventTime(e);
+          velocity.current.x = 0;
+          velocity.current.y = 0;
+          // Keep the drag when the finger or mouse runs off the Moon's edge mid-swipe
+          e.target.setPointerCapture?.(e.pointerId);
         }}
         onPointerMove={(e) => {
           if (!isDragging.current || !moonRef.current) return;
+          const now = eventTime(e);
           const deltaX = e.clientX - previousPointer.current.x;
           const deltaY = e.clientY - previousPointer.current.y;
 
-          velocity.current.x = deltaX * 0.005;
-          velocity.current.y = deltaY * 0.005;
+          moonRef.current.rotation.y += deltaX * DRAG_RADIANS_PER_PIXEL;
+          moonRef.current.rotation.x = Math.max(-1.3, Math.min(1.3, moonRef.current.rotation.x + deltaY * DRAG_RADIANS_PER_PIXEL));
 
-          moonRef.current.rotation.y += velocity.current.x;
-          moonRef.current.rotation.x = Math.max(-1.3, Math.min(1.3, moonRef.current.rotation.x + velocity.current.y));
+          // The spin carried on release comes from speed, distance over time, not
+          // from the size of the last move. Android reports moves far more often
+          // than iOS or a mouse, each a few pixels long, so a per-move measure
+          // left its flicks with a fraction of the spin. Smoothed over the last
+          // few moves, and expressed per 60 Hz frame for the decay loop.
+          const elapsed = Math.min(Math.max(now - lastMoveAt.current, 4), 64);
+          const perFrame = FRAME_MS / elapsed;
+          velocity.current.x = velocity.current.x * 0.5 + deltaX * DRAG_RADIANS_PER_PIXEL * perFrame * 0.5;
+          velocity.current.y = velocity.current.y * 0.5 + deltaY * DRAG_RADIANS_PER_PIXEL * perFrame * 0.5;
 
           previousPointer.current = { x: e.clientX, y: e.clientY };
+          lastMoveAt.current = now;
           invalidate();
         }}
-        onPointerUp={() => {
-          isDragging.current = false;
-          // Let go: the spin carries on from here, one frame asking for the next
-          invalidate();
-        }}
-        onPointerLeave={() => {
-          isDragging.current = false;
-          invalidate();
-        }}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
       >
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </Sphere>
     </group>
   );
 };
+
+// Dragging turns the Moon this far per pixel moved, on every device
+const DRAG_RADIANS_PER_PIXEL = 0.005;
+// When a pointer event happened, rather than when its handler ran: a busy frame
+// can hold two moves back and hand them over together, which read as a burst of
+// speed
+const eventTime = (e) => e?.nativeEvent?.timeStamp || performance.now();
+const FRAME_MS = 1000 / 60;
+// The fastest spin a flick can leave behind, in radians per frame (about 17°)
+const MAX_SPIN = 0.3;
 
 const GL_ATTRIBUTES = { antialias: true, alpha: true, powerPreference: 'high-performance' };
 let warnedNoWebGL = false;
