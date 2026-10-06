@@ -17,7 +17,15 @@ const DISC_SRC = shellImage?.startsWith('data:') ? shellImage : `${import.meta.e
 
 const SIZE = 200;
 
-const MoonDisc = ({ phase }) => (
+// SVG turns clockwise; the angles here are anticlockwise from straight up
+const turn = (angle) => `rotate(${+angle.toFixed(2)} ${SIZE / 2} ${SIZE / 2})`;
+
+// The Moon as getMoonView (src/utils/moonView.js) says it stands in the sky: the
+// photograph turned so its north pole points where the Moon's does with the
+// observer's zenith up, and the lit shape turned so the bright limb faces the Sun.
+// The photograph shows the mean near side; the 3D Moon fades in at that same pose
+// and then nods into the libration of the moment. Mirrored in src/shell/paintNow.js.
+const MoonDisc = ({ view: { litPhase, limbAngle, poleAngle } }) => (
   <svg
     width={SIZE}
     height={SIZE}
@@ -26,11 +34,14 @@ const MoonDisc = ({ phase }) => (
     aria-hidden="true"
   >
     <defs>
-      {/* The day side brightens in steps from the terminator (see shadePhases) */}
+      {/* The day side brightens in steps from the terminator (see shadePhases),
+          drawn with the bright limb on the right and turned to face the Sun */}
       <mask id="moon-disc-phase" style={{ maskType: 'alpha' }}>
-        {shadePhases(phase).map((shifted, step) => (
-          <path key={step} d={litPath(shifted, SIZE)} fill="#fff" fillOpacity={(1 / (SHADE_STEPS - step)).toFixed(4)} />
-        ))}
+        <g transform={turn(270 - limbAngle)}>
+          {shadePhases(litPhase).map((shifted, step) => (
+            <path key={step} d={litPath(shifted, SIZE)} fill="#fff" fillOpacity={(1 / (SHADE_STEPS - step)).toFixed(4)} />
+          ))}
+        </g>
       </mask>
       {/* Earthshine as the 3D Moon renders it at New Moon: dark and cool, with
           the maria sinking to black while the highlands still show. Fitted to its
@@ -48,12 +59,12 @@ const MoonDisc = ({ phase }) => (
     {/* The one photograph, drawn twice: once more through the earthshine filter
         for the night side, then as itself through the day side's mask. <use>
         draws it again without putting the inlined image in the page twice. */}
-    <use href="#moon-disc-photo" filter="url(#moon-disc-earthshine)" opacity={earthshine(phase).toFixed(4)} />
+    <use href="#moon-disc-photo" filter="url(#moon-disc-earthshine)" opacity={earthshine(litPhase).toFixed(4)} />
     <g mask="url(#moon-disc-phase)">
       {/* Decoded with the frame that first shows it, not after: left to decode on
           its own, the first frame painted without it and the photo waited behind
           the app's start-up work, which made it the page's slowest paint */}
-      <image id="moon-disc-photo" href={DISC_SRC} width={SIZE} height={SIZE} decoding="sync" />
+      <image id="moon-disc-photo" href={DISC_SRC} width={SIZE} height={SIZE} transform={turn(-poleAngle)} decoding="sync" />
     </g>
   </svg>
 );

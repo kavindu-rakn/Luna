@@ -1,0 +1,458 @@
+// The 3D Moon, in plain three.js and nothing else: no React, no DOM. It takes a
+// canvas (an OffscreenCanvas in a worker, or a page canvas on the main thread)
+// and is driven by small messages, so exactly the same code runs in either place.
+// See src/scene/client.js for how the page picks one.
+//
+// Nothing renders unless something changed: a new view, a drag and the spin that
+// follows it, a reset, the settle after the first frame, a resize. With software
+// WebGL (PageSpeed, blocklisted GPUs) a frame costs tens of milliseconds, so a
+// loop running at rest would hold its thread for the life of the page.
+
+import {
+  AmbientLight,
+  BufferGeometry,
+  CanvasTexture,
+  DirectionalLight,
+  Float32BufferAttribute,
+  LinearMipmapLinearFilter,
+  LinearFilter,
+  Matrix4,
+  Mesh,
+  MeshStandardMaterial,
+  PerspectiveCamera,
+  Quaternion,
+  Scene,
+  ShaderChunk,
+  SRGBColorSpace,
+  ACESFilmicToneMapping,
+  Vector3,
+  WebGLRenderer
+} from 'three';
+
+// The camera stands far off with a narrow lens. From Earth the Moon is seen as good
+// as face-on, which is also how the flat Moon's photograph is projected; a near
+// camera saw well under half the sphere, so a crescent's lit edge wrapped out of
+// view and the outline looked larger than the flat Moon. This keeps the framing a
+// 40° lens had from 5.8 units, from 300 units away, where perspective moves nothing
+// on the disc by more than a fraction of a pixel.
+const CAMERA_Z = 300;
+const VISIBLE_HEIGHT = 2 * 5.8 * Math.tan((40 * Math.PI) / 360);
+const CAMERA_FOV = (2 * Math.atan(VISIBLE_HEIGHT / 2 / CAMERA_Z) * 180) / Math.PI;
+
+// The Moon's outline fills 92% of the canvas height, or 83% of its width on a
+// narrow portrait phone, where the width runs out first. The flat Moon's CSS
+// (.moon-fallback-disc: min(92cqh, 83cqw)) and the page's hit test use the same
+// two numbers, so the 3D Moon fades in exactly over the flat one.
+export const OUTLINE_OF_HEIGHT = 0.92;
+export const OUTLINE_OF_WIDTH = 0.83;
+
+// Earthshine: sunlight reflected off Earth onto the Moon's night side. Seen from
+// the Moon, Earth is full when the Moon is new, so the glow is strongest when the
+// Moon would otherwise be a black disc. Real earthshine is far fainter; this is
+// bright enough to show the surface, and cool enough to read as the unlit side.
+const EARTHSHINE_MAX = 0.55;
+const EARTHSHINE_COLOR = '#9fb0e0';
+const SUN_INTENSITY = 3.4;
+
+// The Moon's surface doesn't scatter light like matte paint. Lunar dust follows the
+// Lommel-Seeliger law, brightness ∝ cos i / (cos i + cos e), which keeps a crescent
+// as wide as its lit area and the full Moon evenly lit to its edge. This swaps it in
+// for direct light in three.js's standard material, scaled to match Lambert where
+// both face the viewer. Phase 1b's own lunar shader replaces it.
+const LAMBERT_DIRECT = 'vec3 irradiance = dotNL * directLight.color;';
+const lunarReflectance = (shader) => {
+  const chunk = ShaderChunk.lights_physical_pars_fragment;
+  if (!chunk.includes(LAMBERT_DIRECT)) return; // a three.js update moved it: keep Lambert
+  shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <lights_physical_pars_fragment>',
+    chunk.replace(LAMBERT_DIRECT, `float dotNV = saturate( dot( geometryNormal, geometryViewDir ) );
+	vec3 irradiance = ( 2.0 * dotNL / max( dotNL + dotNV, 1e-4 ) ) * directLight.color;`)
+  );
+};
+
+// Dragging turns the Moon this far per CSS pixel, on every device
+const DRAG_RADIANS_PER_PIXEL = 0.005;
+const FRAME_MS = 1000 / 60;
+// The fastest spin a flick can leave behind, in radians per 60 Hz frame (about 17°)
+const MAX_SPIN = 0.3;
+// The spin keeps 94% of its speed each 60 Hz frame, and stops below a hundredth of
+// a degree a frame
+const SPIN_DECAY = 0.94;
+const SPIN_STOP = 2e-4;
+// A finger that rests this long before lifting leaves no spin
+const REST_MS = 80;
+const RESET_MS = 650;
+
+// The flat Moon's photograph shows the mean near side, with no libration. The 3D
+// Moon's first frame matches it, then, once the page has faded it in and says so
+// (settle), nods into the libration of the moment.
+const SETTLE_MS = 1600;
+
+const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+const easeOut = (t) => 1 - (1 - t) ** 3;
+
+// A sphere in the Moon's own axes (x to the middle of the near side, y to 90° east,
+// z to the north pole), mapped onto the equirectangular texture, whose middle
+// column is the prime meridian and whose top row is the north pole
+const moonGeometry = (rows = 128, cols = 192) => {
+  const positions = [];
+  const normals = [];
+  const uvs = [];
+  const index = [];
+  for (let i = 0; i <= rows; i++) {
+    const lat = Math.PI / 2 - (i / rows) * Math.PI;
+    for (let j = 0; j <= cols; j++) {
+      const lon = -Math.PI + (j / cols) * 2 * Math.PI;
+      const x = Math.cos(lat) * Math.cos(lon);
+      const y = Math.cos(lat) * Math.sin(lon);
+      const z = Math.sin(lat);
+      positions.push(x, y, z);
+      normals.push(x, y, z);
+      uvs.push(j / cols, i / rows);
+    }
+  }
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      const a = i * (cols + 1) + j;
+      const b = a + cols + 1;
+      // Wound anticlockwise seen from outside
+      if (i !== 0) index.push(a, b, a + 1);
+      if (i !== rows - 1) index.push(a + 1, b, b + 1);
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setIndex(index);
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new Float32BufferAttribute(normals, 3));
+  geometry.setAttribute('uv', new Float32BufferAttribute(uvs, 2));
+  return geometry;
+};
+
+const makeCanvas = (width, height) => {
+  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(width, height);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+};
+
+// The texture's top and bottom rows each squeeze into a single point at the
+// pole, where their detail turns into a starburst of spokes. Blend each pole's
+// band towards that row's average colour. Phase 1b moves this into the build.
+const blendPoles = (bitmap) => {
+  const width = bitmap.width;
+  const height = bitmap.height;
+  const canvas = makeCanvas(width, height);
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(bitmap, 0, 0);
+  const image = ctx.getImageData(0, 0, width, height);
+  const data = image.data;
+  const band = Math.round(height * (24 / 512));
+  for (const pole of ['north', 'south']) {
+    const edgeRow = pole === 'north' ? 0 : height - 1;
+    const mean = [0, 0, 0];
+    for (let x = 0; x < width; x++) {
+      for (let c = 0; c < 3; c++) mean[c] += data[(edgeRow * width + x) * 4 + c];
+    }
+    for (let c = 0; c < 3; c++) mean[c] /= width;
+    for (let i = 0; i < band; i++) {
+      const y = pole === 'north' ? i : height - 1 - i;
+      const f = (1 - i / band) ** 1.5;
+      for (let x = 0; x < width; x++) {
+        const o = (y * width + x) * 4;
+        for (let c = 0; c < 3; c++) data[o + c] = Math.round(data[o + c] * (1 - f) + mean[c] * f);
+      }
+    }
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+};
+
+const loadMoonTexture = async (url) => {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Moon texture: HTTP ${response.status}`);
+  const bitmap = await createImageBitmap(await response.blob());
+  const texture = new CanvasTexture(blendPoles(bitmap));
+  bitmap.close?.();
+  texture.colorSpace = SRGBColorSpace;
+  // Row 0 of the image is the north pole, at v = 0 in moonGeometry
+  texture.flipY = false;
+  texture.generateMipmaps = true;
+  texture.minFilter = LinearMipmapLinearFilter;
+  texture.magFilter = LinearFilter;
+  texture.anisotropy = 8;
+  texture.needsUpdate = true;
+  return texture;
+};
+
+const quaternionFromRows = (rows) => new Quaternion().setFromRotationMatrix(new Matrix4().set(
+  rows[0], rows[1], rows[2], 0,
+  rows[3], rows[4], rows[5], 0,
+  rows[6], rows[7], rows[8], 0,
+  0, 0, 0, 1
+));
+
+const nextFrame = typeof requestAnimationFrame === 'function'
+  ? (fn) => requestAnimationFrame(fn)
+  : (fn) => setTimeout(() => fn(performance.now()), FRAME_MS);
+
+// Throws if no WebGL 2 context can be had on this canvas; the caller falls back
+export const createScene = async (canvas, options) => {
+  const { width, height, dpr = 1, textureUrl, view, emit = () => {} } = options;
+  let reducedMotion = Boolean(options.reducedMotion);
+
+  const attributes = { antialias: true, alpha: true, powerPreference: 'high-performance' };
+  const context = canvas.getContext('webgl2', attributes);
+  if (!context) throw new Error('WebGL 2 unavailable');
+
+  const renderer = new WebGLRenderer({ canvas, context, ...attributes });
+  renderer.outputColorSpace = SRGBColorSpace;
+  renderer.toneMapping = ACESFilmicToneMapping;
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new Scene();
+  const camera = new PerspectiveCamera(CAMERA_FOV, 1, 0.1, 1000);
+  camera.position.set(0, 0, CAMERA_Z);
+
+  // A trace of ambient light so no part of the sphere is ever pure black
+  scene.add(new AmbientLight('#7880ab', 0.09));
+  // Earthshine arrives from Earth, where the viewer stands
+  const earthLight = new DirectionalLight(EARTHSHINE_COLOR, 0);
+  earthLight.position.set(0, 0, 10);
+  scene.add(earthLight);
+  const sunLight = new DirectionalLight('#ffffff', SUN_INTENSITY);
+  scene.add(sunLight);
+
+  const texture = await loadMoonTexture(textureUrl);
+  const material = new MeshStandardMaterial({ map: texture, roughness: 0.92, metalness: 0.04 });
+  material.onBeforeCompile = lunarReflectance;
+  const moon = new Mesh(moonGeometry(), material);
+  scene.add(moon);
+
+  // The true orientation of the moment, the photograph's (no libration), and the
+  // drag the viewer has added on top
+  const trueTurn = new Quaternion();
+  const meanTurn = new Quaternion();
+  const shownTurn = new Quaternion();
+  const drag = new Quaternion();
+  const resetFrom = new Quaternion();
+  const sunDirection = new Vector3(1, 0, 0);
+
+  // Under reduced motion the Moon simply starts at its true libration
+  let settle = null; // { start } while nodding from the photograph's pose
+  let settleProgress = reducedMotion ? 1 : 0;
+  let reset = null; // { start }
+  let pointer = null; // { x, y, t }
+  const spin = { x: 0, y: 0 };
+  let wasRotated = false;
+  let pendingFrame = false;
+  let lastFrameAt = 0;
+  let firstFrameSent = false;
+  let disposed = false;
+
+  const setSize = (w, h, ratio) => {
+    renderer.setPixelRatio(Math.min(ratio || 1, 2));
+    renderer.setSize(Math.max(1, Math.round(w)), Math.max(1, Math.round(h)), false);
+    camera.aspect = w / Math.max(1, h);
+    camera.updateProjectionMatrix();
+    // Size the sphere so its outline, where the sight lines graze it, lands on the
+    // flat Moon's edge
+    const visibleWidth = VISIBLE_HEIGHT * camera.aspect;
+    const outline = Math.min(OUTLINE_OF_HEIGHT * VISIBLE_HEIGHT, OUTLINE_OF_WIDTH * visibleWidth) / 2;
+    moon.scale.setScalar(outline / Math.sqrt(1 + (outline / CAMERA_Z) ** 2));
+  };
+
+  const applyView = (v) => {
+    trueTurn.copy(quaternionFromRows(v.bodyToView));
+    meanTurn.copy(quaternionFromRows(v.meanBodyToView));
+    sunDirection.fromArray(v.sunView).normalize();
+    sunLight.position.copy(sunDirection).multiplyScalar(16);
+    // Earth's lit fraction seen from the Moon is the Moon's unlit fraction seen from
+    // Earth: 1 at New Moon, 0 at Full. sunView's z is the cosine of the phase angle.
+    earthLight.intensity = EARTHSHINE_MAX * (1 - (1 + sunDirection.z) / 2);
+  };
+
+  const isRotated = () => Math.abs(drag.w) < 0.99999;
+  const reportRotation = () => {
+    const rotated = isRotated();
+    if (rotated !== wasRotated) {
+      wasRotated = rotated;
+      emit('rotated', { rotated });
+    }
+  };
+
+  const render = (now) => {
+    pendingFrame = false;
+    if (disposed) return;
+    const dt = lastFrameAt ? Math.min((now - lastFrameAt) / FRAME_MS, 4) : 1;
+    lastFrameAt = now;
+    let animating = false;
+
+    // The nod from the photograph's pose into the libration of the moment
+    if (settle) {
+      settleProgress = reducedMotion ? 1 : Math.min(1, (now - settle.start) / SETTLE_MS);
+      if (settleProgress < 1) animating = true;
+      else settle = null;
+    }
+    shownTurn.slerpQuaternions(meanTurn, trueTurn, easeInOut(settleProgress));
+
+    // Spin left by a flick, decaying by time rather than by frame, so a 120 Hz
+    // screen doesn't stop it twice as soon
+    if (!pointer && (spin.x || spin.y)) {
+      if (reducedMotion) {
+        spin.x = 0;
+        spin.y = 0;
+      } else {
+        turnBy(spin.x * dt, spin.y * dt);
+        const decay = SPIN_DECAY ** dt;
+        spin.x *= decay;
+        spin.y *= decay;
+        if (Math.abs(spin.x) < SPIN_STOP && Math.abs(spin.y) < SPIN_STOP) {
+          spin.x = 0;
+          spin.y = 0;
+        } else {
+          animating = true;
+        }
+      }
+    }
+
+    // Springing back to the true orientation after a double-click
+    if (reset) {
+      const t = reducedMotion ? 1 : Math.min(1, (now - reset.start) / RESET_MS);
+      drag.slerpQuaternions(resetFrom, new Quaternion(), easeOut(t));
+      if (t < 1) animating = true;
+      else {
+        drag.identity();
+        reset = null;
+      }
+    }
+
+    moon.quaternion.multiplyQuaternions(drag, shownTurn);
+    renderer.render(scene, camera);
+    reportRotation();
+
+    if (!firstFrameSent) {
+      firstFrameSent = true;
+      // Tell the page on the next frame, once this one is surely on screen
+      nextFrame(() => emit('firstFrame'));
+    }
+    if (animating) invalidate();
+  };
+
+  const invalidate = () => {
+    if (pendingFrame || disposed) return;
+    pendingFrame = true;
+    nextFrame(render);
+  };
+
+  // Turn the Moon about the screen's axes, as the drag offset on top of the truth
+  const yaw = new Quaternion();
+  const pitch = new Quaternion();
+  const Y = new Vector3(0, 1, 0);
+  const X = new Vector3(1, 0, 0);
+  const turnBy = (dx, dy) => {
+    yaw.setFromAxisAngle(Y, dx);
+    pitch.setFromAxisAngle(X, dy);
+    drag.premultiply(yaw).premultiply(pitch).normalize();
+  };
+
+  applyView(view);
+  setSize(width, height, dpr);
+
+  // Compile the shaders off the critical path where the parallel-compile extension
+  // exists, before the first frame needs them. Without it there is nothing to
+  // gain, and three.js warns.
+  if (renderer.extensions.has('KHR_parallel_shader_compile')) {
+    try {
+      await renderer.compileAsync(scene, camera);
+    } catch {
+      // Compiles on first render instead
+    }
+  }
+
+  // A lost context (a GPU reset, too many tabs) leaves the flat Moon showing until
+  // three.js has rebuilt everything on the restored one
+  canvas.addEventListener?.('webglcontextlost', (event) => {
+    event.preventDefault();
+    emit('contextLost');
+  });
+  canvas.addEventListener?.('webglcontextrestored', () => {
+    firstFrameSent = false;
+    invalidate();
+  });
+
+  invalidate();
+
+  return {
+    setView(message) {
+      applyView(message.view);
+      invalidate();
+    },
+    resize({ width: w, height: h, dpr: ratio }) {
+      setSize(w, h, ratio);
+      invalidate();
+    },
+    setReducedMotion({ reducedMotion: value }) {
+      reducedMotion = Boolean(value);
+      invalidate();
+    },
+    pointer({ kind, x, y, t }) {
+      if (kind === 'down') {
+        pointer = { x, y, t };
+        spin.x = 0;
+        spin.y = 0;
+        reset = null;
+        return;
+      }
+      if (!pointer) return;
+      if (kind === 'move') {
+        const dx = x - pointer.x;
+        const dy = y - pointer.y;
+        turnBy(dx * DRAG_RADIANS_PER_PIXEL, dy * DRAG_RADIANS_PER_PIXEL);
+        // The spin carried on release comes from speed, distance over time, smoothed
+        // over the last few moves and expressed per 60 Hz frame. Android reports
+        // moves far more often than iOS or a mouse, so a per-move measure left its
+        // flicks with a fraction of the spin.
+        const perFrame = FRAME_MS / Math.min(Math.max(t - pointer.t, 4), 64);
+        spin.x = spin.x * 0.5 + dx * DRAG_RADIANS_PER_PIXEL * perFrame * 0.5;
+        spin.y = spin.y * 0.5 + dy * DRAG_RADIANS_PER_PIXEL * perFrame * 0.5;
+        pointer = { x, y, t };
+        invalidate();
+        return;
+      }
+      // Up or cancelled: a finger that came to rest before lifting doesn't fling
+      if (t - pointer.t > REST_MS || kind === 'cancel') {
+        spin.x = 0;
+        spin.y = 0;
+      }
+      spin.x = Math.max(-MAX_SPIN, Math.min(MAX_SPIN, spin.x));
+      spin.y = Math.max(-MAX_SPIN, Math.min(MAX_SPIN, spin.y));
+      pointer = null;
+      invalidate();
+    },
+    // The page has faded the first frame in: nod from the photograph's pose into
+    // the libration of the moment
+    settle() {
+      if (settleProgress < 1 && !settle) {
+        settle = { start: performance.now() };
+        invalidate();
+      }
+    },
+    // Spring back to the true orientation (a double-click or double-tap)
+    reset() {
+      if (!isRotated()) return;
+      spin.x = 0;
+      spin.y = 0;
+      resetFrom.copy(drag);
+      reset = { start: performance.now() };
+      invalidate();
+    },
+    dispose() {
+      disposed = true;
+      moon.geometry.dispose();
+      material.dispose();
+      texture.dispose();
+      renderer.dispose();
+    }
+  };
+};

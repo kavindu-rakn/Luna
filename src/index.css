@@ -795,9 +795,18 @@ h1, h2, h3, h4 {
   background: radial-gradient(circle at center, rgba(28, 37, 54, 0.6) 0%, rgba(5, 8, 14, 0.92) 100%);
 }
 
+/* The diagram scales into the whole box, centred, at any width */
+.orbital-diagram {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Bottom corner: the Moon's orbit passes under the top one */
 .orbital-sunlight {
   position: absolute;
-  top: 0.5rem;
+  bottom: 0.5rem;
   right: 0.5rem;
   padding: 0.3rem 0.55rem;
   border: 1px solid var(--border-subtle);
@@ -2156,7 +2165,7 @@ h1, h2, h3, h4 {
 }
 
 /* The flat Moon: the first frame, the stand-in while the 3D one loads, and the
-   Moon itself without WebGL. MoonVisualization's useMoonScale sizes the 3D Moon's
+   Moon itself without WebGL. The scene (src/scene/scene.js) sizes the 3D Moon's
    outline to 92% of the canvas height, or 83% of its width on a narrow one; these
    are the same numbers, so the 3D Moon fades in exactly over the flat one. */
 .moon-fallback-disc {

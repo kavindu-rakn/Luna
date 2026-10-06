@@ -251,6 +251,18 @@ when the page opens.
 | J5 keep GSAP vs first-load bytes | GSAP loads after first paint. |
 | G1 real sky vs the Moon's true size | The Moon is drawn far larger than its 0.5° against a wide sky field, like a composite photograph. The sky is oriented to the observer's horizon and centred on the Moon's position. |
 | A2 open to features vs finishing the redesign | New features (meteor showers, reward for staying) come after the redesign, as their own phase. |
+| F5 real libration vs a flat Moon photographed with none | The 3D Moon's first frame takes the photograph's pose, at the true tilt and lighting; once the page has faded it in, it nods into the libration of the moment over 1.6 s. Under reduced motion it starts at its true libration. |
+
+---
+
+## 4b. Settled in chat after Phase 0
+
+- **Branded 404 page** (6 Oct 2026): an unknown path currently ends on Vercel's plain
+  "404: NOT_FOUND" page. The owner wants a branded one, in a later phase: Phase 5's polish.
+- **Phase 1 in three parts**, as the working agreements allow: 1a the renderer and the true
+  Moon, 1b the photographed Moon (textures, lunar shader, glow, quality tiers), 1c the
+  observed sky (stars, tilt). The SVG orbit (E8) moved into 1a, because the old orbit was the
+  other React Three Fiber scene and fiber can only go once both are gone.
 
 ---
 
@@ -258,12 +270,14 @@ when the page opens.
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Foundation: Vercel, measurement, static shell, no loader, fonts, GSAP after paint, audit bugs, render on demand | In review (PR #51): owner checks on phones, then merge and the Pages cutover |
-| 1 | The Moon and the sky: renderer, lunar shader, textures, libration and orientation, real stars, tilt | Not started |
+| 0 | Foundation: Vercel, measurement, static shell, no loader, fonts, GSAP after paint, audit bugs, render on demand | Done: PR #51 merged 6 Oct 2026; GitHub Pages forwards to Vercel |
+| 1a | The renderer and the true Moon: scene worker with main-thread fallback, fiber and drei removed, libration, tilt and lighting from new astronomy, drag offset and reset, SVG orbit | In review |
+| 1b | The photographed Moon: NASA textures (KTX2, 2K/4K, normal map), lunar shader, glow, quality tiers | Not started |
+| 1c | The observed sky: real stars around the Moon, depth layers, scintillation, tilt | Not started |
 | 2 | Design language: tokens, controls, icons, header and menu, cursor, sound engine, idle fade, copy | Not started |
 | 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
-| 5 | Intro and Awwwards polish: cinematic intro, about/credits, final performance pass, domain | Not started |
+| 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
 
 ### Phase 0 notes
