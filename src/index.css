@@ -2175,8 +2175,12 @@ h1, h2, h3, h4 {
   transition: opacity 0.45s ease 0.3s;
 }
 
+/* Once faded out it stops being painted at all: it still follows the date, and a
+   timeline drag would otherwise redraw its masked, filtered photo every frame */
 .moon-viz-fallback.is-hidden {
   opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.45s ease 0.3s, visibility 0s linear 0.75s;
 }
 
 /* The 3D Moon stays transparent until its texture is drawn, then fades in */
