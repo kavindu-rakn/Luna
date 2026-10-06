@@ -105,25 +105,51 @@ const Starfield = () => {
     const handleVisibilityChange = () => {
       isVisible = !document.hidden;
     };
-    const render = () => {
+
+    // Everything advances by elapsed time, not by frame, so a 120 Hz screen no
+    // longer twinkles and drifts twice as fast as a 60 Hz one. While the sky is
+    // still, only the twinkle changes, and slowly, so it is redrawn about fifteen
+    // times a second instead of sixty: drawing it every frame kept the main thread
+    // busy for good, which with software rendering meant seconds of blocking time.
+    const FRAME = 1000 / 60;
+    const REST_INTERVAL = 1000 / 15;
+    let lastFrame = 0;
+    let lastDraw = 0;
+
+    const render = (now = performance.now()) => {
+      animationFrameId = requestAnimationFrame(render);
       if (!isVisible) {
-        animationFrameId = requestAnimationFrame(render);
+        lastFrame = now;
         return;
       }
 
-      ctx.clearRect(0, 0, width, height);
+      // Smooth parallax easing, at the same pace whatever the refresh rate
+      const elapsed = lastFrame ? Math.min(now - lastFrame, 100) : FRAME;
+      lastFrame = now;
+      const ease = 1 - Math.pow(1 - 0.035, elapsed / FRAME);
+      const dx = targetOffsetX - offsetX;
+      const dy = targetOffsetY - offsetY;
+      offsetX += dx * ease;
+      offsetY += dy * ease;
+      const drifting = Math.abs(dx) > 0.05 || Math.abs(dy) > 0.05;
 
-      // Smooth parallax easing
-      offsetX += (targetOffsetX - offsetX) * 0.035;
-      offsetY += (targetOffsetY - offsetY) * 0.035;
+      if (!drifting && lastDraw && now - lastDraw < REST_INTERVAL) return;
+      const step = lastDraw ? Math.min(now - lastDraw, 200) / FRAME : 1;
+      lastDraw = now;
+
+      ctx.clearRect(0, 0, width, height);
 
       const margin = 40; // Pixel margin overshoot for smooth wrapping without edge popping
 
       stars.forEach(star => {
-        // Twinkle
-        star.alpha += star.speedAlpha;
-        if (star.alpha > 0.95 || star.alpha < 0.2) {
-          star.speedAlpha = -star.speedAlpha;
+        // Twinkle: bounce between 0.2 and 0.95, however far one step goes
+        star.alpha += star.speedAlpha * step;
+        if (star.alpha > 0.95) {
+          star.alpha = 0.95;
+          star.speedAlpha = -Math.abs(star.speedAlpha);
+        } else if (star.alpha < 0.2) {
+          star.alpha = 0.2;
+          star.speedAlpha = Math.abs(star.speedAlpha);
         }
 
         let px = (star.nx * width) - (offsetX * star.z);
@@ -140,8 +166,6 @@ const Starfield = () => {
         ctx.fillStyle = `rgba(226, 232, 240, ${Math.abs(star.alpha)})`;
         ctx.fill();
       });
-
-      animationFrameId = requestAnimationFrame(render);
     };
 
     // Reduced motion: paint the sky once, with no twinkle and no parallax drift.

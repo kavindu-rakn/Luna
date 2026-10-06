@@ -12,16 +12,16 @@
     <link rel="icon" type="image/png" sizes="192x192" href="./luna-icon-192.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="./luna-touch-icon.png" />
 
-    <!-- The loading screen paints this immediately; fetch it with the document -->
-    <link rel="preload" as="image" href="./luna-icon-192.png" fetchpriority="high" />
-    
-    <!-- Fonts are bundled from node_modules and served from this origin -->
+    <!-- Fonts are bundled from node_modules and served from this origin. The build
+         preloads the ones the first frame is set in (see luna-shell in vite.config.js). -->
 
     <!-- Viewport & Mobile Display -->
     <!-- No maximum-scale or user-scalable=no: blocking pinch-zoom fails WCAG 1.4.4 -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Luna | An interactive lunar cycle explorer and astronomical ephemeris tracker. Real-time 3D moon phase visualization, 24-hour sky transit, and orbital mechanics." />
     <meta name="theme-color" content="#060910" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- The older Apple name too: iOS before 17.4 only reads this one -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Luna" />

@@ -28,9 +28,24 @@ const CustomCursor = () => {
     const historySize = 100;
     const spacing = 2;
 
+    // The trail only animates while there is something to animate: it starts on
+    // the first mouse move and stops once the pointer has rested long enough for
+    // the tail to gather back into the dot. It used to run every frame for as long
+    // as the page was open, mouse or no mouse.
+    let animId = 0;
+    let running = false;
+    let restingFrames = 0;
+    const start = () => {
+      restingFrames = 0;
+      if (running) return;
+      running = true;
+      animId = requestAnimationFrame(animate);
+    };
+
     const handleMouseMove = (e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
+      start();
       if (!isVisible) {
         isVisible = true;
         dot.style.opacity = '1';
@@ -76,7 +91,6 @@ const CustomCursor = () => {
     document.addEventListener('pointerover', handlePointerOver);
     document.addEventListener('pointerout', handlePointerOut);
 
-    let animId;
     const animate = () => {
       // Sub-pixel linear interpolation to create a continuous combustion tail
       if (lastMouseX === -100) {
@@ -99,8 +113,10 @@ const CustomCursor = () => {
           }
           lastMouseX = mouseX;
           lastMouseY = mouseY;
+          restingFrames = 0;
         } else {
           history.unshift({ x: mouseX, y: mouseY });
+          restingFrames++;
         }
       }
 
@@ -121,10 +137,14 @@ const CustomCursor = () => {
         }
       }
 
+      // A full history of the same point means the tail sits under the dot: stop
+      // until the mouse moves again
+      if (restingFrames > historySize) {
+        running = false;
+        return;
+      }
       animId = requestAnimationFrame(animate);
     };
-
-    animId = requestAnimationFrame(animate);
 
     return () => {
       cancelAnimationFrame(animId);
