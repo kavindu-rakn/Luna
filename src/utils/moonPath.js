@@ -23,7 +23,9 @@ export const litPath = (phase, size) => {
 // Lommel-Seeliger law: with the sun at elongation E, ground δ of longitude past the
 // terminator shines in proportion to 2 sin δ / (sin δ + sin(E − δ)), whatever its
 // latitude. On screen the 3D Moon comes out close to the square root of that, with
-// a toe that darkens the faintest light a little more. The law is 1 all over a
+// a toe that darkens the faintest light a little more. Its relief, which this
+// can't follow, sits within that: sunlit crater rims near the terminator, shadows
+// that darken rough ground some 20-35° in by about a fifth. The law is 1 all over a
 // Full Moon but more towards a crescent's bright limb, so the photograph is stored
 // brighter than the 3D Moon's Full Moon, shows at full strength where the law
 // reaches SHADE_HEADROOM, and at 90% across a Full Moon.
@@ -56,6 +58,7 @@ export const shadePhases = (phase) => {
 };
 
 // Earthshine on the night side, as the 3D Moon has it: Earth's lit fraction seen
-// from the Moon, which is the Moon's unlit fraction seen from Earth. 1 at New
-// Moon, 0 at Full. Mirrored in src/shell/paintNow.js.
-export const earthshine = (phase) => (1 + Math.cos(phase * 2 * Math.PI)) / 2;
+// from the Moon (the Moon's unlit fraction seen from Earth), cubed so it is faint
+// and shows only around thin crescents (F3). 1 at New Moon, 0 at Full. Mirrored in
+// src/shell/paintNow.js.
+export const earthshine = (phase) => ((1 + Math.cos(phase * 2 * Math.PI)) / 2) ** 3;

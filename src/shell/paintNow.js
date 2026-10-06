@@ -134,7 +134,7 @@ export function paintNow(win, doc) {
   // Sun; and the photograph turned to the Moon's tilt
   var litPhase = view.litPhase;
   var night = doc.querySelector('.moon-viz-fallback svg use');
-  if (night) night.setAttribute('opacity', ((1 + Math.cos(litPhase * 2 * Math.PI)) / 2).toFixed(4));
+  if (night) night.setAttribute('opacity', Math.pow((1 + Math.cos(litPhase * 2 * Math.PI)) / 2, 3).toFixed(4));
   var turn = function (selector, angle) {
     var el = doc.querySelector(selector);
     if (el) el.setAttribute('transform', 'rotate(' + +angle.toFixed(2) + ' 100 100)');

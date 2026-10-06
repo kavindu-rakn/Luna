@@ -25,3 +25,6 @@ dist-ssr
 
 # Lighthouse reports from npm run lighthouse
 .lighthouse/
+
+# NASA source maps for scripts/textures (about 95 MB); fetched by the script, never committed
+scripts/textures/source/

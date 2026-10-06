@@ -41,6 +41,8 @@ const DeepDiveContent = ({
         <footer className="drawer-footer">
           Moon and Sun positions from Meeus&rsquo; <em>Astronomical Algorithms</em> and SunCalc.
           <br />
+          Moon imagery: NASA&rsquo;s Scientific Visualization Studio.
+          <br />
           <button type="button" className="text-link" onClick={onShowPrivacy}>
             Privacy
           </button>

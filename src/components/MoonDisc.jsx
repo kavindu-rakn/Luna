@@ -44,13 +44,14 @@ const MoonDisc = ({ view: { litPhase, limbAngle, poleAngle } }) => (
         </g>
       </mask>
       {/* Earthshine as the 3D Moon renders it at New Moon: dark and cool, with
-          the maria sinking to black while the highlands still show. Fitted to its
-          pixels; the night side's opacity scales it down for other phases. */}
+          the maria sinking towards black while the highlands still show. Fitted
+          to the 3D Moon's own lighting and tone curve, to within two levels in
+          255; the night side's opacity scales it down for other phases. */}
       <filter id="moon-disc-earthshine" colorInterpolationFilters="sRGB">
         <feComponentTransfer>
-          <feFuncR type="linear" slope="0.24" intercept="-0.104" />
-          <feFuncG type="linear" slope="0.3" intercept="-0.129" />
-          <feFuncB type="linear" slope="0.4" intercept="-0.139" />
+          <feFuncR type="gamma" amplitude="0.255" exponent="3.05" offset="0.0145" />
+          <feFuncG type="gamma" amplitude="0.294" exponent="2.9" offset="0.0205" />
+          <feFuncB type="gamma" amplitude="0.405" exponent="2.75" offset="0.0446" />
         </feComponentTransfer>
       </filter>
     </defs>

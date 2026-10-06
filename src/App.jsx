@@ -429,7 +429,6 @@ function App({ prerender = false }) {
                 <Suspense fallback={null}>
                   <MoonScene
                     view={moonView}
-                    fraction={lunarDetails.fraction}
                     isReady={moonReady}
                     onScene={markScene}
                     onReady={markReady}

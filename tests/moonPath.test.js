@@ -100,7 +100,8 @@ describe('shadePhases', () => {
 describe('earthshine', () => {
   it('is strongest at New Moon and gone at Full', () => {
     expect(earthshine(0)).toBeCloseTo(1, 6);
-    expect(earthshine(0.25)).toBeCloseTo(0.5, 6);
+    // Faint by the quarters: an eighth of New Moon's
+    expect(earthshine(0.25)).toBeCloseTo(0.125, 6);
     expect(earthshine(0.5)).toBeCloseTo(0, 6);
     expect(earthshine(0.9)).toBeCloseTo(earthshine(0.1), 6);
   });
