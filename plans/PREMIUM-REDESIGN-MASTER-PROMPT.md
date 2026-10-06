@@ -197,12 +197,16 @@ There is no loading screen. The intro (Phase 5) plays over the real page.
 - One framework-free module, `src/scene/`, owns the Moon, the stars, the glow and the camera.
   It takes a canvas (`HTMLCanvasElement` or `OffscreenCanvas`) and exposes a small message-style
   API, so the same code runs in a worker or on the main thread:
-  - `init({ canvas, width, height, dpr, quality, reducedMotion })`
-  - `setView({ phaseAngle, subsolar, libration, axisAngle, parallacticAngle, earthshine,
-    illumination, moonRaDec, siderealFrame })` from the selected date and place
-  - `pointer({ type, x, y, buttons })` for drag, double-click reset and the halo
+  - `init({ canvas, width, height, dpr, quality, reducedMotion, textureUrl, view })`
+  - `setView({ view })` from the selected date and place. As built in 1a, the view is the
+    rotation from the Moon's own axes to the screen (libration, axis angle and parallactic
+    angle folded together, from `getMoonView` in `src/utils/moonView.js`), the same
+    rotation without libration (the flat photograph's pose), and the Sun's direction on
+    screen; 1c adds the Moon's RA/Dec and the sidereal frame for the sky
+  - `pointer({ kind, x, y, t })` for drag (the page hit-tests the disc itself), `reset()` for
+    a double-click or double-tap, `settle()` once the page has faded the first frame in
   - `tilt({ x, y })` from device orientation, already normalised
-  - `resize({ width, height, dpr })`, `setQuality(level)`, `dispose()`
+  - `resize({ width, height, dpr })`, `setReducedMotion()`, `setQuality(level)`, `dispose()`
   - events back: `firstFrame`, `rotated` (offset present or not), `contextLost`, `fallback`
 - **Worker where supported.** If `HTMLCanvasElement.prototype.transferControlToOffscreen`
   exists, transfer the canvas to a module worker running the scene. If the worker can't get a
@@ -530,6 +534,16 @@ nothing listed in §2.1 has regressed; the old URL still reaches the app.
 Goal: a Moon that looks photographed and a sky that looks observed, without blocking the main
 thread.
 
+Built in three pull requests, each shippable:
+
+- **1a, the renderer and the true Moon**: the scene module and worker replacing React Three
+  Fiber and drei (with the old look carried over), the new astronomy, orientation, libration,
+  the drag offset and reset, the 2D Moon's orientation, and the SVG orbit (E8), which has to
+  replace the old orbit scene before fiber can go.
+- **1b, the photographed Moon**: textures, the lunar shader, glow, quality tiers.
+- **1c, the observed sky**: real stars, the halo's pointer uniform, tilt, and removing the old
+  starfield and aura.
+
 - Replace React Three Fiber and drei with the scene module and worker (§4.2).
 - Textures from the NASA SVS CGI Moon Kit (LRO colour and LOLA elevation; public domain, credit
   NASA's Scientific Visualization Studio): 2K and 4K colour, and a normal map generated from
@@ -589,6 +603,8 @@ a first visit from any time zone opens on a nearby city.
 - The cinematic intro (§6.8) and the wordmark's one-time reveal.
 - An About view: what Luna is, how it works, credits (NASA SVS, the star catalogue, Meeus,
   SunCalc, fonts, OpenStreetMap/Nominatim) and the maker.
+- A branded 404 page in Luna's own look, for any path that isn't the app (Vercel serves its
+  plain "404: NOT_FOUND" today).
 - A last design QA sweep at every breakpoint: spacing, alignment, wrapping, clipping,
   overflow, icon sizes, hover and focus states, animation jank, layout shift, dead CSS.
 - A final performance pass against §3.

@@ -61,9 +61,10 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 <td width="50%" valign="top">
 
 ### 3D Photographic Lunar Sphere
-* **Photographic Albedo Map:** A 1024x512 equirectangular lunar albedo texture on a 128-segment sphere, lit by a directional sun vector derived from the true phase angle. Depth reads from the terminator; no elevation or displacement data ships with the project.
-* **360° Free Drag & Inertia:** Smooth spherical rotational momentum with physics decay.
-* **Seamless Polar Antialiasing:** Canvas-level polar blending eliminates equirectangular starburst artifacts.
+* **As It Stands in Your Sky:** The disc is turned as it appears from the chosen place and time, zenith up (the parallactic angle and the tilt of the Moon's axis), lit from the Sun's true direction, and nodding with the real libration of the moment, so a month of scrubbing shows the edges come and go.
+* **Lunar Light:** A Lommel-Seeliger reflectance, the way lunar dust scatters light, so a crescent keeps its true width and the full Moon is evenly bright to its edge.
+* **360° Free Drag & Inertia:** Drag to turn the Moon with momentum; the turn stays as an offset on the true orientation, and a double-click or double-tap springs it back.
+* **Off the Main Thread:** The scene is plain three.js in a Web Worker drawing to an OffscreenCanvas where the browser supports it, and on the main thread elsewhere. It draws only when something changes.
 
 </td>
 <td width="50%" valign="top">
@@ -77,8 +78,8 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 <tr>
 <td width="50%" valign="top">
 
-### 3D Earth-Moon Orbital Geometry
-* **Dynamic Sun-Earth-Moon Alignment:** 3D orbit model placing the Moon at the selected date's elongation around a fixed Earth, with sunlight arriving from a constant direction.
+### Earth-Moon Orbital Geometry
+* **Dynamic Sun-Earth-Moon Alignment:** A crisp SVG diagram, seen from above Earth's north pole, placing the Moon at the selected date's elongation around Earth, with sunlight arriving from a constant direction.
 * **Orbital Telemetry:** Phase name, illuminated percentage, and Earth-Moon distance from a 60-term Meeus series, tracked against the perigee/apogee extremes.
 
 </td>
@@ -227,13 +228,13 @@ Luna has no accounts, cookies, analytics or ads, and every calculation runs on t
 
 ```mermaid
 graph TD
-    A[React 19 Application Root] --> B[Three.js Canvas Layer]
+    A[React 19 Application Root] --> B[Scene Worker: three.js on an OffscreenCanvas]
     A --> C[Telemetry & Navigation HUD]
     A --> D[Astronomical Ephemeris Engine]
 
-    B --> B1[3D Moon Mesh & Shaders]
-    B --> B2[3D Earth-Moon Orbital View]
-    B --> B3[Parallax Starfield Canvas]
+    B --> B1[3D Moon Mesh & Lunar Shading]
+    B --> B2[Main-Thread Fallback]
+    A --> B3[Parallax Starfield Canvas]
 
     C --> C1[Date Controls & Chevrons]
     C --> C2[Synodic Cycle Scrubber]
@@ -247,7 +248,7 @@ graph TD
 ```
 
 * **Frontend:** React 19, Vite
-* **3D Graphics:** Three.js, React Three Fiber (`@react-three/fiber`), Drei (`@react-three/drei`)
+* **3D Graphics:** Three.js, in a Web Worker with an OffscreenCanvas where supported
 * **Motion & Physics:** GSAP (`@gsap/react`), custom spring momentum decay
 * **Ephemeris Calculations:** Meeus periodic-term series (lunar longitude & distance, solar longitude), SunCalc (topocentric altitude/azimuth), golden-section and bisection root finding
 * **Typography:** *Cormorant Garamond* (phase names, dates, wordmark), *Inter* (everything else, with tabular figures)
@@ -336,11 +337,11 @@ npm run build && npm run check:bundle
 
 The page paints before any JavaScript arrives. The build renders the app's first frame to HTML with the stylesheet inlined, and a 2 KB inline script brings its date, phase and flat Moon up to today before the first paint. The live app then replaces it, and the 3D Moon fades in over the flat one once its texture is drawn. There is no loading screen.
 
-Three.js, fiber and drei are about 60% of Luna's JavaScript, but only the 3D scenes need them, so they load on demand after the first paint, as do Deep Dive's panels and GSAP. The entry chunk is **82 KB gzipped**, down from 354 KB.
+Three.js is most of Luna's JavaScript, but only the 3D Moon needs it. It loads after the first paint inside the scene's worker, where it parses, compiles and draws without touching the main thread; browsers whose workers can't draw WebGL load it on the main thread instead. Deep Dive's panels and GSAP also load after first paint. The entry chunk is **82 KB gzipped**, down from 354 KB.
 
 CI fails the build if that chunk crosses 90 KB, if the prerendered first frame is missing, if the content security policy doesn't allow the inline script by its hash, if the 3D engine is preloaded by the document, or if the entry imports it statically. That last case is not hypothetical: a chunking change once pulled React into the 3D chunk, which made the entry look *smaller* while forcing all of Three.js back onto the critical path.
 
-If WebGL is unavailable or a scene fails to download, that scene gives way to a 2D Moon drawn at the correct phase and everything else keeps working.
+If WebGL is unavailable or the scene fails to download, the 2D Moon stays, drawn at the correct phase and tilt, and everything else keeps working.
 
 ---
 
