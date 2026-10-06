@@ -73,7 +73,7 @@ export const getMoonZodiac = (date = new Date()) => {
 
 // Fundamental arguments in degrees, plus the eccentricity correction E,
 // for an instant expressed in Julian centuries since J2000.
-const getLunarArguments = (date) => {
+export const getLunarArguments = (date) => {
   const jd = date.getTime() / 86400000 + 2440587.5;
   const T = (jd - 2451545) / 36525;
   const T2 = T * T;
