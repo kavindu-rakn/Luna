@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HelpCircle } from 'lucide-react';
+import Icon from './icons/Icon';
 import { MEAN_MOON_DISTANCE } from '../utils/lunarCalc';
 import { formatDistance } from '../utils/units';
 
@@ -36,22 +36,22 @@ const OrbitalView = ({ lunarDetails, distanceUnit = 'km' }) => {
     <section className="telemetry-section orbital-card">
       <div className="orbital-header">
         <h3 className="utility-label orbital-title">
-          Earth–Moon Orbital Geometry
+          The Moon around Earth
         </h3>
         <button
           onClick={() => setShowExplanation(!showExplanation)}
           className="ghost-control-btn orbital-explain"
-          title="Explain orbital view"
-          aria-label="Toggle Orbital View Explanation"
+          title="What this shows"
+          aria-label="What this shows"
           aria-expanded={showExplanation}
         >
-          <HelpCircle size={14} />
+          <Icon name="help" size={18} />
         </button>
       </div>
 
       {showExplanation && (
         <div className="orbital-explanation">
-          <strong>Astronomical Context:</strong> Seen from above Earth&rsquo;s north pole, sunlight arrives from the right. As the Moon revolves around Earth, the illuminated portion visible from Earth produces the lunar phase cycle.
+          Seen from above Earth&rsquo;s north pole, with sunlight from the right. As the Moon goes round Earth, the share of its lit half we can see makes the phases.
         </div>
       )}
 
@@ -82,15 +82,15 @@ const OrbitalView = ({ lunarDetails, distanceUnit = 'km' }) => {
         </svg>
 
         <div className="orbital-sunlight" aria-hidden="true">
-          ☀ Sunlight from Right
+          Sunlight from the right
         </div>
       </div>
 
       {/* Current phase context, kept alongside the orbital figure */}
       <div className="orbital-readout">
         <div className="orbital-reading orbital-reading-phase">
-          <div className="utility-label orbital-reading-label">Phase Name</div>
-          <div className="font-serif orbital-phase-value">
+          <div className="utility-label orbital-reading-label">Phase</div>
+          <div className="orbital-phase-value">
             {name}
           </div>
         </div>

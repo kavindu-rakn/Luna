@@ -105,7 +105,7 @@ const PrivacyDialog = ({ isOpen, onClose }) => {
 
       <Section title="Motion">
         <p>
-          On a phone the sky and the Moon shift slightly as you tilt it, read from the motion
+          On a phone the stars shift slightly behind the Moon as you tilt it, read from the motion
           sensor. <strong>Tilt to look around</strong> turns this off; on an iPhone it starts only
           when you turn it on, and iOS asks first. The readings move the sky and nothing else:
           they are never stored or sent.

@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useMemo } from 'react';
-import { Moon, Sparkles, Orbit, Compass, ArrowUpRight, Calendar } from 'lucide-react';
 import gsap from 'gsap';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { MIN_MOON_DISTANCE, MAX_MOON_DISTANCE, MEAN_MOON_DISTANCE, getSynodicCycle } from '../utils/lunarCalc';
@@ -77,7 +76,7 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
   const nextPhaseList = [
     { label: 'Next Full Moon', ...nextPhases?.nextFullMoon },
     { label: 'Next New Moon', ...nextPhases?.nextNewMoon },
-    { label: 'Next 1st Quarter', ...nextPhases?.nextFirstQuarter },
+    { label: 'Next First Quarter', ...nextPhases?.nextFirstQuarter },
     { label: 'Next Last Quarter', ...nextPhases?.nextLastQuarter }
   ].filter(p => p.msRemaining !== undefined)
    .sort((a, b) => a.msRemaining - b.msRemaining);
@@ -86,18 +85,18 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
 
   return (
     <div ref={cardRef} className="telemetry-stack">
-      {/* 1. Core Phase Telemetry Card */}
+      {/* 1. The phase, how much is lit, and how old the Moon is */}
       <section className="telemetry-section telemetry-phase">
         <div className="telemetry-section-header">
           <div>
-            <h3 className="utility-label telemetry-section-label">Current Phase</h3>
+            <h3 className="utility-label telemetry-section-label">Phase</h3>
             <div ref={nameRef} className="font-serif telemetry-phase-name">
               {name}
             </div>
           </div>
           {isExactPrimary && (
             <span className="telemetry-exact-badge">
-              Exact Quarter
+              Exact
             </span>
           )}
         </div>
@@ -106,7 +105,6 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
         <div className="telemetry-measurements">
           <div>
             <div className="telemetry-measurement-heading">
-              <Sparkles size={14} aria-hidden="true" />
               <span className="utility-label">Illumination</span>
             </div>
             <div className="telemetry-measurement-value">
@@ -116,8 +114,7 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
 
           <div>
             <div className="telemetry-measurement-heading">
-              <Orbit size={14} aria-hidden="true" />
-              <span className="utility-label">Lunar Age</span>
+              <span className="utility-label">Age</span>
             </div>
             <div className="telemetry-measurement-value">
               <AnimatedNumber value={age} suffix="" decimals={1} /> <span className="telemetry-unit">days</span>
@@ -163,8 +160,7 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
           {/* Zodiac Constellation */}
           <div className="telemetry-context-block">
             <div className="telemetry-context-heading">
-              <Compass size={14} aria-hidden="true" />
-              <h3 className="utility-label">Zodiac Sign</h3>
+              <h3 className="utility-label">Zodiac</h3>
             </div>
             <div className="telemetry-context-title">
               <span className="zodiac-glyph" aria-hidden="true">{zodiac?.symbol}</span>
@@ -184,7 +180,6 @@ const LunarData = ({ lunarDetails, distanceUnit = 'km' }) => {
           {upcomingPhase && (
             <div className="telemetry-context-block">
               <div className="telemetry-context-heading">
-                <Calendar size={14} aria-hidden="true" />
                 <h3 className="utility-label">{upcomingPhase.label}</h3>
               </div>
               <div className="telemetry-context-title is-accent">

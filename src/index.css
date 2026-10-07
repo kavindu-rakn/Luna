@@ -1,39 +1,95 @@
 :root {
-  /* Observatory typography */
-  /* Two families (decision B3). The heading and figure roles now point at Inter:
-     headings in the sans, and figures in its tabular numerals (see .font-mono). */
+  /* ─── Design language (Phase 2, the master prompt section 5) ───
+     "Quiet stage, instrument data": silver on the night sky, one warm colour that
+     means "now", hairline controls, and two typefaces. Values can be tuned; the
+     roles can't. */
+
+  /* Colour (5.1). Dark only. */
+  --space-0: #04060b;            /* deepest sky, behind the stars */
+  --space-1: #060910;            /* page background, theme colour */
+  --ink-1: #f1f3f7;              /* primary text, active icons */
+  --ink-2: #c5ccd8;              /* secondary text */
+  --ink-3: #8a93a3;              /* muted text and labels, still 4.5:1 on the sky */
+  --ink-4: #4b5262;              /* disabled, decorative only */
+  --hairline: rgba(226, 232, 240, 0.14);         /* control edges at rest, dividers */
+  --hairline-strong: rgba(226, 232, 240, 0.28);  /* hover */
+  --hairline-active: rgba(226, 232, 240, 0.5);   /* pressed, selected */
+  --fill-hover: rgba(241, 243, 247, 0.04);       /* the 4% a control gains on hover */
+  --fill-selected: rgba(241, 243, 247, 0.12);
+  --panel: rgba(8, 11, 17, 0.98); /* panels and sheets: nothing ghosts through */
+  --scrim: rgba(3, 5, 9, 0.6);    /* behind modal overlays: dim only, no blur */
+  --now: #e9c27d;                 /* earthshine amber: live and "now", nothing else */
+  --now-glow: rgba(233, 194, 125, 0.35);
+  --focus-ring: rgba(241, 243, 247, 0.85);
+  --danger: #f0a8a0;
+
+  /* Type (5.2). Cormorant only at 24 px and up, never tracked (it would lose the
+     Q-u ligature); Inter for everything else, tabular wherever numbers change. */
   --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-heading: var(--font-sans);
   --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
-  --font-mono: var(--font-sans);
+  --text-12: 0.75rem;
+  --text-13: 0.8125rem;
+  --text-15: 0.9375rem;
+  --text-17: 1.0625rem;
+  --text-20: 1.25rem;
+  --text-24: 1.5rem;
+  --text-32: 2rem;
+  --text-44: 2.75rem;
+  --text-60: 3.75rem;
 
-  /* Quiet lunar colour system */
-  --bg-deep-space: #060910;
-  --bg-surface-1: rgba(15, 22, 34, 0.78);
-  --bg-surface-2: rgba(20, 29, 44, 0.9);
-  --bg-surface-elevated: rgba(29, 40, 59, 0.96);
-
-  --border-subtle: rgba(217, 228, 255, 0.11);
-  --border-medium: rgba(217, 228, 255, 0.19);
-  --border-highlight: rgba(187, 203, 245, 0.42);
-
-  --text-primary: #eef1f7;
-  --text-secondary: #bdc7d6;
-  --text-muted: #8490a2;
-  --text-accent: #becbf1;
-
-  /* Solid accent surfaces carry white text; the light token is for emphasis only. */
-  --accent-primary: #8d9dd6;
-  --accent-strong: #5c6eaa;
-  --accent-light: #c2cff7;
-  --accent-glow: rgba(141, 157, 214, 0.26);
-
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  /* Space and shape (5.3): a 4 px grid; controls are circles or capsules */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+  --s9: 96px;
+  --radius-panel: 20px;
+  --radius-popover: 16px;
   --radius-pill: 999px;
-  --shadow-overlay: 0 28px 80px -26px rgba(0, 0, 0, 0.92);
-  --ease-observe: cubic-bezier(0.16, 1, 0.3, 1);
+  --control: 40px;               /* 44 on touch screens, set below */
+
+  /* Motion (4.3) */
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --dur-4: 600ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* The names the stylesheet grew up with, pointed at the language above. Later
+     phases retire them as each surface is rebuilt. */
+  --font-heading: var(--font-sans);
+  --font-mono: var(--font-sans);
+  --bg-deep-space: var(--space-1);
+  --bg-surface-1: transparent;
+  --bg-surface-2: var(--fill-hover);
+  --bg-surface-elevated: var(--fill-selected);
+  --border-subtle: var(--hairline);
+  --border-medium: var(--hairline);
+  --border-highlight: var(--hairline-strong);
+  --text-primary: var(--ink-1);
+  --text-secondary: var(--ink-2);
+  --text-muted: var(--ink-3);
+  --text-accent: var(--ink-2);
+  --accent-primary: var(--ink-3);
+  --accent-strong: rgba(241, 243, 247, 0.16);
+  --accent-light: var(--ink-1);
+  --accent-glow: rgba(241, 243, 247, 0.16);
+  --radius-sm: 8px;
+  --radius-md: var(--radius-popover);
+  --radius-lg: var(--radius-panel);
+  --shadow-overlay: 0 24px 64px -24px rgba(0, 0, 0, 0.9);
+  --ease-observe: var(--ease-out);
+}
+
+@media (hover: none), (pointer: coarse) {
+  :root {
+    --control: 44px;
+  }
 }
 
 * {
@@ -169,13 +225,28 @@ h1, h2, h3, h4 {
   font-variant-numeric: tabular-nums;
 }
 
+/* Small labels: sentence case, small and muted (decision B5), never tracked
+   uppercase */
 .utility-label {
   font-family: var(--font-sans);
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
+  font-size: var(--text-13);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink-3);
+}
+
+/* Luna's icons (src/components/icons) take the colour of the text around them */
+.icon {
+  display: block;
+  flex: none;
+}
+
+.icon.is-muted {
+  color: var(--ink-3);
+}
+
+.icon.is-spinning {
+  animation: spin 0.9s linear infinite;
 }
 
 /* Zodiac glyphs must render as monochrome symbol text. Without the variation
@@ -189,10 +260,11 @@ h1, h2, h3, h4 {
   font-weight: 400;
 }
 
-/* Moonlight across the wordmark. It used to slide back and forth forever; it now
-   holds still (decision B2), and gets a single reveal with the intro later. */
+/* Moonlight across the wordmark, in silver only. It used to slide back and forth
+   forever; it now holds still (decision B2), and gets a single reveal with the
+   intro later. */
 .text-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, #d5dcef 45%, #8d9dd6 80%, #ffffff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #e4e8ef 45%, #a9b1bf 80%, #ffffff 100%);
   background-size: 250% 250%;
   background-position: 50% 50%;
   -webkit-background-clip: text;
@@ -200,90 +272,128 @@ h1, h2, h3, h4 {
   background-clip: text;
 }
 
-/* Controls use a single tactile language across the observatory. */
-.glass-button {
-  background: rgba(18, 27, 42, 0.72);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  border-radius: var(--radius-pill);
-  padding: 0.5rem 1rem;
-  font-family: var(--font-sans);
-  font-weight: 550;
-  font-size: 0.78rem;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-observe), box-shadow 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 38px;
-}
-
-/* Hover styles only where there is a pointer to hover with. A touch screen keeps
-   :hover on whatever was tapped last, so a tapped button stayed lit until the next
-   tap elsewhere. A tap shows :active instead: lit the moment the finger lands,
-   fading out as it lifts. */
-@media (hover: hover) {
-  .glass-button:hover {
-    background: var(--bg-surface-elevated);
-    border-color: var(--border-highlight);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 24px -14px var(--accent-glow);
-  }
-}
-
-.glass-button:active {
-  background: var(--bg-surface-elevated);
-  border-color: var(--border-highlight);
-  transform: translateY(0);
-  transition-duration: 0s;
-}
-
-.glass-button:focus-visible {
-  outline: 2px solid var(--accent-light);
-  outline-offset: 3px;
-}
-
-/* Ghost Buttons (Nav/Controls) */
+/* Controls: the hairline instrument (decisions D1, D7, C4). Transparent at rest
+   with a 1 px edge; on hover the edge brightens and a 4% fill appears; on press a
+   soft light blooms from the point pressed (.is-blooming, set by
+   src/utils/pressBloom.js) and the edge reaches its brightest. Nothing scales,
+   lifts, glows or pulls towards the pointer. */
+.glass-button,
 .ghost-control-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-secondary);
-  padding: 0.45rem;
-  cursor: pointer;
-  border-radius: 50%;
+  position: relative;
+  /* Keeps the bloom inside the control's own shape */
+  overflow: hidden;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 38px;
-  min-height: 38px;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s var(--ease-observe);
-  /* Drawn on its own layer from the start. Otherwise the hover's scale moves it
-     onto one only while hovered, and a button sitting on a half pixel snaps to a
-     whole one, so its icon jumps sideways as the pointer arrives. */
-  will-change: transform;
+  gap: var(--s2);
+  min-height: var(--control);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    color var(--dur-2) var(--ease-out);
 }
 
+.glass-button {
+  padding: 0 var(--s4);
+  border: 1px solid var(--hairline);
+  color: var(--ink-1);
+  font-size: var(--text-13);
+  font-weight: 500;
+}
+
+/* Quieter: icon controls inside a group, with no edge until reached for */
+.ghost-control-btn {
+  min-width: var(--control);
+  padding: 0;
+  border: 1px solid transparent;
+  color: var(--ink-2);
+}
+
+/* Hover only where there is a pointer to hover with. A touch screen keeps :hover
+   on whatever was tapped last, so a tapped button stayed lit until the next tap
+   elsewhere; a tap shows :active instead. */
 @media (hover: hover) {
+  .glass-button:hover,
   .ghost-control-btn:hover {
-    color: var(--text-primary);
-    background: rgba(206, 218, 244, 0.1);
-    border-color: var(--border-subtle);
-    transform: scale(1.04);
+    border-color: var(--hairline-strong);
+    background-color: var(--fill-hover);
+    color: var(--ink-1);
   }
 }
 
-.ghost-control-btn:active {
-  color: var(--text-primary);
-  background: rgba(206, 218, 244, 0.14);
-  border-color: var(--border-subtle);
-  transform: scale(0.95);
-  transition-duration: 0s, 0s, 0s, 0.2s;
+.glass-button:active,
+.ghost-control-btn:active,
+.glass-button.is-blooming,
+.ghost-control-btn.is-blooming {
+  border-color: var(--hairline-active);
+  color: var(--ink-1);
 }
 
+/* Selected, open or on */
+.glass-button.is-active,
+.glass-button.is-open,
+.glass-button[aria-pressed="true"],
+.ghost-control-btn[aria-pressed="true"] {
+  border-color: var(--hairline-active);
+  background-color: var(--fill-selected);
+  color: var(--ink-1);
+}
+
+/* The bloom: a radial light from the press point, fading as it spreads */
+.glass-button::after,
+.ghost-control-btn::after,
+.calendar-day::after,
+.location-row::after,
+.calendar-phase::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(circle at var(--press-x, 50%) var(--press-y, 50%),
+    rgba(241, 243, 247, 0.3), rgba(241, 243, 247, 0.12) 35%, rgba(241, 243, 247, 0) 70%);
+  transform-origin: var(--press-x, 50%) var(--press-y, 50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.is-blooming::after {
+  animation: press-bloom var(--dur-4) linear;
+}
+
+/* Swells from the press point for the first fifth, then fades as it spreads */
+@keyframes press-bloom {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.3);
+    animation-timing-function: cubic-bezier(0.2, 0, 0.2, 1);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(0.9);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+.glass-button:focus-visible,
 .ghost-control-btn:focus-visible {
-  outline: 2px solid var(--accent-light);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+.glass-button:disabled,
+.ghost-control-btn:disabled {
+  color: var(--ink-4);
+  cursor: default;
 }
 
 /* App Container */
@@ -382,18 +492,13 @@ h1, h2, h3, h4 {
 }
 
 .icon-button {
-  width: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  width: var(--control);
+  min-width: var(--control);
   padding: 0;
 }
 
 .deep-dive-trigger {
-  min-height: 36px;
-  padding-inline: 0.85rem;
-  font-family: var(--font-serif);
-  font-size: 1.02rem;
-  letter-spacing: 0.02em;
+  padding-inline: var(--s4);
   white-space: nowrap;
 }
 
@@ -402,11 +507,6 @@ h1, h2, h3, h4 {
   display: none;
 }
 
-.deep-dive-trigger.is-active {
-  background: var(--bg-surface-elevated);
-  border-color: var(--accent-light);
-  box-shadow: 0 0 0 3px rgba(194, 207, 247, 0.08);
-}
 
 .controls-panel {
   display: flex;
@@ -418,9 +518,7 @@ h1, h2, h3, h4 {
 /* Data Drawer / Telemetry Inspector */
 .data-drawer {
   position: absolute;
-  background: rgba(8, 13, 22, 0.96);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  background: var(--panel);
   box-shadow: -20px 0 70px rgba(0, 0, 0, 0.64);
   z-index: 50;
   overflow-y: auto;
@@ -447,7 +545,7 @@ h1, h2, h3, h4 {
   height: 3px;
   margin: 0 auto 1.1rem;
   border-radius: var(--radius-pill);
-  background: rgba(194, 207, 247, 0.32);
+  background: rgba(226, 232, 240, 0.32);
 }
 
 .drawer-header {
@@ -466,14 +564,12 @@ h1, h2, h3, h4 {
 
 .drawer-title {
   margin: 0;
-  color: var(--text-accent);
-  font-size: 0.75rem;
+  color: var(--ink-1);
+  font-family: var(--font-serif);
+  font-size: var(--text-32);
+  font-weight: 400;
+  line-height: 1.1;
   outline: none;
-}
-
-.drawer-close {
-  background: var(--bg-surface-2);
-  border-color: var(--border-medium);
 }
 
 /* Deep Dive: each topic is its own quiet panel, a faint tint with no border, glow
@@ -489,8 +585,8 @@ h1, h2, h3, h4 {
 .telemetry-section {
   padding: 1.25rem;
   border-radius: var(--radius-lg);
-  background: rgba(217, 228, 255, 0.035);
-  box-shadow: inset 0 1px 0 rgba(217, 228, 255, 0.04);
+  background: rgba(226, 232, 240, 0.035);
+  box-shadow: inset 0 1px 0 rgba(226, 232, 240, 0.04);
 }
 
 .telemetry-section-header {
@@ -516,15 +612,12 @@ h1, h2, h3, h4 {
 .telemetry-exact-badge {
   flex: 0 0 auto;
   margin-top: 0.15rem;
-  padding: 0.25rem 0.55rem;
-  border: 1px solid rgba(194, 207, 247, 0.42);
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--hairline-active);
   border-radius: var(--radius-pill);
-  background: rgba(141, 157, 214, 0.12);
-  color: var(--text-accent);
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--ink-1);
+  font-size: var(--text-12);
+  font-weight: 500;
 }
 
 .telemetry-measurements {
@@ -561,13 +654,13 @@ h1, h2, h3, h4 {
   height: 5px;
   overflow: hidden;
   border-radius: var(--radius-pill);
-  background: rgba(194, 207, 247, 0.11);
+  background: rgba(226, 232, 240, 0.11);
 }
 
 .distance-gauge-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #6e7fba, #c2cff7);
+  background: linear-gradient(90deg, var(--ink-3), var(--ink-1));
   transition: width 0.6s ease;
 }
 
@@ -796,11 +889,8 @@ h1, h2, h3, h4 {
 }
 
 .orbital-explain {
-  flex: 0 0 30px;
-  width: 30px;
-  min-width: 30px;
-  min-height: 30px;
-  padding: 0;
+  flex: 0 0 var(--control);
+  width: var(--control);
 }
 
 .orbital-explanation {
@@ -843,8 +933,7 @@ h1, h2, h3, h4 {
   padding: 0.3rem 0.55rem;
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  background: rgba(5, 7, 14, 0.8);
-  backdrop-filter: blur(8px);
+  background: var(--panel);
   color: var(--text-accent);
   font-size: 0.72rem;
   pointer-events: none;
@@ -881,6 +970,7 @@ h1, h2, h3, h4 {
 
 .orbital-phase-value {
   overflow: hidden;
+  font-family: var(--font-sans);
   margin-top: 0.2rem;
   color: var(--text-primary);
   font-size: 0.98rem;
@@ -1195,8 +1285,8 @@ h1, h2, h3, h4 {
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.35rem center;
-  font-family: var(--font-serif);
-  font-size: 1.05rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-15);
   font-weight: 600;
   color: var(--text-primary);
   cursor: pointer;
@@ -1215,7 +1305,7 @@ h1, h2, h3, h4 {
 }
 
 .calendar-select option {
-  background: #0b0e20;
+  background: var(--space-1);
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.9rem;
@@ -1242,11 +1332,11 @@ h1, h2, h3, h4 {
     }
 
     .calendar-select-month {
-      inline-size: 6.2rem;
+      inline-size: 7.4rem;
     }
 
     .calendar-select-year {
-      inline-size: 3.6rem;
+      inline-size: 4.6rem;
     }
 
     /* The chevron is already drawn by the background image */
@@ -1261,8 +1351,8 @@ h1, h2, h3, h4 {
       overflow-y: auto;
       border: 1px solid var(--border-medium);
       border-radius: 12px;
-      background: rgba(9, 12, 28, 0.98);
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7), 0 0 24px rgba(99, 102, 241, 0.12);
+      background: var(--panel);
+      box-shadow: var(--shadow-overlay);
       color-scheme: dark;
     }
 
@@ -1317,6 +1407,9 @@ h1, h2, h3, h4 {
 }
 
 .calendar-phase {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   width: 100%;
   display: grid;
   grid-template-columns: 14px 1fr auto;
@@ -1396,15 +1489,15 @@ h1, h2, h3, h4 {
   padding: 1.35rem;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-lg);
-  background: rgba(10, 16, 27, 0.97);
+  background: var(--panel);
   color: var(--text-primary);
   box-shadow: var(--shadow-overlay);
   animation: fadeIn 0.2s ease-out;
 }
 
+/* Dim only, no blur (decision E10) */
 .modal-dialog::backdrop {
-  background: rgba(3, 6, 12, 0.68);
-  backdrop-filter: blur(6px);
+  background: var(--scrim);
 }
 
 .modal-header {
@@ -1417,9 +1510,9 @@ h1, h2, h3, h4 {
 .modal-header h2 {
   margin: 0;
   font-family: var(--font-serif);
-  font-size: 1.6rem;
-  font-weight: 500;
-  letter-spacing: 0;
+  font-size: var(--text-32);
+  font-weight: 400;
+  letter-spacing: normal;
 }
 
 .shortcuts-group + .shortcuts-group {
@@ -1523,28 +1616,21 @@ h1, h2, h3, h4 {
   margin-top: 0.75rem;
 }
 
-.privacy-actions .glass-button {
-  min-height: 34px;
-  padding: 0.3rem 0.9rem;
-  border-radius: 17px;
-  font-size: 0.8rem;
-}
-
 .privacy-confirm {
   margin-top: 0.75rem;
   padding: 0.8rem 0.9rem;
-  border: 1px solid rgba(252, 165, 165, 0.35);
-  border-radius: 12px;
-  background: rgba(127, 29, 29, 0.18);
+  border: 1px solid rgba(240, 168, 160, 0.35);
+  border-radius: var(--radius-popover);
 }
 
 .privacy-confirm p {
   color: var(--text-primary);
 }
 
+/* Forgetting can't be undone, so it alone is drawn in red */
 .privacy-actions .privacy-danger {
-  border-color: rgba(252, 165, 165, 0.6);
-  color: #fecaca;
+  border-color: rgba(240, 168, 160, 0.55);
+  color: var(--danger);
 }
 
 /* Toasts: in the bottom-right corner above the timeline on wide screens, well
@@ -1566,9 +1652,7 @@ h1, h2, h3, h4 {
   padding: 0.6rem 1rem;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-pill);
-  background: rgba(10, 16, 27, 0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--panel);
   box-shadow: var(--shadow-overlay);
   color: var(--text-primary);
   font-size: 0.85rem;
@@ -1596,19 +1680,29 @@ h1, h2, h3, h4 {
   }
 }
 
-.share-toast svg {
-  flex: none;
-  color: var(--accent-light);
+.share-toast .icon {
+  color: var(--ink-1);
+}
+
+.share-trigger.is-failed {
+  color: var(--danger);
 }
 
 .update-prompt {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  /* The lane above the toasts' (see .share-toast), so both can show at once */
+  bottom: calc(var(--toast-bottom) + 3.5rem);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  animation: fadeIn var(--dur-2) var(--ease-out);
   max-width: min(22rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   padding: 0.65rem 0.75rem 0.65rem 0.9rem;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-md);
-  background: rgba(10, 16, 27, 0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--panel);
   box-shadow: var(--shadow-overlay);
   color: var(--text-primary);
   font-size: 0.8rem;
@@ -1640,6 +1734,8 @@ h1, h2, h3, h4 {
 }
 
 .location-panel {
+  z-index: 120;
+  animation: fadeIn var(--dur-2) var(--ease-out);
   position: absolute;
   top: 2.75rem;
   right: 0;
@@ -1647,13 +1743,16 @@ h1, h2, h3, h4 {
   padding: 0.85rem;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-md);
-  background: rgba(10, 16, 27, 0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--panel);
   box-shadow: var(--shadow-overlay);
 }
 
 .location-row {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -1673,13 +1772,13 @@ h1, h2, h3, h4 {
 
 @media (hover: hover) {
   .location-row:hover:not(:disabled) {
-    background: rgba(194, 207, 247, 0.09);
+    background: rgba(226, 232, 240, 0.09);
     border-color: var(--border-subtle);
   }
 }
 
 .location-row:active:not(:disabled) {
-  background: rgba(194, 207, 247, 0.09);
+  background: rgba(226, 232, 240, 0.09);
   border-color: var(--border-subtle);
   transition-duration: 0s;
 }
@@ -1694,13 +1793,98 @@ h1, h2, h3, h4 {
   opacity: 0.72;
 }
 
+/* The location button in the header, until the date block takes it (2b) */
+.location-trigger {
+  max-width: 13rem;
+}
+
+.location-trigger-label,
+.location-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-search-field {
+  position: relative;
+  margin-bottom: var(--s2);
+  color: var(--ink-3);
+}
+
+.location-search-field .icon {
+  position: absolute;
+  left: var(--s3);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
 .location-search {
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border-subtle);
+  width: 100%;
+  min-height: var(--control);
+  padding: 0 var(--s3) 0 calc(var(--s3) + 18px + var(--s2));
+  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 1px solid var(--hairline);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 0.84rem;
+  font-size: var(--text-15);
+  outline: none;
+}
+
+@media (hover: hover) {
+  .location-search:hover {
+    border-color: var(--hairline-strong);
+  }
+}
+
+.location-status {
+  padding: var(--s2) 0.6rem;
+  color: var(--ink-3);
+  font-size: var(--text-13);
+}
+
+.location-status.is-error {
+  color: var(--danger);
+}
+
+.location-results {
+  max-height: 13rem;
+  margin-top: var(--s1);
+  overflow-y: auto;
+}
+
+.location-saved {
+  margin-top: var(--s2);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--hairline);
+}
+
+.location-saved-header,
+.location-saved-row {
+  display: flex;
+  align-items: center;
+}
+
+.location-saved-header {
+  justify-content: space-between;
+  padding-left: 0.6rem;
+}
+
+.location-note,
+.location-credit {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--text-12);
+  line-height: 1.5;
+}
+
+.location-note {
+  padding: 0 0.6rem var(--s1);
+}
+
+.location-credit {
+  margin-top: var(--s3);
 }
 
 .location-search::placeholder {
@@ -1708,9 +1892,9 @@ h1, h2, h3, h4 {
 }
 
 .location-search:focus-visible {
-  outline: 2px solid var(--accent-light);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
-  border-color: var(--border-highlight);
+  border-color: var(--hairline-active);
 }
 
 .calendar-panel {
@@ -1723,9 +1907,7 @@ h1, h2, h3, h4 {
   padding: 1.1rem;
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-lg);
-  background: rgba(10, 16, 27, 0.97);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: var(--panel);
   box-shadow: var(--shadow-overlay);
   color-scheme: dark;
   animation: fadeIn 0.2s ease-out;
@@ -1748,10 +1930,10 @@ h1, h2, h3, h4 {
 
 .calendar-month-navigation .ghost-control-btn,
 .calendar-close {
-  flex: 0 0 30px;
-  width: 30px;
-  min-width: 30px;
-  min-height: 30px;
+  flex: 0 0 36px;
+  width: 36px;
+  min-width: 36px;
+  min-height: 36px;
   padding: 0;
 }
 
@@ -1765,9 +1947,8 @@ h1, h2, h3, h4 {
 .calendar-weekdays {
   margin-bottom: 0.35rem;
   color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.04em;
+  font-size: var(--text-12);
+  font-weight: 500;
 }
 
 .calendar-grid {
@@ -1787,10 +1968,13 @@ h1, h2, h3, h4 {
 }
 
 .calendar-day-outside {
-  color: rgba(217, 228, 255, 0.24);
+  color: rgba(226, 232, 240, 0.24);
 }
 
 .calendar-day {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   flex-direction: column;
   gap: 3px;
   padding: 0;
@@ -1806,31 +1990,31 @@ h1, h2, h3, h4 {
 
 @media (hover: hover) {
   .calendar-day:hover:not(.is-selected) {
-    background: rgba(217, 228, 255, 0.1);
+    background: rgba(226, 232, 240, 0.1);
   }
 }
 
 .calendar-day:active:not(.is-selected) {
-  background: rgba(217, 228, 255, 0.1);
+  background: rgba(226, 232, 240, 0.1);
   transition-duration: 0s;
 }
 
 .calendar-day.is-today:not(.is-selected) {
-  border-color: rgba(194, 207, 247, 0.75);
-  color: var(--accent-light);
-  font-weight: 650;
+  border-color: var(--hairline-strong);
+  color: var(--ink-1);
+  font-weight: 600;
 }
 
 .calendar-day.is-selected {
-  background: var(--accent-strong);
-  color: #fff;
-  font-weight: 700;
-  box-shadow: 0 0 12px var(--accent-glow);
+  border-color: var(--hairline-active);
+  background: var(--fill-selected);
+  color: var(--ink-1);
+  font-weight: 600;
 }
 
 @media (hover: hover) {
   .calendar-day.is-selected:hover {
-    background: var(--accent-strong);
+    background: var(--fill-selected);
   }
 }
 
@@ -2009,11 +2193,9 @@ h1, h2, h3, h4 {
 
 .timeline-hint {
   margin: 0;
-  font-size: 0.625rem;
-  letter-spacing: 0.12em;
+  font-size: var(--text-12);
   line-height: 1;
   white-space: nowrap;
-  opacity: 0.85;
 }
 
 .timeline-track {
@@ -2096,7 +2278,7 @@ h1, h2, h3, h4 {
 .timeline-thumb-ring {
   position: absolute;
   inset: -3px;
-  border: 1.5px solid var(--accent-light);
+  border: 1.5px solid var(--now);
   border-radius: 50%;
   opacity: 0.6;
   animation: pulse-ring 2.4s ease-in-out infinite;
@@ -2112,12 +2294,10 @@ h1, h2, h3, h4 {
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 0.75rem;
-  border: 1px solid rgba(194, 207, 247, 0.3);
+  border: 1px solid rgba(226, 232, 240, 0.3);
   border-radius: 10px;
-  background: rgba(16, 24, 38, 0.96);
+  background: var(--panel);
   box-shadow: var(--shadow-overlay);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   color: var(--text-primary);
   font-size: 0.8rem;
   white-space: nowrap;
@@ -2125,7 +2305,9 @@ h1, h2, h3, h4 {
 }
 
 .timeline-tooltip-name {
-  font-size: 1.05rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-13);
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -2690,12 +2872,10 @@ h1, h2, h3, h4 {
     background-position: 50% 50% !important;
   }
 
-  /* Hover lifts and scale nudges are motion too */
-  .glass-button:hover,
-  .ghost-control-btn:hover,
-  .ghost-control-btn:active {
-    transform: none !important;
-  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @keyframes fadeIn {

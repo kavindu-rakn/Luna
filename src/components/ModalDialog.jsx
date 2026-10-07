@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import Icon from './icons/Icon';
 
 /**
  * A native modal <dialog> with a title and a close button. showModal() traps focus,
@@ -43,17 +43,11 @@ const ModalDialog = ({ isOpen, onClose, title, titleId, className = '', children
             browser reads that */}
         <button
           type="button"
-          className="ghost-control-btn"
+          className="glass-button icon-button"
           onClick={() => dialogRef.current?.close()}
           aria-label="Close"
-          style={{
-            background: 'var(--bg-surface-2)',
-            border: '1px solid var(--border-medium)',
-            borderRadius: '50%',
-            padding: 0
-          }}
         >
-          <X size={16} />
+          <Icon name="close" />
         </button>
       </div>
       {children}

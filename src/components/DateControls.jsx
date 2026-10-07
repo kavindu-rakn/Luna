@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, X, CircleDot } from 'lucide-react';
+import Icon from './icons/Icon';
 import {
   getAdjacentQuarterPhase,
   getZonedDay,
@@ -223,7 +223,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
         className={`glass-button date-display-btn ${isCalendarOpen ? 'is-open' : ''}`}
         // No aria-label: the button is named by the date it shows, so voice control
         // users can say what they see. The title still describes what it does.
-        title="Click to open calendar (or press T for Today)"
+        title="Open the calendar"
         aria-expanded={isCalendarOpen}
       >
         <span className="font-serif date-text-desktop">
@@ -249,10 +249,10 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
               <button
                 onClick={handlePrevMonth}
                 className="ghost-control-btn"
-                title="Previous Month"
-                aria-label="Previous Month"
+                title="Previous month"
+                aria-label="Previous month"
               >
-                <ChevronLeft size={16} />
+                <Icon name="previousDay" size={18} />
               </button>
               {/* Native selects: the keyboard, screen readers and type-to-jump all
                   work as anywhere else, so typing 1969 on the year goes straight there */}
@@ -279,10 +279,10 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
               <button
                 onClick={handleNextMonth}
                 className="ghost-control-btn"
-                title="Next Month"
-                aria-label="Next Month"
+                title="Next month"
+                aria-label="Next month"
               >
-                <ChevronRight size={16} />
+                <Icon name="nextDay" size={18} />
               </button>
             </div>
 
@@ -291,7 +291,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
               className="ghost-control-btn calendar-close"
               aria-label="Close calendar"
             >
-              <X size={15} />
+              <Icon name="close" size={18} />
             </button>
           </div>
 
@@ -414,56 +414,56 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
         {/* Previous Major Phase (New, 1st Q, Full, Last Q) */}
         <button
           className="ghost-control-btn"
-          title="Previous Major Phase (Shift+←)"
+          title="Previous phase (Shift+←)"
           onClick={() => jumpQuarterPhase(-1)}
-          aria-label="Previous Major Phase"
+          aria-label="Previous phase"
           aria-keyshortcuts="Shift+ArrowLeft"
         >
-          <ChevronsLeft size={16} />
+          <Icon name="previousPhase" />
         </button>
 
         {/* -1 Day */}
         <button
           className="ghost-control-btn"
-          title="Previous Day (←)"
+          title="Previous day (←)"
           onClick={() => changeDate(-1)}
-          aria-label="Previous Day"
+          aria-label="Previous day"
           aria-keyshortcuts="ArrowLeft"
         >
-          <ChevronLeft size={16} />
+          <Icon name="previousDay" />
         </button>
 
         {/* Today: a centre dot between the arrows, drawn just like them */}
         <button
           className="ghost-control-btn"
-          title="Jump to Today (T)"
+          title="Back to now (T)"
           onClick={onToday ?? (() => setCurrentDate(new Date()))}
-          aria-label="Reset to Today"
+          aria-label="Back to now"
           aria-keyshortcuts="T"
         >
-          <CircleDot size={16} aria-hidden="true" />
+          <Icon name="now" />
         </button>
 
         {/* +1 Day */}
         <button
           className="ghost-control-btn"
-          title="Next Day (→)"
+          title="Next day (→)"
           onClick={() => changeDate(1)}
-          aria-label="Next Day"
+          aria-label="Next day"
           aria-keyshortcuts="ArrowRight"
         >
-          <ChevronRight size={16} />
+          <Icon name="nextDay" />
         </button>
 
         {/* Next Major Phase (New, 1st Q, Full, Last Q) */}
         <button
           className="ghost-control-btn"
-          title="Next Major Phase (Shift+→)"
+          title="Next phase (Shift+→)"
           onClick={() => jumpQuarterPhase(1)}
-          aria-label="Next Major Phase"
+          aria-label="Next phase"
           aria-keyshortcuts="Shift+ArrowRight"
         >
-          <ChevronsRight size={16} />
+          <Icon name="nextPhase" />
         </button>
       </div>
     </div>

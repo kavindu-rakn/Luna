@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MapPin, Search, LocateFixed, Star, X, Loader } from 'lucide-react';
+import Icon from './icons/Icon';
 import {
   searchPlaces,
   resolveTimeZone,
@@ -140,26 +140,14 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
       <button
         ref={triggerRef}
         type="button"
-        className="glass-button"
+        className={`glass-button location-trigger${isOpen ? ' is-open' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
         aria-label={`Observing from ${location?.name || 'an unset location'}. Change location.`}
-        style={{
-          padding: '0.35rem 0.85rem',
-          background: isOpen ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
-          border: isOpen ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)',
-          gap: '0.4rem',
-          fontSize: '0.78rem',
-          fontWeight: 500,
-          maxWidth: '13rem'
-        }}
       >
-        <MapPin size={13} color="var(--accent-light)" style={{ flexShrink: 0 }} />
-        <span
-          className="location-trigger-label"
-          style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-        >
+        <Icon name="location" size={18} />
+        <span className="location-trigger-label">
           {location?.name || 'Set location'}
         </span>
       </button>
@@ -170,18 +158,10 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
           role="dialog"
           aria-label="Choose an observing location"
           className="location-panel"
-          style={{
-            zIndex: 120,
-            animation: 'fadeIn 0.2s ease-out'
-          }}
         >
           {/* Search */}
-          <div style={{ position: 'relative', marginBottom: '0.6rem' }}>
-            <Search
-              size={14}
-              color="var(--text-muted)"
-              style={{ position: 'absolute', left: '0.7rem', top: '50%', transform: 'translateY(-50%)' }}
-            />
+          <div className="location-search-field">
+            <Icon name="search" size={18} />
             <input
               className="location-search"
               ref={inputRef}
@@ -197,48 +177,37 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
               }}
               placeholder="Search for a town or city"
               aria-label="Search for a town or city"
-              style={{
-                width: '100%',
-                padding: '0.55rem 0.6rem 0.55rem 2rem',
-                borderRadius: '10px',
-                background: 'var(--bg-surface-2)',
-                border: '1px solid var(--border-subtle)',
-                color: 'var(--text-primary)',
-                fontSize: '0.85rem',
-                fontFamily: 'var(--font-sans)',
-                outline: 'none'
-              }}
             />
           </div>
 
           {/* Use my location */}
           <button type="button" className="location-row" onClick={useMyLocation} disabled={isLocating}>
             {isLocating
-              ? <Loader size={14} color="var(--accent-light)" />
-              : <LocateFixed size={14} color="var(--accent-light)" />}
+              ? <Icon name="spinner" size={18} className="is-spinning" />
+              : <Icon name="locateMe" size={18} />}
             <span>{isLocating ? 'Finding you…' : 'Use my location'}</span>
           </button>
 
           {/* Status */}
           {status === 'searching' && (
-            <div style={{ padding: '0.5rem 0.6rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <div className="location-status">
               Searching…
             </div>
           )}
           {status === 'empty' && (
-            <div style={{ padding: '0.5rem 0.6rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            <div className="location-status">
               No places matched “{query.trim()}”.
             </div>
           )}
           {status === 'error' && (
-            <div style={{ padding: '0.5rem 0.6rem', fontSize: '0.8rem', color: '#fca5a5' }}>
+            <div className="location-status is-error">
               {errorMessage}
             </div>
           )}
 
           {/* Results */}
           {results.length > 0 && (
-            <div style={{ marginTop: '0.35rem', maxHeight: '13rem', overflowY: 'auto' }}>
+            <div className="location-results">
               {results.map((place) => (
                 <button
                   key={place.id}
@@ -247,8 +216,8 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                   onClick={() => applyPlace(place)}
                   title={place.detail}
                 >
-                  <MapPin size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <Icon name="location" size={18} className="is-muted" />
+                  <span className="location-row-name">
                     {place.name}
                   </span>
                 </button>
@@ -257,40 +226,35 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
           )}
 
           {/* Saved places */}
-          <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--border-subtle)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-              <span className="utility-label" style={{ fontSize: '0.66rem' }}>Saved places</span>
+          <div className="location-saved">
+            <div className="location-saved-header">
+              <span className="utility-label">Saved places</span>
               <button
                 type="button"
                 onClick={toggleSaved}
                 className="ghost-control-btn"
-                style={{ padding: 0 }}
+                aria-pressed={isCurrentSaved}
                 aria-label={isCurrentSaved ? 'Remove this location from saved places' : 'Save this location'}
-                title={isCurrentSaved ? 'Remove from saved' : 'Save this location'}
+                title={isCurrentSaved ? 'Remove from saved places' : 'Save this location'}
               >
-                <Star
-                  size={13}
-                  color={isCurrentSaved ? 'var(--accent-light)' : 'var(--text-muted)'}
-                  fill={isCurrentSaved ? 'var(--accent-light)' : 'none'}
-                />
+                <Icon name={isCurrentSaved ? 'savedPlaceFilled' : 'savedPlace'} size={18} />
               </button>
             </div>
 
             {savedPlaces.length === 0 ? (
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              <p className="location-note">
                 Star a location to keep it here.
               </p>
             ) : (
               savedPlaces.map((place) => (
-                <div key={`${place.lat},${place.lon}`} style={{ display: 'flex', alignItems: 'center' }}>
+                <div key={`${place.lat},${place.lon}`} className="location-saved-row">
                   <button
                     type="button"
                     className="location-row"
                     onClick={() => applyPlace(place)}
-                    style={{ flex: 1 }}
                   >
-                    <Star size={12} color="var(--accent-light)" fill="var(--accent-light)" style={{ flexShrink: 0 }} />
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <Icon name="savedPlaceFilled" size={18} className="is-muted" />
+                    <span className="location-row-name">
                       {place.name}
                     </span>
                   </button>
@@ -298,17 +262,16 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                     type="button"
                     onClick={() => removeSaved(place)}
                     className="ghost-control-btn"
-                    style={{ padding: 0 }}
                     aria-label={`Remove ${place.name} from saved places`}
                   >
-                    <X size={12} />
+                    <Icon name="close" size={16} />
                   </button>
                 </div>
               ))
             )}
           </div>
 
-          <p style={{ marginTop: '0.7rem', marginBottom: 0, fontSize: '0.66rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          <p className="location-credit">
             Place search by Nominatim, data ©{' '}
             <a className="text-link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
               OpenStreetMap contributors

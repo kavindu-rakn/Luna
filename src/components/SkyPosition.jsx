@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Sunrise, Sunset, ArrowUp, ArrowDown, MapPin, Moon } from 'lucide-react';
+import Icon from './icons/Icon';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
@@ -98,7 +98,7 @@ const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
         fontFamily="var(--font-sans)"
         fontWeight="600"
       >
-        0° Horizon
+        Horizon
       </text>
 
       {/* 4-Hour Time Ticks on X-Axis */}
@@ -146,7 +146,7 @@ const AltitudeArc = ({ altitudePoints, currentFraction, currentAltitude }) => {
           <g transform={`translate(${Math.min(width - 58, Math.max(58, currentPoint.x))}, ${currentPoint.y > horizonY ? currentPoint.y + 16 : currentPoint.y - 12})`}>
             <rect x="-56" y="-10" width="112" height="18" rx="4" fill="rgba(12,16,34,0.9)" stroke="var(--border-subtle)" />
             <text x="0" y="3" textAnchor="middle" fill="var(--text-primary)" fontSize="9" fontFamily="var(--font-mono)" fontWeight="600">
-              {currentPoint.altitude > 0 ? `+${currentPoint.altitude}°` : `${currentPoint.altitude}°`} ({aboveHorizon ? 'Visible' : 'Below horizon'})
+              {currentPoint.altitude > 0 ? `+${currentPoint.altitude}°` : `${currentPoint.altitude}°`} ({aboveHorizon ? 'up' : 'below the horizon'})
             </text>
           </g>
         </g>
@@ -184,15 +184,15 @@ const SkyPosition = ({ skyData, locationName }) => {
       {/* Header */}
       <div className="sky-position-header">
         <div className="sky-position-heading">
-          <Moon size={16} aria-hidden="true" />
+          <Icon name="moon" size={18} />
           <h3 className="utility-label">
-            24-Hour Sky Transit & Ephemeris
+            In your sky today
           </h3>
         </div>
 
         <div className="sky-position-context">
           <span className="sky-position-location">
-            <MapPin size={12} aria-hidden="true" /> {locationName || 'Location'}
+            <Icon name="location" size={16} /> {locationName || 'Location'}
           </span>
           {skyData.timeZoneLabel && (
             <span className="sky-position-timezone">· {skyData.timeZoneLabel}</span>
@@ -212,29 +212,29 @@ const SkyPosition = ({ skyData, locationName }) => {
       {/* Observational Ephemeris Grid */}
       <div className="sky-ephemeris-grid">
         <StatItem
-          icon={<ArrowUp size={15} />}
+          icon={<Icon name="rise" />}
           label="Moonrise"
           value={skyData.moonrise}
         />
         <StatItem
-          icon={<ArrowDown size={15} />}
+          icon={<Icon name="set" />}
           label="Moonset"
           value={skyData.moonset}
         />
         <StatItem
-          icon={<ArrowUp size={15} />}
-          label="Peak Altitude"
+          icon={<Icon name="peak" />}
+          label="Highest"
           value={`${skyData.peakAltitude}°`}
           subValue={`${skyData.peakTime} (${skyData.peakCompass})`}
           highlight={true}
         />
         <StatItem
-          icon={<Sunrise size={15} />}
+          icon={<Icon name="sunrise" />}
           label="Sunrise"
           value={skyData.sunrise}
         />
         <StatItem
-          icon={<Sunset size={15} />}
+          icon={<Icon name="sunset" />}
           label="Sunset"
           value={skyData.sunset}
         />
@@ -243,7 +243,7 @@ const SkyPosition = ({ skyData, locationName }) => {
       {/* Times belong to the observing location, not to the viewer's device */}
       {skyData.timeZone && (
         <div className="sky-position-timezone-note">
-          All times shown in {skyData.timeZone} ({skyData.timeZoneLabel})
+          Times in {skyData.timeZone} ({skyData.timeZoneLabel})
         </div>
       )}
     </section>

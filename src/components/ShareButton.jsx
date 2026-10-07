@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Share2, Check, CircleAlert } from 'lucide-react';
+import Icon from './icons/Icon';
 import { buildShareUrl } from '../utils/shareUrl';
 
 // The async Clipboard API needs a secure context and a user gesture, and some
@@ -68,20 +68,12 @@ const ShareButton = ({ date, location }) => {
     <>
       <button
         type="button"
-        className="glass-button icon-button"
+        className={`glass-button icon-button share-trigger${status === 'idle' ? '' : ` is-${status}`}`}
         onClick={share}
         aria-label={label}
         title={label}
-        style={{
-          padding: 0,
-          borderRadius: '50%',
-          background: status === 'copied' ? 'var(--bg-surface-elevated)' : 'var(--bg-surface-1)',
-          border: status === 'copied' ? '1px solid var(--accent-light)' : '1px solid var(--border-subtle)'
-        }}
       >
-        {status === 'copied'
-          ? <Check size={14} color="var(--accent-light)" />
-          : <Share2 size={14} color={status === 'failed' ? '#fca5a5' : 'var(--text-secondary)'} />}
+        <Icon name={status === 'copied' ? 'check' : status === 'failed' ? 'alert' : 'share'} />
       </button>
 
       {/* The tick on the button sits right under the cursor that clicked it, so say
@@ -90,13 +82,13 @@ const ShareButton = ({ date, location }) => {
       <div className={`share-toast${status === 'idle' ? '' : ' is-visible'}`} role="status" aria-live="polite">
         {status === 'copied' && (
           <>
-            <Check size={15} aria-hidden="true" />
+            <Icon name="check" size={18} />
             <span>Link copied to clipboard</span>
           </>
         )}
         {status === 'failed' && (
           <>
-            <CircleAlert size={15} aria-hidden="true" />
+            <Icon name="alert" size={18} />
             <span>Could not copy the link</span>
           </>
         )}
