@@ -161,7 +161,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | G1 | Stars | **The real sky around the Moon** (rec) | The Moon sits in front of its actual constellation. |
 | G2 | Twinkle | **Rare, subtle scintillation on a few bright stars, time-based** (rec) | |
 | G3 | Renderer | **GPU points in the Moon's WebGL pass** (rec) | |
-| G4 | Desktop parallax | **Depth layers: far stars, near stars, Moon, interface** (rec) | |
+| G4 | Desktop parallax | **Depth layers: far stars, near stars, Moon, interface** (rec) | **Settled in chat (7 Oct 2026):** the Moon holds still with the interface and the sky slides behind it, the faintest stars most. A Moon that moved with the hand read as a cheap magnetic-button effect. |
 | G5 | Gyro permission | **From its own control** (rec) | "Tilt to look around". No prompt on first tap. |
 | G6 | Tilt feel | **Smaller, spring-damped, a small dead zone, quicker recentre** (rec) | |
 | G7 | Ambient sky events | **Meteors only on real shower nights** | Owner: "Meteor shower feature is going to be added, plus the rare reward for staying too, but different and simpler than the actual meteor shower feature's effect. These will attract people to check the app." |
@@ -363,17 +363,24 @@ when the page opens.
   page's Moon area, with 4× antialiasing, and laid onto the canvas at whole pixels; the canvas
   itself has no antialiasing and no depth buffer. On a phone that keeps memory near what the
   Moon's own canvas used, and a frame where only a star changes reuses the Moon as drawn. The
-  glow moved back into the scene, now that nothing can crop it, so it drifts with the Moon; the
-  page's CSS glow stays for the flat Moon and fades out as the scene fades in. Measured on a real
+  glow moved back into the scene, now that nothing can crop it; the page's CSS glow stays for
+  the flat Moon and fades out as the scene fades in. Measured on a real
   GPU: the 3D Moon's outline lands on the flat Moon's to the pixel.
 - The composite (section 4, G1): an 80° field across the screen's diagonal. The drawn Moon
   covers about 14° of sky in every direction (about 16° on a phone), so stars and planets that
   close to the Moon are behind it, as in a composite photograph: a planet beside the Moon in
-  the real sky shows only once it is more than about 14° away.
-- Depth layers move the Moon up to 10 px and stars 3-6 px by brightness, on a spring; with the
-  mouse on desktops and with tilt on phones. Measured: the Moon 9.5 px and Saturn 6 px with the
-  pointer at the screen's edge; tilting 12° moves the Moon 5 px, and holding still recentres it
-  exactly. Twinkle: one bright star at a time for about 2 s, every 3.5-9 s, ±13% in brightness,
+  the real sky shows only once it is more than about 14° away. The owner kept this as decided
+  (7 Oct 2026), over a narrower field or pushing nearby objects out to the Moon's edge.
+- Depth layers (G4, changed in chat): first built as the brief had them, the Moon moving most
+  (up to 10 px, stars 3-6 px). The owner found a Moon that follows the cursor and the tilt
+  gimmicky, like magnetic buttons, so it now holds still with the interface and the sky slides
+  behind it, as the background does when a camera circles its subject: the faintest stars
+  about 7 px, the brightest about 4, on a spring, with the mouse on desktops and the tilt on
+  phones. The movement between Moon and stars, which is what reads as depth, is the same as
+  before. It also keeps the Moon a still target for dragging, keeps it on its phase name, and
+  means the Moon never renders again just because the stars moved. Measured: Saturn slides 4 px
+  with the pointer at the screen's edge and the Moon's pixels don't change; tilting 12° slides a
+  star 3.6 px, and holding still brings it back exactly. Twinkle: one bright star at a time for about 2 s, every 3.5-9 s, ±13% in brightness,
   about 14 frames a second while it lasts and none in between; none under reduced motion.
 - "Tilt to look around" sits in the header, on phones only, until Phase 2's menu takes it.
   Recent Chrome also has iOS's permission step but grants it without asking, so the page asks

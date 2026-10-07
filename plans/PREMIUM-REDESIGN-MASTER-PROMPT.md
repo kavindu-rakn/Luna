@@ -408,8 +408,9 @@ Plain and observer-first: "Tonight", "Rises 6:40 pm in the east", "Back to now".
   composite: a wide field (roughly 60–90° across the viewport) centred on the Moon's position,
   oriented to the observer's horizon, the Moon sitting in front of its actual constellation.
   Magnitude drives size and brightness on a power curve; colour index drives temperature.
-  A few bright stars scintillate, rarely and subtly, on time not frames. Depth layers (G4):
-  faint stars move least, bright stars a little more, the Moon more, the interface not at all.
+  A few bright stars scintillate, rarely and subtly, on time not frames. Depth layers (G4, as
+  settled in chat on 7 Oct 2026): the Moon holds still with the interface, and the sky slides
+  behind it, the faintest stars most, the brightest less.
 - **Tilt (G5, G6)**: on phones, device orientation drives the same depth layers: small,
   spring-damped, a small dead zone, a recentre within about a second of settling. On iOS it
   starts only from the "Tilt to look around" control, which asks for permission; elsewhere it is
