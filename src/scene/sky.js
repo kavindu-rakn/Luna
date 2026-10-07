@@ -90,8 +90,9 @@ void main() {
   // Never narrower than this, or a faint star would flicker between pixels as
   // the sky drifts
   vSigma = max(look.y * pixelRatio, 0.6);
-  // The halo reaches out to four of its widths, two Gaussian widths each
-  vSize = min(ceil(vSigma * (halo > 0.0 ? 16.0 : 6.0)) + 1.0, 63.0);
+  // Wide enough that the light has faded to nothing at the sprite's square edge:
+  // four Gaussian widths each way, or the halo's reach, fading out before the edge
+  vSize = min(ceil(vSigma * (halo > 0.0 ? 16.0 : 8.0)) + 1.0, 63.0);
   vPeak = min(peak, 1.0);
   vHalo = halo * min(peak, 1.5);
   vColor = color;
@@ -110,7 +111,8 @@ varying float vSize;
 void main() {
   vec2 d = (gl_PointCoord - 0.5) * vSize;
   float a = vPeak * exp(-dot(d, d) / (2.0 * vSigma * vSigma));
-  a = min(1.0, a + vHalo * exp(-length(d) / (2.0 * vSigma)));
+  float edge = 1.0 - smoothstep(0.4, 0.5, length(gl_PointCoord - 0.5));
+  a = min(1.0, a + vHalo * edge * exp(-length(d) / (2.0 * vSigma)));
   if (a < 0.002) discard;
   gl_FragColor = vec4(vColor * a, a);
 }
