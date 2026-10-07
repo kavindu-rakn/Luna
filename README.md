@@ -13,12 +13,9 @@
 
 ![React](https://img.shields.io/badge/React-000000?style=for-the-badge)
 ![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge)
-![React Three Fiber](https://img.shields.io/badge/React_Three_Fiber-000000?style=for-the-badge)
-![Drei](https://img.shields.io/badge/Drei-000000?style=for-the-badge)
 ![Vite](https://img.shields.io/badge/Vite-000000?style=for-the-badge)
 ![SunCalc](https://img.shields.io/badge/SunCalc-000000?style=for-the-badge)
 ![GSAP](https://img.shields.io/badge/GSAP-000000?style=for-the-badge)
-![Lucide](https://img.shields.io/badge/Lucide_Icons-000000?style=for-the-badge)
 ![WebGL](https://img.shields.io/badge/WebGL-000000?style=for-the-badge)
 
 <p align="center">
@@ -256,7 +253,7 @@ graph TD
 * **Motion & Physics:** GSAP (`@gsap/react`), custom spring momentum decay
 * **Ephemeris Calculations:** Meeus periodic-term series (lunar longitude & distance, solar longitude), SunCalc (topocentric altitude/azimuth), golden-section and bisection root finding, JPL's Keplerian elements for the planets
 * **Typography:** *Cormorant Garamond* (phase names, dates, wordmark), *Inter* (everything else, with tabular figures)
-* **Icons:** Lucide React
+* **Icons:** Luna's own set, drawn for it on a 24 px grid with 1.25 px strokes (`src/components/icons/`)
 
 ---
 

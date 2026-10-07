@@ -190,7 +190,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false }
               }}
             >
               <MoonIcon phase={hovered.phase} size={15} />
-              <span className="font-serif timeline-tooltip-name">{hovered.name}</span>
+              <span className="timeline-tooltip-name">{hovered.name}</span>
               <span className="timeline-tooltip-date">{formatShortDate(hovered.date)}</span>
               <span className="font-mono timeline-tooltip-fraction">
                 {parseFloat(hovered.fraction).toFixed(0)}%

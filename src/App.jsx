@@ -9,6 +9,7 @@ import { getMoonView } from './utils/moonView';
 import { glowStyle } from './utils/moonPath';
 import { useTilt } from './hooks/useTilt';
 import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion';
+import { installPressBloom } from './utils/pressBloom';
 
 // The 3D Moon's component starts the scene; three.js itself loads inside the
 // scene's worker (or on the main thread where workers can't draw WebGL). Even the
@@ -49,7 +50,7 @@ import { usePreferences } from './hooks/usePreferences';
 import { getLunarDetails, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
-import { X, BarChart3, Lightbulb, Rotate3d } from 'lucide-react';
+import Icon from './components/icons/Icon';
 
 // Keys that controls like the timeline and the calendar grid use to move around
 const NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
@@ -95,6 +96,9 @@ function App({ prerender = false }) {
   // "Tilt to look around": the phone's motion sensor moves the sky's depth layers
   const tilt = useTilt(!prerender);
   const reducedMotion = usePrefersReducedMotion();
+
+  // The light bloom on every pressed control (decision D7)
+  useEffect(() => (prerender ? undefined : installPressBloom()), [prerender]);
 
   // 12- or 24-hour clock, km or miles. How this viewer reads, not what they are
   // looking at, so these stay on the device and out of the URL.
@@ -442,7 +446,7 @@ function App({ prerender = false }) {
                 aria-label="Tilt to look around"
                 title="Tilt to look around"
               >
-                <Rotate3d size={15} color="var(--text-secondary)" aria-hidden="true" />
+                <Icon name="tilt" />
               </button>
             )}
             {/* Hidden on touch-only devices, which have no keyboard to use it with */}
@@ -453,19 +457,19 @@ function App({ prerender = false }) {
               aria-label="Keyboard shortcuts"
               title="Keyboard shortcuts (?)"
             >
-              <Lightbulb size={15} color="var(--text-secondary)" aria-hidden="true" />
+              <Icon name="keyboard" />
             </button>
             <button
               type="button"
               className={`glass-button deep-dive-trigger ${isDrawerOpen ? 'is-active' : ''}`}
               onClick={() => setIsDrawerOpen(prev => !prev)}
-              aria-label="Toggle telemetry details"
+              aria-label="Deep Dive"
               aria-expanded={isDrawerOpen}
               aria-controls="telemetry-drawer"
               aria-keyshortcuts="D"
             >
               {/* Shown only where the label is hidden and the icon has to stand alone */}
-              <BarChart3 size={14} aria-hidden="true" />
+              <Icon name="readings" />
               <span>Deep Dive</span>
             </button>
           </div>
@@ -528,22 +532,22 @@ function App({ prerender = false }) {
         {/* Drawer Header & Close Button */}
         <div className="drawer-header">
           <div className="drawer-heading">
-            <BarChart3 size={16} color="var(--accent-light)" />
             <h2
               id="telemetry-heading"
               ref={drawerHeadingRef}
               tabIndex={-1}
-              className="utility-label drawer-title"
+              className="drawer-title"
             >
-              Astronomical Telemetry
+              Deep Dive
             </h2>
           </div>
           <button
             onClick={() => setIsDrawerOpen(false)}
-            className="ghost-control-btn drawer-close"
-            aria-label="Close details (Esc)"
+            className="glass-button icon-button drawer-close"
+            aria-label="Close Deep Dive (Esc)"
+            title="Close (Esc)"
           >
-            <X size={16} />
+            <Icon name="close" />
           </button>
         </div>
 

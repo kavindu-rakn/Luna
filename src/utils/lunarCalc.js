@@ -341,17 +341,28 @@ const formatCountdown = (ms) => {
 // which some engines render as "24:00" at midnight.
 const hourCycleFor = (clock) => (clock === '24h' ? 'h23' : 'h12');
 
+// Clock times as Luna writes them (decision K2): "6:40 pm" on a 12-hour clock,
+// with no leading zero and the day period in lower case after a plain space, and
+// "18:40" or "06:40" on a 24-hour one. Built from the parts, because engines
+// differ in how they space "PM" (newer ones use a narrow no-break space).
+const hourFor = (clock) => (clock === '24h' ? '2-digit' : 'numeric');
+const writeTime = (formatter, d) => formatter.formatToParts(d).map((part) => {
+  if (part.type === 'dayPeriod') return part.value.toLowerCase();
+  if (part.type === 'literal') return part.value.replace(/\s/g, ' ');
+  return part.value;
+}).join('');
+
 // Date and time of a phase event, in the observing location's timezone
 export const formatPhaseStamp = (d, timeZone, clock = '12h') => {
   try {
-    return new Intl.DateTimeFormat('en-US', {
+    return writeTime(new Intl.DateTimeFormat('en-US', {
       month: 'short',
       day: 'numeric',
-      hour: 'numeric',
+      hour: hourFor(clock),
       minute: '2-digit',
       hourCycle: hourCycleFor(clock),
       timeZone
-    }).format(d);
+    }), d);
   } catch {
     return '--';
   }
@@ -719,35 +730,23 @@ export const getTimeZoneLabel = (date, timeZone) => {
   }
 };
 
-// Format an instant as a clock time in the given timezone
+// Format an instant as a clock time in the given timezone: "6:40 pm" or "18:40"
 export const formatTimeString = (d, timeZone, clock = '12h') => {
   if (!d || isNaN(d.getTime())) return '--:--';
   try {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: '2-digit',
+    return writeTime(new Intl.DateTimeFormat('en-US', {
+      hour: hourFor(clock),
       minute: '2-digit',
       hourCycle: hourCycleFor(clock),
       timeZone
-    }).format(d);
+    }), d);
   } catch {
     return '--:--';
   }
 };
 
-// A clock time without the padding zero, "7:30 PM" or "19:30", for running text
-export const formatShortTime = (d, timeZone, clock = '12h') => {
-  if (!d || isNaN(d.getTime())) return '--:--';
-  try {
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hourCycle: hourCycleFor(clock),
-      timeZone
-    }).format(d);
-  } catch {
-    return '--:--';
-  }
-};
+// The same, for running text. Kept as its own name for the places that read it.
+export const formatShortTime = formatTimeString;
 
 // Locate moonrise / moonset by scanning the location's own 24-hour day for horizon
 // crossings, then bisecting to the second. Derived from the same altitude function
@@ -808,9 +807,9 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null,
 
   // Sample the local day in 30-minute intervals (48 points)
   const altitudePoints = [];
-  let peakPoint = { altitude: -90, hour: 0, label: '12 AM', azimuth: 180, compass: 'S' };
+  let peakPoint = { altitude: -90, hour: 0, label: '12 am', azimuth: 180, compass: 'S' };
 
-  // Axis ticks read "4 AM" on a 12-hour clock and "04:00" on a 24-hour one, where a
+  // Axis ticks read "4 am" on a 12-hour clock and "04:00" on a 24-hour one, where a
   // bare "04" would look like a count rather than a time. One formatter for all 48.
   const tickFormat = new Intl.DateTimeFormat('en-US', clock === '24h'
     ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: zone }
@@ -837,7 +836,7 @@ export const getSkyData = (date = new Date(), lat = 0, lon = 0, timeZone = null,
       compass: compassDir,
       isDaylight: sunAltDeg > 0,
       isMoonUp: altDeg > 0,
-      label: tickFormat.format(pointDate)
+      label: writeTime(tickFormat, pointDate)
     };
 
     altitudePoints.push(point);

@@ -43,8 +43,8 @@ describe('the machine timezone must not leak into results', () => {
   it('renders Greenwich sunrise and sunset on the location clock, not the viewer clock', () => {
     const sky = getSkyData(new Date('2026-09-19T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
     // Before the fix these read 11:12 AM and 11:38 PM on an Asia/Colombo machine
-    expect(sky.sunrise).toBe('06:41 AM');
-    expect(sky.sunset).toBe('07:05 PM');
+    expect(sky.sunrise).toBe('6:41 am');
+    expect(sky.sunset).toBe('7:05 pm');
   });
 
   it('anchors the charted day to local midnight at the location', () => {
@@ -52,7 +52,7 @@ describe('the machine timezone must not leak into results', () => {
     // 19 Sep 2026 00:00 BST is 18 Sep 23:00 UTC
     expect(new Date(sky.dayStartMs).toISOString()).toBe('2026-09-18T23:00:00.000Z');
     expect(sky.altitudePoints).toHaveLength(48);
-    expect(sky.altitudePoints[0].label).toBe('12 AM');
+    expect(sky.altitudePoints[0].label).toBe('12 am');
   });
 
   it('names the timezone it used', () => {
@@ -70,9 +70,9 @@ describe('the machine timezone must not leak into results', () => {
     const newYork = getNextMajorPhases(from, 'America/New_York').nextFullMoon;
 
     expect(london.date.getTime()).toBe(tokyo.date.getTime());
-    expect(london.formatted).toBe('Sep 26, 5:50 PM');
-    expect(tokyo.formatted).toBe('Sep 27, 1:50 AM');
-    expect(newYork.formatted).toBe('Sep 26, 12:50 PM');
+    expect(london.formatted).toBe('Sep 26, 5:50 pm');
+    expect(tokyo.formatted).toBe('Sep 27, 1:50 am');
+    expect(newYork.formatted).toBe('Sep 26, 12:50 pm');
   });
 
   it('resolves local midnight across DST, half-hour offsets and the dateline', () => {
@@ -106,14 +106,14 @@ describe('the viewer chooses the clock', () => {
   });
 
   it('labels the chart axis to match', () => {
-    expect(ticks(sky('12h'))).toEqual(['12 AM', '4 AM', '8 AM', '12 PM', '4 PM', '8 PM']);
+    expect(ticks(sky('12h'))).toEqual(['12 am', '4 am', '8 am', '12 pm', '4 pm', '8 pm']);
     expect(ticks(sky('24h'))).toEqual(['00:00', '04:00', '08:00', '12:00', '16:00', '20:00']);
   });
 
   it('reads midnight as 00:00, never 24:00', () => {
     const midnight = new Date('2026-09-10T00:00:00Z');
     expect(formatTimeString(midnight, 'UTC', '24h')).toBe('00:00');
-    expect(formatTimeString(midnight, 'UTC', '12h')).toBe('12:00 AM');
+    expect(formatTimeString(midnight, 'UTC', '12h')).toBe('12:00 am');
   });
 
   it('stamps the next phase on the chosen clock, through getLunarDetails as well', () => {
@@ -125,13 +125,13 @@ describe('the viewer chooses the clock', () => {
 
   it('gives the peak its half hour instead of rounding it to the hour', () => {
     // The Moon culminates between samples at 19:30; this used to read "7 PM"
-    expect(sky('12h').peakTime).toBe('7:30 PM');
+    expect(sky('12h').peakTime).toBe('7:30 pm');
     expect(sky('24h').peakTime).toBe('19:30');
   });
 
   it('stays on 12-hour when no clock is given', () => {
-    expect(getSkyData(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz).sunrise).toBe('06:41 AM');
-    expect(getNextMajorPhases(WHEN, 'Europe/London').nextFullMoon.formatted).toBe('Sep 26, 5:50 PM');
+    expect(getSkyData(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz).sunrise).toBe('6:41 am');
+    expect(getNextMajorPhases(WHEN, 'Europe/London').nextFullMoon.formatted).toBe('Sep 26, 5:50 pm');
   });
 });
 
@@ -469,7 +469,7 @@ describe('robustness', () => {
     const polar = getSkyData(new Date('2026-06-21T12:00:00Z'), 78.22, 15.65, 'Arctic/Longyearbyen');
     for (const value of [polar.moonrise, polar.moonset]) {
       expect(typeof value).toBe('string');
-      expect(value).toMatch(/^(--:--|\d{2}:\d{2} [AP]M)$/);
+      expect(value).toMatch(/^(--:--|\d{1,2}:\d{2} [ap]m)$/);
     }
   });
 
