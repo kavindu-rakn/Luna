@@ -140,13 +140,14 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
       <button
         ref={triggerRef}
         type="button"
-        className={`glass-button location-trigger${isOpen ? ' is-open' : ''}`}
+        className={`date-place${isOpen ? ' is-open' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        aria-label={`Observing from ${location?.name || 'an unset location'}. Change location.`}
+        title="Change the place"
       >
-        <Icon name="location" size={18} />
+        {/* Named by the place it shows, so voice control users can say what they see */}
+        <Icon name="location" size={16} />
         <span className="location-trigger-label">
           {location?.name || 'Set location'}
         </span>

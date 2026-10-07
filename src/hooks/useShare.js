@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import Icon from './icons/Icon';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { buildShareUrl } from '../utils/shareUrl';
 
 // The async Clipboard API needs a secure context and a user gesture, and some
@@ -23,7 +22,10 @@ const copyWithSelection = (text) => {
   return ok;
 };
 
-const ShareButton = ({ date, location }) => {
+// Sharing a link to the view on screen: the native share sheet on touch devices,
+// the clipboard everywhere else. status says how the last copy went, for the toast
+// (src/components/ShareToast.jsx); it returns to idle after a moment.
+export const useShare = (date, location) => {
   const [status, setStatus] = useState('idle'); // idle | copied | failed
   const resetTimer = useRef(null);
 
@@ -58,43 +60,5 @@ const ShareButton = ({ date, location }) => {
     }
   }, [date, location, flash]);
 
-  const label = status === 'copied'
-    ? 'Link copied'
-    : status === 'failed'
-      ? 'Could not copy the link'
-      : 'Share a link to this view';
-
-  return (
-    <>
-      <button
-        type="button"
-        className={`glass-button icon-button share-trigger${status === 'idle' ? '' : ` is-${status}`}`}
-        onClick={share}
-        aria-label={label}
-        title={label}
-      >
-        <Icon name={status === 'copied' ? 'check' : status === 'failed' ? 'alert' : 'share'} />
-      </button>
-
-      {/* The tick on the button sits right under the cursor that clicked it, so say
-          it where it can be seen too. The same element is the live region that
-          announces it, and it stays mounted so a screen reader hears each change. */}
-      <div className={`share-toast${status === 'idle' ? '' : ' is-visible'}`} role="status" aria-live="polite">
-        {status === 'copied' && (
-          <>
-            <Icon name="check" size={18} />
-            <span>Link copied to clipboard</span>
-          </>
-        )}
-        {status === 'failed' && (
-          <>
-            <Icon name="alert" size={18} />
-            <span>Could not copy the link</span>
-          </>
-        )}
-      </div>
-    </>
-  );
+  return { share, status };
 };
-
-export default ShareButton;
