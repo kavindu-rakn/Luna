@@ -28,3 +28,6 @@ dist-ssr
 
 # NASA source maps for scripts/textures (about 95 MB); fetched by the script, never committed
 scripts/textures/source/
+
+# CDS star and constellation catalogues for scripts/sky (about 600 KB); fetched by the script, never committed
+scripts/sky/source/

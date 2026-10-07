@@ -115,11 +115,43 @@ textarea {
 .vignette {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: -2;
   pointer-events: none;
   background:
     linear-gradient(180deg, rgba(3, 6, 12, 0.35), transparent 22%, transparent 76%, rgba(3, 6, 12, 0.55)),
     radial-gradient(ellipse at center, transparent 52%, rgba(3, 6, 12, 0.38) 100%);
+}
+
+/* The sky: the real stars around the Moon and the 3D Moon itself, drawn by the
+   scene on one canvas that covers the screen (src/scene/scene.js). Above the
+   nebula and vignette, below the whole interface, and never in the way of a click:
+   drags on the Moon start on .moon-hit, over the Moon's area. */
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.sky > canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Transparent until the scene's first frame is drawn, then faded in over the flat
+   Moon, stars and all */
+.sky-scene,
+.sky-flat {
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-observe);
+}
+
+.sky-scene.is-ready,
+.sky-flat.is-drawn {
+  opacity: 1;
 }
 
 /* Typography Classes */
@@ -2219,20 +2251,17 @@ h1, h2, h3, h4 {
   transition: opacity 0.4s ease;
 }
 
-@supports not (width: 1cqh) {
-  .moon-glow {
-    --glow-size: calc(min(42vh, 360px) * 1.9);
-  }
-}
-
-/* The 3D Moon stays transparent until its texture is drawn, then fades in */
-.moon-3d {
+/* The 3D scene draws the same glow in its own sky, where it can drift with the
+   Moon; this one fades out as that one fades in */
+.moon-glow.is-hidden {
   opacity: 0;
   transition: opacity 0.5s var(--ease-observe);
 }
 
-.moon-3d.is-ready {
-  opacity: 1;
+@supports not (width: 1cqh) {
+  .moon-glow {
+    --glow-size: calc(min(42vh, 360px) * 1.9);
+  }
 }
 
 /* Moon Viz Wrapper */
@@ -2257,10 +2286,10 @@ h1, h2, h3, h4 {
   min-height: 0;
 }
 
-.moon-canvas {
-  width: 100%;
-  height: 100%;
-  position: relative;
+/* Where drags on the Moon start; the Moon is drawn on the sky behind */
+.moon-hit {
+  position: absolute;
+  inset: 0;
   z-index: 1;
   /* One finger on the Moon turns the Moon. Without this, Android Chrome claimed
      the swipe as a page pan a few pixels in and cancelled the drag, so a full

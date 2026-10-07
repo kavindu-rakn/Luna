@@ -8,15 +8,16 @@
 // 'fallback' reaches the page and the flat Moon stays. Features are detected,
 // never browser versions.
 
-export const startScene = ({ canvas, width, height, dpr, reducedMotion, textureBase, view, onEvent, replaceCanvas }) => {
+export const startScene = ({ canvas, width, height, dpr, moon, reducedMotion, textureBase, skyBase, view, onEvent, replaceCanvas }) => {
   let disposed = false;
   let worker = null;
   let scene = null;
   let route = null;
   // Where messages go once a scene is starting or running. Until then only the
-  // latest view and size are kept, and the scene starts from them.
+  // latest view, layout and motion preference are kept, and the scene starts
+  // from them.
   let deliver = null;
-  const state = { width, height, dpr, reducedMotion, textureBase, view };
+  const state = { width, height, dpr, moon, reducedMotion, textureBase, skyBase, view };
 
   const send = (type, data = {}) => {
     if (type === 'setView') state.view = data.view;

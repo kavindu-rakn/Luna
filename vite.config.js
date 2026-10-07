@@ -157,12 +157,12 @@ export default defineConfig({
       includeManifestIcons: false,
       workbox: {
         // Everything Luna needs is static and computed on the device, so the app,
-        // the 3D engine, its texture decoder and the 2K Moon textures are
-        // precached: the Moon should still render on a hillside with no signal.
-        // Most of that is nearly free, since the page downloaded it moments earlier
-        // and the install is served from the HTTP cache. woff2 only; every browser
-        // with service workers reads it.
-        globPatterns: ['**/*.{js,css,html,woff2,png,jpg,webmanifest,wasm,ktx2}'],
+        // the 3D engine, its texture decoder, the 2K Moon textures and the star
+        // catalogue (30 KB) are precached: the Moon and its sky should still render
+        // on a hillside with no signal. Most of that is nearly free, since the page
+        // downloaded it moments earlier and the install is served from the HTTP
+        // cache. woff2 only; every browser with service workers reads it.
+        globPatterns: ['**/*.{js,css,html,woff2,png,jpg,webmanifest,wasm,ktx2,bin}'],
         // The first cut precached 3.1 MB, much of it never used by the page at all.
         // These are left out rather than forced onto a first visit over mobile data:
         globIgnores: [

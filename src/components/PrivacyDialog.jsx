@@ -67,9 +67,9 @@ const PrivacyDialog = ({ isOpen, onClose }) => {
 
       <Section title="Kept on this device">
         <p>
-          Your chosen place, your saved places, your clock and distance settings, and the name of
-          the last place found with Use my location. They stay in this browser and are never sent
-          anywhere. Luna also keeps a copy of its own files so that it works offline.
+          Your chosen place, your saved places, your clock and distance settings, whether Tilt to
+          look around is on, and the name of the last place found with Use my location. They stay
+          in this browser and are never sent anywhere. Luna also keeps a copy of its own files so that it works offline.
         </p>
         <div className="privacy-actions">
           <button
@@ -104,9 +104,10 @@ const PrivacyDialog = ({ isOpen, onClose }) => {
 
       <Section title="Motion">
         <p>
-          On a phone the stars drift as you tilt it, read from the motion sensor. On an iPhone
-          Luna asks first. The readings move the stars and nothing else: they are never stored
-          or sent.
+          On a phone the sky and the Moon shift slightly as you tilt it, read from the motion
+          sensor. <strong>Tilt to look around</strong> turns this off; on an iPhone it starts only
+          when you turn it on, and iOS asks first. The readings move the sky and nothing else:
+          they are never stored or sent.
         </p>
       </Section>
 

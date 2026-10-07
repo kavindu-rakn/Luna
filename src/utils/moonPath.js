@@ -64,17 +64,19 @@ export const shadePhases = (phase) => {
 export const earthshine = (phase) => ((1 + Math.cos(phase * 2 * Math.PI)) / 2) ** 3;
 
 // The glow off the Moon's lit limb (decision F6): a soft halo, strongest at full,
-// gathered on the bright limb's side while the Moon is thin. It is drawn by the
-// page behind both Moons (.moon-glow in index.css), so the canvas can't crop it
-// and the flat Moon has it from the first frame. Returns its CSS variables: the
-// strength, and how far the halo's centre leans towards the bright limb, as a
-// share of the glow's box. Mirrored in src/shell/paintNow.js.
+// gathered on the bright limb's side while the Moon is thin. The page draws it
+// behind the flat Moon (.moon-glow in index.css), from the first frame; the 3D
+// scene draws the same gradient in its own sky (src/scene/sky.js), where it can
+// drift with the Moon. Returns its CSS variables: the strength, and how far the
+// halo's centre leans towards the bright limb, as a share of the glow's box.
+// Mirrored in src/shell/paintNow.js.
 export const GLOW_MAX = 0.2;
+// In the box's own units, which span 3.8 Moon radii: up to a third of a radius
+export const GLOW_LEAN = 0.33 / 3.8;
 
 export const glowStyle = ({ litPhase, limbAngle }) => {
   const lit = (1 - Math.cos(litPhase * 2 * Math.PI)) / 2;
-  // In the box's own units, which span 3.8 Moon radii: up to a third of a radius
-  const lean = (0.33 / 3.8) * (1 - lit) * 100;
+  const lean = GLOW_LEAN * (1 - lit) * 100;
   const a = (limbAngle * Math.PI) / 180;
   return {
     '--glow': (GLOW_MAX * lit ** 1.5).toFixed(3),
