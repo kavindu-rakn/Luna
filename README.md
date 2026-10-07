@@ -96,8 +96,10 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 <tr>
 <td width="50%" valign="top">
 
-### Custom Dark Glass Calendar
-* **Glassmorphic Month Matrix:** Non-native monthly calendar modal for instant date jumping.
+### A Quiet Stage
+* **Nothing but the Moon:** The header holds the wordmark, the date block and one menu. The date opens the calendar, the place beneath it opens the location picker, and five controls step by phase and by day, with ⊙ lit in amber while the view follows the clock. The phase name opens Deep Dive. After a few seconds untouched, everything but the Moon, the sky and the phase name fades away.
+* **One Menu:** Deep Dive, sharing, *Tilt to look around* on phones, keyboard shortcuts where there is a keyboard, privacy, and the 12/24-hour and km/mile settings.
+* **Calendar:** A monthly calendar, anchored to the date, for instant date jumping.
 * **Month & Year Pickers:** Go straight to any month from 1900 to 2100, or type a year to jump to it.
 * **A Moon on Every Day:** Each day shows its phase at local noon, the days of New, First Quarter, Full and Last Quarter Moons are ringed, and the month's exact phase times sit below, each one click from its precise moment.
 * **Fixed Six-Week Grid:** The month matrix always renders six rows, so the modal keeps one height whether a month spans four rows or six.
@@ -218,7 +220,7 @@ Luna has no accounts, cookies, analytics or ads, and every calculation runs on t
 
 * **Your location** is asked for only when you press *Use my location*, and is rounded to about a kilometre the moment it arrives. The exact position is never stored, sent or put in a link. The rounded position is sent to OpenStreetMap's Nominatim to name the place.
 * **Place search** sends what you type to Nominatim, which, like any web service, sees your IP address.
-* **Motion:** on a phone the sky drifts with its tilt, read from the motion sensor; the readings move the sky and are never stored or sent. On an iPhone it starts only from *Tilt to look around*, and iOS asks first.
+* **Motion:** on a phone the sky drifts with its tilt, read from the motion sensor; the readings move the sky and are never stored or sent. On an iPhone it starts only from *Tilt to look around*, in the menu, and iOS asks first.
 * **Stored on the device:** your chosen place, saved places, clock and distance settings, whether tilt is on, and the name of the last place located. Older versions also kept a name for every place ever located; that history is deleted on the first visit after updating.
 * **Share links** carry the date, the place name and coordinates rounded to about a kilometre.
 

@@ -274,8 +274,8 @@ when the page opens.
 | 1a | The renderer and the true Moon: scene worker with main-thread fallback, fiber and drei removed, libration, tilt and lighting from new astronomy, drag offset and reset, SVG orbit | Done: PR #55 merged 6 Oct 2026 |
 | 1b | The photographed Moon: NASA textures (KTX2, 2K/4K, normal map), lunar shader, glow, quality tiers | Done: PR #57 merged 7 Oct 2026 |
 | 1c | The observed sky: real stars around the Moon, planets, depth layers, scintillation, tilt | Done: PR #58 merged 7 Oct 2026 |
-| 2a | The instrument: tokens, hairline controls with the light bloom, the custom icon set, copy | In review |
-| 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive, idle fade | Not started |
+| 2a | The instrument: tokens, hairline controls with the light bloom, the custom icon set, copy | Done: PR #60 merged 7 Oct 2026 |
+| 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive, idle fade | In review |
 | 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Not started |
 | 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
@@ -410,3 +410,23 @@ when the page opens.
   12-hour times read "6:40 pm" (K2), 24-hour "18:40". Cormorant now only appears at 24 px and up,
   except the date pill, which 2b redraws. "Drag the slider" stays, in sentence case, until
   Phase 4's first-visit nudge replaces it. The live timeline thumb pulses in `--now`.
+- 2b rebuilds the header (D2): the wordmark, the date block in the middle, one menu on the
+  right. The crescent is redrawn as vectors fitted to the old 128 px mark: a dark disc, its
+  rim, and the crescent cut from one circle by another, its horns reaching just past the rim
+  (B1). The glow is a CSS drop shadow, so the same mark can be drawn plain.
+- The date block (D4, D5): the date in Cormorant at 24 px opens the calendar; the place sits
+  beneath it as a quiet caption that opens the location picker, anchored to it; the five
+  controls are one hairline capsule, ⊙ lit in `--now` while the view follows the clock and
+  otherwise drawn like the other four. On phones it stays at the top under the wordmark and
+  menu until Phase 4's bottom dock; its caption's touch target is 36 px there, short of 44,
+  for that interim, so the Moon keeps its size.
+- The menu is a disclosure, not an ARIA menu, since it holds actions, a switch and two radio
+  groups. It holds Deep Dive, Share, Tilt to look around (touch screens, motion allowed),
+  Keyboard shortcuts (devices with a keyboard), Privacy, and the clock and distance settings
+  (E4), which moved out of Deep Dive. Sound joins in 2c, About in Phase 5.
+- The phase name is a real button that opens Deep Dive, drawn as text with a hairline
+  underline on hover and focus.
+- Idle fade (D3): after 4 s with no pointer, touch, scroll or key, the header and the timeline
+  fade over 1.2 s and come back in 0.2 s. Never while a panel or popover is open, or while
+  something has keyboard focus or a text field is in use; faded controls stay in the
+  accessibility tree and only stop taking clicks.
