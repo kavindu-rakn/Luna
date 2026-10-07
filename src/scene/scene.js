@@ -24,7 +24,6 @@ import {
   WebGLRenderer
 } from 'three';
 import { createLunarMaterial } from './lunarMaterial.js';
-import { createGlow } from './glow.js';
 import { chooseTier, createTextureLoader, PIXEL_RATIO_CAP } from './textures.js';
 
 // The camera stands far off with a narrow lens. From Earth the Moon is seen as good
@@ -158,8 +157,6 @@ export const createScene = async (canvas, options) => {
   material.uniforms.ambient.value.copy(AMBIENT);
   const moon = new Mesh(moonGeometry(), material);
   scene.add(moon);
-  const glow = createGlow();
-  scene.add(glow.mesh);
 
   // The true orientation of the moment, the photograph's (no libration), and the
   // drag the viewer has added on top
@@ -198,8 +195,6 @@ export const createScene = async (canvas, options) => {
     const outline = Math.min(OUTLINE_OF_HEIGHT * VISIBLE_HEIGHT, OUTLINE_OF_WIDTH * visibleWidth) / 2;
     const radius = outline / Math.sqrt(1 + (outline / CAMERA_Z) ** 2);
     moon.scale.setScalar(radius);
-    glow.mesh.scale.setScalar(radius);
-    glow.mesh.position.z = -1.05 * radius;
   };
 
   const applyView = (v) => {
@@ -207,7 +202,6 @@ export const createScene = async (canvas, options) => {
     meanTurn.copy(quaternionFromRows(v.meanBodyToView));
     sunDirection.fromArray(v.sunView).normalize();
     material.uniforms.sunDirection.value.copy(sunDirection);
-    glow.setSun(sunDirection);
     // Earth's lit fraction seen from the Moon is the Moon's unlit fraction seen from
     // Earth: 1 at New Moon, 0 at Full. sunView's z is the cosine of the phase angle.
     const unlit = 1 - (1 + sunDirection.z) / 2;
@@ -431,7 +425,6 @@ export const createScene = async (canvas, options) => {
       material.uniforms.map.value?.dispose();
       material.uniforms.normalMap.value?.dispose();
       material.dispose();
-      glow.dispose();
       textures.dispose();
       renderer.dispose();
     }

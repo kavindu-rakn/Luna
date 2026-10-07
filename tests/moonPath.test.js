@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  litPath, shadePhases, earthshine, SHADE_STEPS, SHADE_HEADROOM, SHADE_TOE
+  litPath, shadePhases, earthshine, glowStyle, GLOW_MAX, SHADE_STEPS, SHADE_HEADROOM, SHADE_TOE
 } from '../src/utils/moonPath';
 import { getMoonView } from '../src/utils/moonView';
 import { paintNow } from '../src/shell/paintNow';
@@ -107,12 +107,29 @@ describe('earthshine', () => {
   });
 });
 
+describe('glowStyle', () => {
+  it('glows strongest at full and not at all at new', () => {
+    expect(Number(glowStyle({ litPhase: 0.5, limbAngle: 0 })['--glow'])).toBeCloseTo(GLOW_MAX, 6);
+    expect(Number(glowStyle({ litPhase: 0, limbAngle: 0 })['--glow'])).toBe(0);
+  });
+
+  it('leans the halo towards the bright limb while the Moon is thin', () => {
+    // Bright limb on the right (270° anticlockwise from up): the halo shifts right
+    const crescent = glowStyle({ litPhase: 0.1, limbAngle: 270 });
+    expect(parseFloat(crescent['--glow-x'])).toBeGreaterThan(5);
+    expect(Math.abs(parseFloat(crescent['--glow-y']))).toBeLessThan(0.01);
+    // A full Moon has nothing to lean towards
+    expect(Math.abs(parseFloat(glowStyle({ litPhase: 0.5, limbAngle: 270 })['--glow-x']))).toBeLessThan(0.01);
+  });
+});
+
 describe('the shell script', () => {
   const element = () => ({ setAttribute(name, value) { this[name] = value; } });
   const paint = (search) => {
     const svg = { getAttribute: () => '200' };
     const paths = Array.from({ length: SHADE_STEPS }, () => ({ ...element(), ownerSVGElement: svg }));
-    const parts = { use: element(), 'mask g': element(), image: element() };
+    const glow = { vars: {}, style: { setProperty(name, value) { glow.vars[name] = value; } } };
+    const parts = { use: element(), 'mask g': element(), image: element(), '.moon-glow': glow };
     const doc = {
       querySelector: (selector) => Object.entries(parts).find(([key]) => selector.endsWith(key))?.[1] ?? null,
       querySelectorAll: (selector) => (selector.endsWith('path') ? paths : [])
@@ -130,6 +147,7 @@ describe('the shell script', () => {
     expect(parts.use.opacity).toBe(earthshine(view.litPhase).toFixed(4));
     expect(angleBetween(angle(parts['mask g'].transform), 270 - view.limbAngle)).toBeLessThan(0.01);
     expect(angleBetween(angle(parts.image.transform), -view.poleAngle)).toBeLessThan(0.01);
+    expect(parts['.moon-glow'].vars).toEqual(glowStyle(view));
   });
 
   it('turns it within a degree or so of where the app will', () => {

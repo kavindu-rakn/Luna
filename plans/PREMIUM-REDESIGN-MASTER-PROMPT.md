@@ -559,7 +559,9 @@ Built in three pull requests, each shippable:
   browsers (the loader spawns its own workers); if not, transcode in the scene worker directly.
 - The lunar shader (F2): Lommel-Seeliger with a little Lambert, the normal map, a small
   opposition surge near full, faint earthshine (F3), tone mapping, correct colour space.
-- Glow (F6): an analytic limb glow on all tiers; a real bloom pass only on high.
+- Glow (F6): a soft halo off the lit limb, drawn by the page behind the Moon (a CSS gradient),
+  so the canvas can't crop it and the flat Moon has it from the first frame. No bloom pass: the
+  owner dropped it on 7 Oct 2026 as work and cost for no visible gain.
 - New astronomy with tests (§2.2): optical libration l, b; axis position angle P; subsolar
   selenographic point; parallactic angle q; the Moon's topocentric RA/Dec for the sky field.
 - Orientation (F4), libration (F5) and the drag offset with double-click reset (F7).

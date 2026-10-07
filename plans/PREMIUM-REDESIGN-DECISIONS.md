@@ -337,6 +337,16 @@ when the page opens.
   terminator; 20-35° in, the 3D Moon's relief shadows darken rough ground by about a fifth,
   which a photograph can't follow for every Sun direction, so the relief fades in with the 3D
   Moon. Its earthshine is fitted to the shader's own maths to within two levels in 255.
-- F6's glow is an analytic halo on every tier. The brief's separate bloom pass for the high tier
-  is not built: it needs a second render target over a transparent canvas, and the halo already
-  gives the effect. Left for the owner to decide.
+- F6's glow first ran inside the canvas, which is barely taller than the Moon, so its top and
+  bottom were cropped into a light rectangle, worst at full (the owner's phone check, 7 Oct 2026).
+  It is now a CSS gradient behind both Moons, which the canvas can't crop and the flat Moon
+  shares from the first frame. The owner dropped the brief's bloom pass the same day.
+- The owner asked why the full and new Moons look flat while other phases show sharp relief.
+  That is the real Moon: at full the Sun is behind the viewer and every slope it lights faces the
+  viewer too, so there are no shadows; earthshine, which lights the new Moon, comes from Earth,
+  behind the viewer, for the same reason. A "relief floor" was tried (relief lit from 12° or 20°
+  off the viewer): it added almost nothing to the face and piled black shadows along one limb,
+  so the shader stays physical.
+- Earthshine shows on crescents but not gibbous Moons, as F3 decided and as on the real Moon:
+  seen from a gibbous Moon, Earth is a thin crescent, and its light is a sliver of what reaches a
+  young crescent Moon from a nearly full Earth.

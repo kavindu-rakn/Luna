@@ -62,3 +62,23 @@ export const shadePhases = (phase) => {
 // and shows only around thin crescents (F3). 1 at New Moon, 0 at Full. Mirrored in
 // src/shell/paintNow.js.
 export const earthshine = (phase) => ((1 + Math.cos(phase * 2 * Math.PI)) / 2) ** 3;
+
+// The glow off the Moon's lit limb (decision F6): a soft halo, strongest at full,
+// gathered on the bright limb's side while the Moon is thin. It is drawn by the
+// page behind both Moons (.moon-glow in index.css), so the canvas can't crop it
+// and the flat Moon has it from the first frame. Returns its CSS variables: the
+// strength, and how far the halo's centre leans towards the bright limb, as a
+// share of the glow's box. Mirrored in src/shell/paintNow.js.
+export const GLOW_MAX = 0.2;
+
+export const glowStyle = ({ litPhase, limbAngle }) => {
+  const lit = (1 - Math.cos(litPhase * 2 * Math.PI)) / 2;
+  // In the box's own units, which span 3.8 Moon radii: up to a third of a radius
+  const lean = (0.33 / 3.8) * (1 - lit) * 100;
+  const a = (limbAngle * Math.PI) / 180;
+  return {
+    '--glow': (GLOW_MAX * lit ** 1.5).toFixed(3),
+    '--glow-x': `${(-Math.sin(a) * lean).toFixed(2)}%`,
+    '--glow-y': `${(-Math.cos(a) * lean).toFixed(2)}%`
+  };
+};

@@ -2192,6 +2192,39 @@ h1, h2, h3, h4 {
   transition: opacity 0.45s ease 0.3s, visibility 0s linear 0.75s;
 }
 
+/* The glow off the Moon's lit limb (F6), behind both Moons, centred on them and
+   3.8 Moon radii across. Its shape follows two falloffs from the limb, a tight rim
+   over 7% of a radius and a wide one over 35%; glowStyle in src/utils/moonPath.js
+   sets its strength and leans it towards the bright limb. The limb sits at 52.6%
+   of the gradient's radius. */
+.moon-glow {
+  --glow-size: calc(min(92cqh, 83cqw) * 1.9);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--glow-size);
+  height: var(--glow-size);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: var(--glow, 0);
+  background: radial-gradient(circle closest-side at calc(50% + var(--glow-x, 0%)) calc(50% + var(--glow-y, 0%)),
+    rgb(215 222 244) 52%,
+    rgb(215 222 244 / 0.77) 54%,
+    rgb(215 222 244 / 0.47) 57%,
+    rgb(215 222 244 / 0.26) 62%,
+    rgb(215 222 244 / 0.14) 70%,
+    rgb(215 222 244 / 0.08) 80%,
+    rgb(215 222 244 / 0.035) 90%,
+    rgb(215 222 244 / 0) 100%);
+  transition: opacity 0.4s ease;
+}
+
+@supports not (width: 1cqh) {
+  .moon-glow {
+    --glow-size: calc(min(42vh, 360px) * 1.9);
+  }
+}
+
 /* The 3D Moon stays transparent until its texture is drawn, then fades in */
 .moon-3d {
   opacity: 0;

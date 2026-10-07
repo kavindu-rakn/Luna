@@ -7,6 +7,7 @@ import SceneBoundary from './components/SceneBoundary';
 import MoonDisc from './components/MoonDisc';
 import { hasWebGLApi } from './utils/webgl';
 import { getMoonView } from './utils/moonView';
+import { glowStyle } from './utils/moonPath';
 
 // The 3D Moon's component starts the scene; three.js itself loads inside the
 // scene's worker (or on the main thread where workers can't draw WebGL). Even the
@@ -22,6 +23,9 @@ const DeepDiveContent = lazy(loadDeepDive);
 // A photographic flat Moon at the right phase. It is what the prerendered page shows
 // first, it holds the stage while the 3D Moon loads, and it stays if WebGL is
 // unavailable, so the view is never simply empty. The 3D Moon fades in over it.
+// The glow off the lit limb, behind whichever Moon is showing (see glowStyle)
+const MoonGlow = ({ view }) => <div className="moon-glow" aria-hidden="true" style={glowStyle(view)} />;
+
 const MoonFallback = ({ view, hidden }) => (
   <div className={`moon-viz-wrapper moon-viz-fallback${hidden ? ' is-hidden' : ''}`} aria-hidden="true">
     <div className="moon-fallback-disc">
@@ -423,6 +427,7 @@ function App({ prerender = false }) {
             role="img"
             aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated`}
           >
+            <MoonGlow view={moonView} />
             <MoonFallback view={moonView} hidden={moonReady} />
             {hasWebGL && (
               <SceneBoundary name="Moon scene" onError={markFailed} fallback={null}>
