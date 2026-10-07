@@ -8,7 +8,7 @@
 // 'fallback' reaches the page and the flat Moon stays. Features are detected,
 // never browser versions.
 
-export const startScene = ({ canvas, width, height, dpr, reducedMotion, textureUrl, view, onEvent, replaceCanvas }) => {
+export const startScene = ({ canvas, width, height, dpr, reducedMotion, textureBase, view, onEvent, replaceCanvas }) => {
   let disposed = false;
   let worker = null;
   let scene = null;
@@ -16,7 +16,7 @@ export const startScene = ({ canvas, width, height, dpr, reducedMotion, textureU
   // Where messages go once a scene is starting or running. Until then only the
   // latest view and size are kept, and the scene starts from them.
   let deliver = null;
-  const state = { width, height, dpr, reducedMotion, textureUrl, view };
+  const state = { width, height, dpr, reducedMotion, textureBase, view };
 
   const send = (type, data = {}) => {
     if (type === 'setView') state.view = data.view;
@@ -30,7 +30,7 @@ export const startScene = ({ canvas, width, height, dpr, reducedMotion, textureU
     try {
       const { createScene } = await import('./scene.js');
       if (disposed) return;
-      const started = await createScene(target, { ...state, emit: onEvent });
+      const started = await createScene(target, { ...state, route: 'main', emit: onEvent });
       if (disposed) {
         started.dispose();
         return;
@@ -66,7 +66,7 @@ export const startScene = ({ canvas, width, height, dpr, reducedMotion, textureU
         event.preventDefault?.();
         fallBack();
       };
-      worker.postMessage({ type: 'init', canvas: offscreen, ...state }, [offscreen]);
+      worker.postMessage({ type: 'init', canvas: offscreen, ...state, route: 'worker' }, [offscreen]);
       // The worker holds anything sent while its scene starts
       deliver = (type, data) => worker?.postMessage({ type, ...data });
     } catch {

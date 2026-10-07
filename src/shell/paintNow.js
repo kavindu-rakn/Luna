@@ -133,8 +133,18 @@ export function paintNow(win, doc) {
   // with the bright limb on the right (src/utils/moonPath.js), turned to face the
   // Sun; and the photograph turned to the Moon's tilt
   var litPhase = view.litPhase;
+  // The glow behind both Moons, as glowStyle sets it
+  var glow = doc.querySelector('.moon-glow');
+  if (glow) {
+    var lit = (1 - Math.cos(litPhase * 2 * Math.PI)) / 2;
+    var lean = (0.33 / 3.8) * (1 - lit) * 100;
+    var limbRad = view.limbAngle * rad;
+    glow.style.setProperty('--glow', (0.2 * Math.pow(lit, 1.5)).toFixed(3));
+    glow.style.setProperty('--glow-x', (-Math.sin(limbRad) * lean).toFixed(2) + '%');
+    glow.style.setProperty('--glow-y', (-Math.cos(limbRad) * lean).toFixed(2) + '%');
+  }
   var night = doc.querySelector('.moon-viz-fallback svg use');
-  if (night) night.setAttribute('opacity', ((1 + Math.cos(litPhase * 2 * Math.PI)) / 2).toFixed(4));
+  if (night) night.setAttribute('opacity', Math.pow((1 + Math.cos(litPhase * 2 * Math.PI)) / 2, 3).toFixed(4));
   var turn = function (selector, angle) {
     var el = doc.querySelector(selector);
     if (el) el.setAttribute('transform', 'rotate(' + +angle.toFixed(2) + ' 100 100)');

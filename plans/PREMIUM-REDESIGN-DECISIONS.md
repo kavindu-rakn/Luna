@@ -271,8 +271,8 @@ when the page opens.
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Foundation: Vercel, measurement, static shell, no loader, fonts, GSAP after paint, audit bugs, render on demand | Done: PR #51 merged 6 Oct 2026; GitHub Pages forwards to Vercel |
-| 1a | The renderer and the true Moon: scene worker with main-thread fallback, fiber and drei removed, libration, tilt and lighting from new astronomy, drag offset and reset, SVG orbit | In review |
-| 1b | The photographed Moon: NASA textures (KTX2, 2K/4K, normal map), lunar shader, glow, quality tiers | Not started |
+| 1a | The renderer and the true Moon: scene worker with main-thread fallback, fiber and drei removed, libration, tilt and lighting from new astronomy, drag offset and reset, SVG orbit | Done: PR #55 merged 6 Oct 2026 |
+| 1b | The photographed Moon: NASA textures (KTX2, 2K/4K, normal map), lunar shader, glow, quality tiers | In review |
 | 1c | The observed sky: real stars around the Moon, depth layers, scintillation, tilt | Not started |
 | 2 | Design language: tokens, controls, icons, header and menu, cursor, sound engine, idle fade, copy | Not started |
 | 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
@@ -318,3 +318,35 @@ when the page opens.
     canvas now sets `touch-action: pinch-zoom` and captures the pointer, and the spin on
     release comes from speed, timed by the events themselves, so 120 Hz and 60 Hz flicks
     at the same speed leave the same spin.
+
+### Phase 1 notes
+
+- 1b's textures come from NASA SVS's CGI Moon Kit (svs.gsfc.nasa.gov/4720): the owner chose the
+  2025 colour map (`lroc_color_16bit_srgb_4k.tif`, 61.9 MB) over the 2019 one, with
+  `ldem_16_uint.tif` (33.2 MB) for relief. `scripts/textures/build.mjs` fetches them into a
+  git-ignored folder and writes the committed textures and the flat Moon's photograph.
+- The 2025 map is albedo only, brighter and in colour, with no shading baked in, where the old
+  texture had crater shadows painted on. Relief now comes from LOLA elevation through the normal
+  map, lit from the Sun's true direction: crisp along the terminator, gone at full.
+- Sizes: colour 410 KB (2K) and 1.5 MB (4K, large screens only), relief 663 KB. The relief was
+  compared on a quarter Moon's terminator: ETC1S with all three directions was 450 KB and soft;
+  UASTC was crisp at 1.9 MB; ETC1S with the two directions stored apart was nearly as crisp at
+  663 KB. The flat Moon's photograph is 20 KB, down from 27 KB, at 512 px.
+- The flat Moon's photograph is lit and tone-mapped as the 3D Moon lights a full Moon, and
+  matches it there within 4% along the disc. At other phases its stepped shading matches at the
+  terminator; 20-35° in, the 3D Moon's relief shadows darken rough ground by about a fifth,
+  which a photograph can't follow for every Sun direction, so the relief fades in with the 3D
+  Moon. Its earthshine is fitted to the shader's own maths to within two levels in 255.
+- F6's glow first ran inside the canvas, which is barely taller than the Moon, so its top and
+  bottom were cropped into a light rectangle, worst at full (the owner's phone check, 7 Oct 2026).
+  It is now a CSS gradient behind both Moons, which the canvas can't crop and the flat Moon
+  shares from the first frame. The owner dropped the brief's bloom pass the same day.
+- The owner asked why the full and new Moons look flat while other phases show sharp relief.
+  That is the real Moon: at full the Sun is behind the viewer and every slope it lights faces the
+  viewer too, so there are no shadows; earthshine, which lights the new Moon, comes from Earth,
+  behind the viewer, for the same reason. A "relief floor" was tried (relief lit from 12° or 20°
+  off the viewer): it added almost nothing to the face and piled black shadows along one limb,
+  so the shader stays physical.
+- Earthshine shows on crescents but not gibbous Moons, as F3 decided and as on the real Moon:
+  seen from a gibbous Moon, Earth is a thin crescent, and its light is a sliver of what reaches a
+  young crescent Moon from a nearly full Earth.

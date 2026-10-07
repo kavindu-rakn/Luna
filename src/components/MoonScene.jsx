@@ -15,7 +15,7 @@ const SETTLE_AFTER_MS = 700;
 const DOUBLE_TAP_MS = 320;
 const DOUBLE_TAP_PX = 30;
 
-const TEXTURE_PATH = `${import.meta.env.BASE_URL}assets/textures/moon_1024.jpg`;
+const TEXTURE_PATH = `${import.meta.env.BASE_URL}assets/textures/`;
 
 // Only what the scene draws from, so each message stays small
 const sceneView = (view) => ({ bodyToView: view.bodyToView, meanBodyToView: view.meanBodyToView, sunView: view.sunView });
@@ -23,7 +23,7 @@ const sceneView = (view) => ({ bodyToView: view.bodyToView, meanBodyToView: view
 // The 3D Moon. The scene itself runs in a worker where the browser allows (see
 // src/scene/client.js); this component owns the canvas, tells the scene what to
 // show, and forwards drags. It never loads three.js itself.
-const MoonScene = ({ view, fraction, isReady, onScene, onReady, onFail, onLost, onRotated }) => {
+const MoonScene = ({ view, isReady, onScene, onReady, onFail, onLost, onRotated }) => {
   const canvasRef = useRef(null);
   const sceneRef = useRef(null);
   const reducedMotion = usePrefersReducedMotion();
@@ -62,7 +62,7 @@ const MoonScene = ({ view, fraction, isReady, onScene, onReady, onFail, onLost, 
       height: box.height,
       dpr: window.devicePixelRatio || 1,
       reducedMotion: latest.current.reducedMotion,
-      textureUrl: new URL(TEXTURE_PATH, window.location.href).href,
+      textureBase: new URL(TEXTURE_PATH, window.location.href).href,
       view: sceneView(latest.current.view),
       onEvent: (type, data) => {
         if (type === 'firstFrame') {
@@ -159,24 +159,10 @@ const MoonScene = ({ view, fraction, isReady, onScene, onReady, onFail, onLost, 
     if (locate(event).onMoon) sceneRef.current?.send('reset');
   };
 
-  // The soft glow behind the Moon, larger on wide screens
-  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
-  useEffect(() => {
-    const media = window.matchMedia('(max-width: 768px)');
-    const onChange = (event) => setIsMobile(event.matches);
-    media.addEventListener('change', onChange);
-    return () => media.removeEventListener('change', onChange);
-  }, []);
-  const glowSize = isMobile ? '300px' : '440px';
-
   return (
     // Transparent until the scene has drawn its first frame, then faded in over
     // the flat Moon
     <div className={`moon-viz-wrapper moon-3d${isReady ? ' is-ready' : ''}`}>
-      <div
-        className="moon-aura"
-        style={{ width: glowSize, height: glowSize, opacity: Math.max(0.12, parseFloat(fraction) / 100) }}
-      />
       <div className="moon-canvas">
         <canvas
           key={canvasKey}

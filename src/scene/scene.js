@@ -4,30 +4,27 @@
 // See src/scene/client.js for how the page picks one.
 //
 // Nothing renders unless something changed: a new view, a drag and the spin that
-// follows it, a reset, the settle after the first frame, a resize. With software
-// WebGL (PageSpeed, blocklisted GPUs) a frame costs tens of milliseconds, so a
-// loop running at rest would hold its thread for the life of the page.
+// follows it, a reset, the settle after the first frame, a sharper texture
+// arriving, a resize. With software WebGL (PageSpeed, blocklisted GPUs) a frame
+// costs tens of milliseconds, so a loop running at rest would hold its thread for
+// the life of the page.
 
 import {
-  AmbientLight,
+  ACESFilmicToneMapping,
   BufferGeometry,
-  CanvasTexture,
-  DirectionalLight,
+  Color,
   Float32BufferAttribute,
-  LinearMipmapLinearFilter,
-  LinearFilter,
   Matrix4,
   Mesh,
-  MeshStandardMaterial,
   PerspectiveCamera,
   Quaternion,
   Scene,
-  ShaderChunk,
   SRGBColorSpace,
-  ACESFilmicToneMapping,
   Vector3,
   WebGLRenderer
 } from 'three';
+import { createLunarMaterial } from './lunarMaterial.js';
+import { chooseTier, createTextureLoader, PIXEL_RATIO_CAP } from './textures.js';
 
 // The camera stands far off with a narrow lens. From Earth the Moon is seen as good
 // as face-on, which is also how the flat Moon's photograph is projected; a near
@@ -46,29 +43,18 @@ const CAMERA_FOV = (2 * Math.atan(VISIBLE_HEIGHT / 2 / CAMERA_Z) * 180) / Math.P
 export const OUTLINE_OF_HEIGHT = 0.92;
 export const OUTLINE_OF_WIDTH = 0.83;
 
-// Earthshine: sunlight reflected off Earth onto the Moon's night side. Seen from
-// the Moon, Earth is full when the Moon is new, so the glow is strongest when the
-// Moon would otherwise be a black disc. Real earthshine is far fainter; this is
-// bright enough to show the surface, and cool enough to read as the unlit side.
-const EARTHSHINE_MAX = 0.55;
-const EARTHSHINE_COLOR = '#9fb0e0';
-const SUN_INTENSITY = 3.4;
-
-// The Moon's surface doesn't scatter light like matte paint. Lunar dust follows the
-// Lommel-Seeliger law, brightness ∝ cos i / (cos i + cos e), which keeps a crescent
-// as wide as its lit area and the full Moon evenly lit to its edge. This swaps it in
-// for direct light in three.js's standard material, scaled to match Lambert where
-// both face the viewer. Phase 1b's own lunar shader replaces it.
-const LAMBERT_DIRECT = 'vec3 irradiance = dotNL * directLight.color;';
-const lunarReflectance = (shader) => {
-  const chunk = ShaderChunk.lights_physical_pars_fragment;
-  if (!chunk.includes(LAMBERT_DIRECT)) return; // a three.js update moved it: keep Lambert
-  shader.fragmentShader = shader.fragmentShader.replace(
-    '#include <lights_physical_pars_fragment>',
-    chunk.replace(LAMBERT_DIRECT, `float dotNV = saturate( dot( geometryNormal, geometryViewDir ) );
-	vec3 irradiance = ( 2.0 * dotNL / max( dotNL + dotNV, 1e-4 ) ) * directLight.color;`)
-  );
-};
+// Sunlight, scaled for an albedo map that is brighter than the real Moon's dark
+// dust (it is made to look right, not to measure), then tone-mapped
+const SUN_INTENSITY = 0.62;
+// Earthshine: sunlight reflected off Earth onto the Moon's night side. Seen from the
+// Moon, Earth is full when the Moon is new, so the glow is strongest then. It is
+// kept faint and fades fast with the phase, so it shows only around thin crescents
+// (F3), cool enough to read as the unlit side.
+const EARTHSHINE_MAX = 0.16;
+const EARTHSHINE_FALLOFF = 3;
+const EARTHSHINE_COLOR = new Color('#9fb0e0');
+// A trace of light so no part of the sphere is ever pure black
+const AMBIENT = new Color('#7880ab').multiplyScalar(0.012);
 
 // Dragging turns the Moon this far per CSS pixel, on every device
 const DRAG_RADIANS_PER_PIXEL = 0.005;
@@ -82,6 +68,10 @@ const SPIN_STOP = 2e-4;
 // A finger that rests this long before lifting leaves no spin
 const REST_MS = 80;
 const RESET_MS = 650;
+// Frames that keep running slower than this (30 a second) lower the pixel ratio,
+// half a step at a time, down to 1
+const SLOW_FRAME_MS = 34;
+const SLOW_SAMPLE = 30;
 
 // The flat Moon's photograph shows the mean near side, with no libration. The 3D
 // Moon's first frame matches it, then, once the page has faded it in and says so
@@ -128,63 +118,6 @@ const moonGeometry = (rows = 128, cols = 192) => {
   return geometry;
 };
 
-const makeCanvas = (width, height) => {
-  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(width, height);
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  return canvas;
-};
-
-// The texture's top and bottom rows each squeeze into a single point at the
-// pole, where their detail turns into a starburst of spokes. Blend each pole's
-// band towards that row's average colour. Phase 1b moves this into the build.
-const blendPoles = (bitmap) => {
-  const width = bitmap.width;
-  const height = bitmap.height;
-  const canvas = makeCanvas(width, height);
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(bitmap, 0, 0);
-  const image = ctx.getImageData(0, 0, width, height);
-  const data = image.data;
-  const band = Math.round(height * (24 / 512));
-  for (const pole of ['north', 'south']) {
-    const edgeRow = pole === 'north' ? 0 : height - 1;
-    const mean = [0, 0, 0];
-    for (let x = 0; x < width; x++) {
-      for (let c = 0; c < 3; c++) mean[c] += data[(edgeRow * width + x) * 4 + c];
-    }
-    for (let c = 0; c < 3; c++) mean[c] /= width;
-    for (let i = 0; i < band; i++) {
-      const y = pole === 'north' ? i : height - 1 - i;
-      const f = (1 - i / band) ** 1.5;
-      for (let x = 0; x < width; x++) {
-        const o = (y * width + x) * 4;
-        for (let c = 0; c < 3; c++) data[o + c] = Math.round(data[o + c] * (1 - f) + mean[c] * f);
-      }
-    }
-  }
-  ctx.putImageData(image, 0, 0);
-  return canvas;
-};
-
-const loadMoonTexture = async (url) => {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`Moon texture: HTTP ${response.status}`);
-  const bitmap = await createImageBitmap(await response.blob());
-  const texture = new CanvasTexture(blendPoles(bitmap));
-  bitmap.close?.();
-  texture.colorSpace = SRGBColorSpace;
-  // Row 0 of the image is the north pole, at v = 0 in moonGeometry
-  texture.flipY = false;
-  texture.generateMipmaps = true;
-  texture.minFilter = LinearMipmapLinearFilter;
-  texture.magFilter = LinearFilter;
-  texture.anisotropy = 8;
-  texture.needsUpdate = true;
-  return texture;
-};
-
 const quaternionFromRows = (rows) => new Quaternion().setFromRotationMatrix(new Matrix4().set(
   rows[0], rows[1], rows[2], 0,
   rows[3], rows[4], rows[5], 0,
@@ -198,7 +131,7 @@ const nextFrame = typeof requestAnimationFrame === 'function'
 
 // Throws if no WebGL 2 context can be had on this canvas; the caller falls back
 export const createScene = async (canvas, options) => {
-  const { width, height, dpr = 1, textureUrl, view, emit = () => {} } = options;
+  const { width, height, dpr = 1, textureBase, view, route, emit = () => {} } = options;
   let reducedMotion = Boolean(options.reducedMotion);
 
   const attributes = { antialias: true, alpha: true, powerPreference: 'high-performance' };
@@ -214,18 +147,14 @@ export const createScene = async (canvas, options) => {
   const camera = new PerspectiveCamera(CAMERA_FOV, 1, 0.1, 1000);
   camera.position.set(0, 0, CAMERA_Z);
 
-  // A trace of ambient light so no part of the sphere is ever pure black
-  scene.add(new AmbientLight('#7880ab', 0.09));
-  // Earthshine arrives from Earth, where the viewer stands
-  const earthLight = new DirectionalLight(EARTHSHINE_COLOR, 0);
-  earthLight.position.set(0, 0, 10);
-  scene.add(earthLight);
-  const sunLight = new DirectionalLight('#ffffff', SUN_INTENSITY);
-  scene.add(sunLight);
-
-  const texture = await loadMoonTexture(textureUrl);
-  const material = new MeshStandardMaterial({ map: texture, roughness: 0.92, metalness: 0.04 });
-  material.onBeforeCompile = lunarReflectance;
+  // The tier decides the sharpest colour map and the pixel ratio; the 2K maps come
+  // first on every tier, so the first frame is never held up by the 4K one
+  const tier = chooseTier({ renderer, width, height, dpr, route });
+  const textures = createTextureLoader({ base: textureBase, renderer, ktx2: route !== 'main' });
+  const [color, relief] = await Promise.all([textures.load('color-2k'), textures.load('normal-2k')]);
+  const material = createLunarMaterial({ map: color, normalMap: relief });
+  material.uniforms.sunIntensity.value = SUN_INTENSITY;
+  material.uniforms.ambient.value.copy(AMBIENT);
   const moon = new Mesh(moonGeometry(), material);
   scene.add(moon);
 
@@ -247,11 +176,16 @@ export const createScene = async (canvas, options) => {
   let wasRotated = false;
   let pendingFrame = false;
   let lastFrameAt = 0;
+  let wasAnimating = false;
+  const pace = { frames: 0, total: 0 };
   let firstFrameSent = false;
   let disposed = false;
 
+  let ratioCap = PIXEL_RATIO_CAP[tier];
+  const size = { w: width, h: height, ratio: dpr };
   const setSize = (w, h, ratio) => {
-    renderer.setPixelRatio(Math.min(ratio || 1, 2));
+    Object.assign(size, { w, h, ratio });
+    renderer.setPixelRatio(Math.min(ratio || 1, ratioCap));
     renderer.setSize(Math.max(1, Math.round(w)), Math.max(1, Math.round(h)), false);
     camera.aspect = w / Math.max(1, h);
     camera.updateProjectionMatrix();
@@ -259,17 +193,19 @@ export const createScene = async (canvas, options) => {
     // flat Moon's edge
     const visibleWidth = VISIBLE_HEIGHT * camera.aspect;
     const outline = Math.min(OUTLINE_OF_HEIGHT * VISIBLE_HEIGHT, OUTLINE_OF_WIDTH * visibleWidth) / 2;
-    moon.scale.setScalar(outline / Math.sqrt(1 + (outline / CAMERA_Z) ** 2));
+    const radius = outline / Math.sqrt(1 + (outline / CAMERA_Z) ** 2);
+    moon.scale.setScalar(radius);
   };
 
   const applyView = (v) => {
     trueTurn.copy(quaternionFromRows(v.bodyToView));
     meanTurn.copy(quaternionFromRows(v.meanBodyToView));
     sunDirection.fromArray(v.sunView).normalize();
-    sunLight.position.copy(sunDirection).multiplyScalar(16);
+    material.uniforms.sunDirection.value.copy(sunDirection);
     // Earth's lit fraction seen from the Moon is the Moon's unlit fraction seen from
     // Earth: 1 at New Moon, 0 at Full. sunView's z is the cosine of the phase angle.
-    earthLight.intensity = EARTHSHINE_MAX * (1 - (1 + sunDirection.z) / 2);
+    const unlit = 1 - (1 + sunDirection.z) / 2;
+    material.uniforms.earthshine.value.copy(EARTHSHINE_COLOR).multiplyScalar(EARTHSHINE_MAX * unlit ** EARTHSHINE_FALLOFF);
   };
 
   const isRotated = () => Math.abs(drag.w) < 0.99999;
@@ -285,6 +221,19 @@ export const createScene = async (canvas, options) => {
     pendingFrame = false;
     if (disposed) return;
     const dt = lastFrameAt ? Math.min((now - lastFrameAt) / FRAME_MS, 4) : 1;
+    // Only back-to-back animation frames say anything about the device's pace
+    if (wasAnimating && lastFrameAt) {
+      pace.frames++;
+      pace.total += now - lastFrameAt;
+      if (pace.frames >= SLOW_SAMPLE) {
+        if (pace.total / pace.frames > SLOW_FRAME_MS && ratioCap > 1) {
+          ratioCap = Math.max(1, ratioCap - 0.5);
+          setSize(size.w, size.h, size.ratio);
+        }
+        pace.frames = 0;
+        pace.total = 0;
+      }
+    }
     lastFrameAt = now;
     let animating = false;
 
@@ -335,7 +284,9 @@ export const createScene = async (canvas, options) => {
       firstFrameSent = true;
       // Tell the page on the next frame, once this one is surely on screen
       nextFrame(() => emit('firstFrame'));
+      sharpen();
     }
+    wasAnimating = animating;
     if (animating) invalidate();
   };
 
@@ -343,6 +294,27 @@ export const createScene = async (canvas, options) => {
     if (pendingFrame || disposed) return;
     pendingFrame = true;
     nextFrame(render);
+  };
+
+  // On the high tier, swap in the 4K colour map once the first frame is up. The
+  // upload happens here, on its own, rather than inside a frame that's animating.
+  let sharpened = false;
+  const sharpen = () => {
+    if (sharpened || tier !== 'high' || !textures.canLoad('color-4k')) return;
+    sharpened = true;
+    textures.load('color-4k').then((sharp) => {
+      if (disposed) {
+        sharp.dispose();
+        return;
+      }
+      renderer.initTexture(sharp);
+      const previous = material.uniforms.map.value;
+      material.uniforms.map.value = sharp;
+      previous.dispose();
+      invalidate();
+    }).catch(() => {
+      // The 2K map stays
+    });
   };
 
   // Turn the Moon about the screen's axes, as the drag offset on top of the truth
@@ -450,8 +422,10 @@ export const createScene = async (canvas, options) => {
     dispose() {
       disposed = true;
       moon.geometry.dispose();
+      material.uniforms.map.value?.dispose();
+      material.uniforms.normalMap.value?.dispose();
       material.dispose();
-      texture.dispose();
+      textures.dispose();
       renderer.dispose();
     }
   };
