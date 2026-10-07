@@ -202,10 +202,15 @@ There is no loading screen. The intro (Phase 5) plays over the real page.
     rotation from the Moon's own axes to the screen (libration, axis angle and parallactic
     angle folded together, from `getMoonView` in `src/utils/moonView.js`), the same
     rotation without libration (the flat photograph's pose), and the Sun's direction on
-    screen; 1c adds the Moon's RA/Dec and the sidereal frame for the sky
+    screen; 1c adds the Moon's RA/Dec, the parallactic angle, sidereal time, latitude and
+    the instant, from which the scene builds the sky's frame and places the planets
   - `pointer({ kind, x, y, t })` for drag (the page hit-tests the disc itself), `reset()` for
     a double-click or double-tap, `settle()` once the page has faded the first frame in
-  - `tilt({ x, y })` from device orientation, already normalised
+  - `tilt({ x, y })` from device orientation, already normalised (dead zone and recentring
+    on the page, src/utils/tilt.js); `look({ x, y, inside })` from the mouse, for the depth
+    layers and the stars' pointer light; `setVisible({ visible })` so nothing twinkles unseen
+  - As built in 1c, the canvas covers the screen behind the interface and `resize` carries the
+    Moon's area on it; the Moon renders into a box of its own and the sky pass lays it down
   - `resize({ width, height, dpr })`, `setReducedMotion()`, `setQuality(level)`, `dispose()`
   - events back: `firstFrame`, `rotated` (offset present or not), `contextLost`, `fallback`
 - **Worker where supported.** If `HTMLCanvasElement.prototype.transferControlToOffscreen`

@@ -272,8 +272,8 @@ when the page opens.
 |---|---|---|
 | 0 | Foundation: Vercel, measurement, static shell, no loader, fonts, GSAP after paint, audit bugs, render on demand | Done: PR #51 merged 6 Oct 2026; GitHub Pages forwards to Vercel |
 | 1a | The renderer and the true Moon: scene worker with main-thread fallback, fiber and drei removed, libration, tilt and lighting from new astronomy, drag offset and reset, SVG orbit | Done: PR #55 merged 6 Oct 2026 |
-| 1b | The photographed Moon: NASA textures (KTX2, 2K/4K, normal map), lunar shader, glow, quality tiers | In review |
-| 1c | The observed sky: real stars around the Moon, depth layers, scintillation, tilt | Not started |
+| 1b | The photographed Moon: NASA textures (KTX2, 2K/4K, normal map), lunar shader, glow, quality tiers | Done: PR #57 merged 7 Oct 2026 |
+| 1c | The observed sky: real stars around the Moon, planets, depth layers, scintillation, tilt | In review |
 | 2 | Design language: tokens, controls, icons, header and menu, cursor, sound engine, idle fade, copy | Not started |
 | 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
@@ -350,3 +350,32 @@ when the page opens.
 - Earthshine shows on crescents but not gibbous Moons, as F3 decided and as on the real Moon:
   seen from a gibbous Moon, Earth is a thin crescent, and its light is a sliver of what reaches a
   young crescent Moon from a nearly full Earth.
+- 1c's sky comes from two CDS catalogues the owner approved on 7 Oct 2026: the Bright Star
+  Catalogue (V/50, 5,080 stars to magnitude 6, packed by `scripts/sky/build.mjs` into a 30 KB
+  file the service worker precaches) and Roman's constellation boundaries (VI/42), which name
+  the constellation behind the Moon in its screen-reader label, so the sky is also text (2.3).
+- **The five naked-eye planets were added** (owner, 7 Oct 2026): the Moon travels the ecliptic
+  as they do, and a sky without them is wrong whenever one is up. Positions from JPL's
+  approximate Keplerian elements, tested against JPL Horizons; magnitudes from the Astronomical
+  Almanac's formulas, with Saturn's rings.
+- The stars have to share the Moon's WebGL pass (G3), so the scene's canvas now covers the whole
+  screen behind the interface. The Moon is rendered into a box of its own, the size of the
+  page's Moon area, with 4× antialiasing, and laid onto the canvas at whole pixels; the canvas
+  itself has no antialiasing and no depth buffer. On a phone that keeps memory near what the
+  Moon's own canvas used, and a frame where only a star changes reuses the Moon as drawn. The
+  glow moved back into the scene, now that nothing can crop it, so it drifts with the Moon; the
+  page's CSS glow stays for the flat Moon and fades out as the scene fades in. Measured on a real
+  GPU: the 3D Moon's outline lands on the flat Moon's to the pixel.
+- The composite (section 4, G1): an 80° field across the screen's diagonal. The drawn Moon
+  covers about 14° of sky in every direction (about 16° on a phone), so stars and planets that
+  close to the Moon are behind it, as in a composite photograph: a planet beside the Moon in
+  the real sky shows only once it is more than about 14° away.
+- Depth layers move the Moon up to 10 px and stars 3-6 px by brightness, on a spring; with the
+  mouse on desktops and with tilt on phones. Measured: the Moon 9.5 px and Saturn 6 px with the
+  pointer at the screen's edge; tilting 12° moves the Moon 5 px, and holding still recentres it
+  exactly. Twinkle: one bright star at a time for about 2 s, every 3.5-9 s, ±13% in brightness,
+  about 14 frames a second while it lasts and none in between; none under reduced motion.
+- "Tilt to look around" sits in the header, on phones only, until Phase 2's menu takes it.
+  Recent Chrome also has iOS's permission step but grants it without asking, so the page asks
+  once without a tap (which never prompts): tilt starts wherever no prompt is needed, and on an
+  iPhone it waits for the control.

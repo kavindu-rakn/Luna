@@ -65,6 +65,8 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 * **NASA Imagery:** The colour of NASA's Lunar Reconnaissance Orbiter (the 2025 CGI Moon Kit) with relief from LOLA laser altimetry, so craters and mountains catch the light along the terminator and flatten towards full, as on the real Moon. GPU-compressed KTX2 textures: 2K everywhere, 4K on large screens.
 * **Lunar Light:** A shader of its own: Lommel-Seeliger reflectance, the way lunar dust scatters light, so a crescent keeps its true width and the full Moon is evenly bright to its edge, a small opposition surge near full, faint earthshine around thin crescents, and a soft glow off the lit limb.
 * **360° Free Drag & Inertia:** Drag to turn the Moon with momentum; the turn stays as an offset on the true orientation, and a double-click or double-tap springs it back.
+* **The Real Sky Behind It:** The 5,080 stars the eye can see (the Bright Star Catalogue, to magnitude 6) and the five naked-eye planets, placed where they really are around the Moon, turned to your horizon, and coloured by temperature. The Moon is drawn far larger than its true half degree, as in a composite photograph, so the sky is an 80° field around it. A bright star twinkles now and then, more strongly when it is low. The constellation behind the Moon is named in its screen-reader label.
+* **Depth You Can Feel:** Faint stars sit furthest back, bright stars nearer, the Moon nearest. They drift with the mouse on a desktop and with the phone's tilt (*Tilt to look around*), on a spring that recentres once the phone settles.
 * **Off the Main Thread:** The scene is plain three.js in a Web Worker drawing to an OffscreenCanvas where the browser supports it, and on the main thread elsewhere. It draws only when something changes.
 
 </td>
@@ -204,7 +206,7 @@ Every parameter is treated as untrusted and validated on its own, so a malformed
 <a id="offline"></a>
 ## | | | O F F L I N E
 
-Luna is an installable app and works with no connection. Every calculation already runs on the device, so after one visit the app, the 3D engine and the 2K Moon textures are cached, and it opens on a hillside with no signal.
+Luna is an installable app and works with no connection. Every calculation already runs on the device, so after one visit the app, the 3D engine, the 2K Moon textures and the star catalogue are cached, and it opens on a hillside with no signal.
 
 * **What works offline:** everything except searching for a new place. Saved places still work, since their timezone is resolved locally from the coordinates. Shared links open too.
 * **What stays out of the cache:** the share-card image, install icons and font subsets for scripts the UI does not use. The 4K Moon texture, for large screens, and the image textures, for browsers that can't decode KTX2, are cached the first time they are used.
@@ -219,7 +221,8 @@ Luna has no accounts, cookies, analytics or ads, and every calculation runs on t
 
 * **Your location** is asked for only when you press *Use my location*, and is rounded to about a kilometre the moment it arrives. The exact position is never stored, sent or put in a link. The rounded position is sent to OpenStreetMap's Nominatim to name the place.
 * **Place search** sends what you type to Nominatim, which, like any web service, sees your IP address.
-* **Stored on the device:** your chosen place, saved places, clock and distance settings, and the name of the last place located. Older versions also kept a name for every place ever located; that history is deleted on the first visit after updating.
+* **Motion:** on a phone the sky drifts with its tilt, read from the motion sensor; the readings move the sky and are never stored or sent. On an iPhone it starts only from *Tilt to look around*, and iOS asks first.
+* **Stored on the device:** your chosen place, saved places, clock and distance settings, whether tilt is on, and the name of the last place located. Older versions also kept a name for every place ever located; that history is deleted on the first visit after updating.
 * **Share links** carry the date, the place name and coordinates rounded to about a kilometre.
 
 ---
@@ -235,7 +238,7 @@ graph TD
 
     B --> B1[3D Moon Mesh & Lunar Shading]
     B --> B2[Main-Thread Fallback]
-    A --> B3[Parallax Starfield Canvas]
+    B --> B3[Real Stars, Planets & Depth Layers]
 
     C --> C1[Date Controls & Chevrons]
     C --> C2[Synodic Cycle Scrubber]
@@ -251,7 +254,7 @@ graph TD
 * **Frontend:** React 19, Vite
 * **3D Graphics:** Three.js, in a Web Worker with an OffscreenCanvas where supported
 * **Motion & Physics:** GSAP (`@gsap/react`), custom spring momentum decay
-* **Ephemeris Calculations:** Meeus periodic-term series (lunar longitude & distance, solar longitude), SunCalc (topocentric altitude/azimuth), golden-section and bisection root finding
+* **Ephemeris Calculations:** Meeus periodic-term series (lunar longitude & distance, solar longitude), SunCalc (topocentric altitude/azimuth), golden-section and bisection root finding, JPL's Keplerian elements for the planets
 * **Typography:** *Cormorant Garamond* (phase names, dates, wordmark), *Inter* (everything else, with tabular figures)
 * **Icons:** Lucide React
 
@@ -338,7 +341,7 @@ npm run build && npm run check:bundle
 
 The page paints before any JavaScript arrives. The build renders the app's first frame to HTML with the stylesheet inlined, and a 2 KB inline script brings its date, phase and flat Moon up to today before the first paint. The live app then replaces it, and the 3D Moon fades in over the flat one once its texture is drawn. There is no loading screen.
 
-Three.js is most of Luna's JavaScript, but only the 3D Moon needs it. It loads after the first paint inside the scene's worker, where it parses, compiles and draws without touching the main thread; browsers whose workers can't draw WebGL load it on the main thread instead. Deep Dive's panels and GSAP also load after first paint. The entry chunk is **82 KB gzipped**, down from 354 KB.
+Three.js is most of Luna's JavaScript, but only the 3D Moon needs it. It loads after the first paint inside the scene's worker, where it parses, compiles and draws without touching the main thread; browsers whose workers can't draw WebGL load it on the main thread instead. Deep Dive's panels and GSAP also load after first paint. The entry chunk is **86 KB gzipped**, down from 354 KB.
 
 CI fails the build if that chunk crosses 90 KB, if the prerendered first frame is missing, if the content security policy doesn't allow the inline script by its hash, if the 3D engine is preloaded by the document, or if the entry imports it statically. That last case is not hypothetical: a chunking change once pulled React into the 3D chunk, which made the entry look *smaller* while forcing all of Three.js back onto the critical path.
 
@@ -352,6 +355,8 @@ If WebGL is unavailable or the scene fails to download, the 2D Moon stays, drawn
 Released under the [MIT License](./LICENSE). © 2026 Kavindu Ranathunga.
 
 Moon textures from NASA's Scientific Visualization Studio, [CGI Moon Kit](https://svs.gsfc.nasa.gov/4720) (LRO colour and LOLA elevation), in the public domain. They are rebuilt with `node scripts/textures/build.mjs`.
+
+Stars from the Bright Star Catalogue, 5th revised edition (Hoffleit & Warren, 1991, NASA Astronomical Data Center), and constellation boundaries from Roman (1987, *PASP* 99, 695), both through the [VizieR catalogue service](https://vizier.cds.unistra.fr/) at CDS, Strasbourg ([V/50](https://cdsarc.cds.unistra.fr/viz-bin/cat/V/50), [VI/42](https://cdsarc.cds.unistra.fr/viz-bin/cat/VI/42)). They are rebuilt with `node scripts/sky/build.mjs`. Planet positions from JPL's [Keplerian elements for approximate positions of the major planets](https://ssd.jpl.nasa.gov/planets/approx_pos.html) (Standish & Williams).
 
 ---
 
