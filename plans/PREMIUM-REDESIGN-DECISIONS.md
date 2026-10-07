@@ -273,8 +273,10 @@ when the page opens.
 | 0 | Foundation: Vercel, measurement, static shell, no loader, fonts, GSAP after paint, audit bugs, render on demand | Done: PR #51 merged 6 Oct 2026; GitHub Pages forwards to Vercel |
 | 1a | The renderer and the true Moon: scene worker with main-thread fallback, fiber and drei removed, libration, tilt and lighting from new astronomy, drag offset and reset, SVG orbit | Done: PR #55 merged 6 Oct 2026 |
 | 1b | The photographed Moon: NASA textures (KTX2, 2K/4K, normal map), lunar shader, glow, quality tiers | Done: PR #57 merged 7 Oct 2026 |
-| 1c | The observed sky: real stars around the Moon, planets, depth layers, scintillation, tilt | In review |
-| 2 | Design language: tokens, controls, icons, header and menu, cursor, sound engine, idle fade, copy | Not started |
+| 1c | The observed sky: real stars around the Moon, planets, depth layers, scintillation, tilt | Done: PR #58 merged 7 Oct 2026 |
+| 2a | The instrument: tokens, hairline controls with the light bloom, the custom icon set, copy | In review |
+| 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive, idle fade | Not started |
+| 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Not started |
 | 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
@@ -388,3 +390,23 @@ when the page opens.
   Recent Chrome also has iOS's permission step but grants it without asking, so the page asks
   once without a tap (which never prompts): tilt starts wherever no prompt is needed, and on an
   iPhone it waits for the control.
+
+### Phase 2 notes
+
+- Phase 2 in three parts, as the working agreements allow (7 Oct 2026): 2a the instrument
+  (tokens, controls, icons, copy), 2b the header and date block, 2c the cursor and sound.
+- 2a keeps every surface where it is and changes how it looks and reads. The section 5 tokens
+  are in `:root`; the stylesheet's older names now point at them, so the lavender accent is gone
+  everywhere at once, and later phases retire the old names as they rebuild each surface.
+  Panels and popovers are opaque (`--panel`), with no blur; the modal scrim dims only.
+- Controls: transparent at rest with a hairline edge, a 4% fill and a brighter edge on hover,
+  nothing scaled or lifted. The press bloom is CSS on `::after`, started by a capture-phase
+  pointer listener (`src/utils/pressBloom.js`) that records where the press landed; a key press
+  blooms from the middle. It swells for the first fifth of 600 ms, then fades as it spreads.
+- The icon set: 34 icons drawn for Luna in `src/components/icons/icons.js`, plain path data that
+  `Icon.jsx` draws and a contact sheet can render too. Lucide is removed, which took 1.6 KB off
+  the entry. The peak icon is a dotted path with the Moon at its top.
+- Copy: no "telemetry" or "ephemeris"; sentence case; labels lost their decorative icons;
+  12-hour times read "6:40 pm" (K2), 24-hour "18:40". Cormorant now only appears at 24 px and up,
+  except the date pill, which 2b redraws. "Drag the slider" stays, in sentence case, until
+  Phase 4's first-visit nudge replaces it. The live timeline thumb pulses in `--now`.
