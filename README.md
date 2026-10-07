@@ -6,7 +6,7 @@
 
 ### *An Immersive Celestial Lunar Ephemeris & 3D Orbital Explorer*
 
-### [**▶  LAUNCH LUNA**](https://kavindu-rakn.github.io/Luna/)
+### [**▶  LAUNCH LUNA**](https://luna-kvn.vercel.app/)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/kavindu-rakn/Luna/ci.yml?branch=master&style=for-the-badge&label=CI)](https://github.com/kavindu-rakn/Luna/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-6366f1?style=for-the-badge)](./LICENSE)
@@ -185,7 +185,7 @@ Luna is built with a keyboard navigation system:
 Every view has a link. The address bar always describes what is on screen, and the link button copies it.
 
 ```text
-https://kavindu-rakn.github.io/Luna/?d=2026-09-26T16:50Z&at=64.15,-21.94&n=Reykjavik,+Iceland&tz=Atlantic/Reykjavik
+https://luna-kvn.vercel.app/?d=2026-09-26T16:50Z&at=64.15,-21.94&n=Reykjavik,+Iceland&tz=Atlantic/Reykjavik
 ```
 
 | Param | Meaning |

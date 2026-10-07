@@ -3,6 +3,7 @@ import ModalDialog from './ModalDialog';
 import { forgetStoredData } from '../utils/storage';
 
 const OSMF_PRIVACY = 'https://osmfoundation.org/wiki/Privacy_Policy';
+const VERCEL_PRIVACY = 'https://vercel.com/legal/privacy-notice';
 const GITHUB_PRIVACY = 'https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement';
 
 const ExternalLink = ({ href, children }) => (
@@ -121,7 +122,10 @@ const PrivacyDialog = ({ isOpen, onClose }) => {
       <Section title="Hosting">
         <p>
           Like any website, the server that delivers Luna receives your IP address and browser
-          details when the page loads. The official copy is served by GitHub Pages.{' '}
+          details when the page loads. The official copy is served by Vercel.{' '}
+          <ExternalLink href={VERCEL_PRIVACY}>Vercel&rsquo;s privacy notice</ExternalLink>. Luna&rsquo;s
+          old GitHub Pages address only forwards visitors there, so if you open that address,
+          GitHub sees the visit too.{' '}
           <ExternalLink href={GITHUB_PRIVACY}>GitHub&rsquo;s privacy statement</ExternalLink>.
         </p>
       </Section>

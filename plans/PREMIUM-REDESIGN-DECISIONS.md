@@ -288,6 +288,8 @@ when the page opens.
   on mobile within the day), and `vite preview` serves uncompressed files, so only same-run
   comparisons mean anything.
 - Vercel project `luna-kvn` created on 5 Oct 2026; production is https://luna-kvn.vercel.app.
+  Renamed `luna` on 7 Oct 2026. The production address is unchanged, but preview URLs now
+  start `luna-git-`.
   Vercel Authentication is off for this project (owner's choice), so previews open without a
   login. Previews always score SEO 60 and Best Practices 92: Vercel sends `x-robots-tag:
   noindex` and injects its comment toolbar, which our CSP blocks. Production has neither.
