@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import DateControls from './components/DateControls';
-import Starfield from './components/Starfield';
 import LunarTimeline from './components/LunarTimeline';
 import CustomCursor from './components/CustomCursor';
 import SceneBoundary from './components/SceneBoundary';
@@ -8,11 +7,16 @@ import MoonDisc from './components/MoonDisc';
 import { hasWebGLApi } from './utils/webgl';
 import { getMoonView } from './utils/moonView';
 import { glowStyle } from './utils/moonPath';
+import { useTilt } from './hooks/useTilt';
+import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion';
 
 // The 3D Moon's component starts the scene; three.js itself loads inside the
 // scene's worker (or on the main thread where workers can't draw WebGL). Even the
 // component waits for first paint, so the entry stays within its budget.
 const MoonScene = lazy(() => import('./components/MoonScene'));
+
+// Without WebGL the sky is drawn once, flat, from the same catalogue
+const SkyFallback = lazy(() => import('./components/SkyFallback'));
 
 // Deep Dive's panels, and GSAP with them, are only needed once the drawer opens.
 // They load after first paint and are mounted, hidden, once the page is idle, so
@@ -23,8 +27,11 @@ const DeepDiveContent = lazy(loadDeepDive);
 // A photographic flat Moon at the right phase. It is what the prerendered page shows
 // first, it holds the stage while the 3D Moon loads, and it stays if WebGL is
 // unavailable, so the view is never simply empty. The 3D Moon fades in over it.
-// The glow off the lit limb, behind whichever Moon is showing (see glowStyle)
-const MoonGlow = ({ view }) => <div className="moon-glow" aria-hidden="true" style={glowStyle(view)} />;
+// The glow off the lit limb, behind the flat Moon (see glowStyle). The 3D scene
+// draws its own, in its sky, so this one fades out as the scene fades in.
+const MoonGlow = ({ view, hidden }) => (
+  <div className={`moon-glow${hidden ? ' is-hidden' : ''}`} aria-hidden="true" style={glowStyle(view)} />
+);
 
 const MoonFallback = ({ view, hidden }) => (
   <div className={`moon-viz-wrapper moon-viz-fallback${hidden ? ' is-hidden' : ''}`} aria-hidden="true">
@@ -42,7 +49,7 @@ import { usePreferences } from './hooks/usePreferences';
 import { getLunarDetails, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
-import { X, BarChart3, Lightbulb } from 'lucide-react';
+import { X, BarChart3, Lightbulb, Rotate3d } from 'lucide-react';
 
 // Keys that controls like the timeline and the calendar grid use to move around
 const NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
@@ -80,6 +87,14 @@ function App({ prerender = false }) {
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const showPrivacy = useCallback(() => setIsPrivacyOpen(true), []);
   const closePrivacy = useCallback(() => setIsPrivacyOpen(false), []);
+
+  // The sky's canvas sits behind the whole interface; the scene draws into it
+  const [skyHost, setSkyHost] = useState(null);
+  const moonAreaRef = useRef(null);
+
+  // "Tilt to look around": the phone's motion sensor moves the sky's depth layers
+  const tilt = useTilt(!prerender);
+  const reducedMotion = usePrefersReducedMotion();
 
   // 12- or 24-hour clock, km or miles. How this viewer reads, not what they are
   // looking at, so these stay on the device and out of the URL.
@@ -130,6 +145,18 @@ function App({ prerender = false }) {
     return () => cancel(handle);
   }, [prerender, isSettled]);
   const mountDeepDive = !prerender && hasOpenedDrawer;
+
+  // The constellation behind the Moon, so the label can say what the sky shows.
+  // Its boundary table loads once the page has settled.
+  const [constellationOf, setConstellationOf] = useState(null);
+  useEffect(() => {
+    if (prerender || !isSettled) return undefined;
+    let cancelled = false;
+    import('./sky/constellations')
+      .then((module) => { if (!cancelled) setConstellationOf(() => module.constellationOfDate); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [prerender, isSettled]);
 
   const containerRef = useRef();
   const mainViewRef = useRef();
@@ -295,6 +322,10 @@ function App({ prerender = false }) {
   // How the Moon stands in this observer's sky: its tilt, libration and lighting,
   // for the 3D Moon and the flat one alike
   const moonView = useMemo(() => getMoonView(currentDate, location?.lat ?? 0, location?.lon ?? 0), [currentDate, location]);
+  const constellation = useMemo(
+    () => constellationOf?.(moonView.ra, moonView.dec, moonView.time) ?? null,
+    [constellationOf, moonView]
+  );
 
   // What a screen reader hears when the view changes. It names the date and place,
   // which the old announcement left out, and waits for the view to settle: a drag
@@ -322,12 +353,21 @@ function App({ prerender = false }) {
         {announcement}
       </div>
 
-      {/* Background Starfield Canvas with Mouse Parallax */}
-      <Starfield />
-
       {/* Atmospheric Space Gradients */}
       <div className="nebula" aria-hidden="true" />
       <div className="vignette" aria-hidden="true" />
+
+      {/* The real sky around the Moon, and the 3D Moon itself, on one canvas
+          behind the interface. Without WebGL, a flat drawing of the same sky. */}
+      <div ref={setSkyHost} className="sky" aria-hidden="true">
+        {skyHost && loadStage === 'failed' && !prerender && (
+          <SceneBoundary name="Flat sky" fallback={null}>
+            <Suspense fallback={null}>
+              <SkyFallback view={moonView} skyHost={skyHost} areaRef={moonAreaRef} />
+            </Suspense>
+          </SceneBoundary>
+        )}
+      </div>
 
       {!prerender && (
         <>
@@ -391,6 +431,20 @@ function App({ prerender = false }) {
               onShowPrivacy={showPrivacy}
             />
             <ShareButton date={currentDate} location={location} />
+            {/* Phones only, and only where motion is welcome. Moves into the menu
+                with the redesigned header. */}
+            {tilt.supported && !reducedMotion && (
+              <button
+                type="button"
+                className={`glass-button icon-button tilt-trigger${tilt.on ? ' is-active' : ''}`}
+                onClick={tilt.toggle}
+                aria-pressed={tilt.on}
+                aria-label="Tilt to look around"
+                title="Tilt to look around"
+              >
+                <Rotate3d size={15} color="var(--text-secondary)" aria-hidden="true" />
+              </button>
+            )}
             {/* Hidden on touch-only devices, which have no keyboard to use it with */}
             <button
               type="button"
@@ -423,18 +477,21 @@ function App({ prerender = false }) {
               Dragging to rotate is exploration, not information: the phase and
               illumination it shows are all available as text. */}
           <div
+            ref={moonAreaRef}
             className="moon-container"
             role="img"
-            aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated`}
+            aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated${constellation ? `, in ${constellation}` : ''}`}
           >
-            <MoonGlow view={moonView} />
+            <MoonGlow view={moonView} hidden={moonReady} />
             <MoonFallback view={moonView} hidden={moonReady} />
-            {hasWebGL && (
+            {hasWebGL && skyHost && (
               <SceneBoundary name="Moon scene" onError={markFailed} fallback={null}>
                 <Suspense fallback={null}>
                   <MoonScene
                     view={moonView}
                     isReady={moonReady}
+                    skyHost={skyHost}
+                    tilt={tilt.on}
                     onScene={markScene}
                     onReady={markReady}
                     onFail={markFailed}

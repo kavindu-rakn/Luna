@@ -202,10 +202,15 @@ There is no loading screen. The intro (Phase 5) plays over the real page.
     rotation from the Moon's own axes to the screen (libration, axis angle and parallactic
     angle folded together, from `getMoonView` in `src/utils/moonView.js`), the same
     rotation without libration (the flat photograph's pose), and the Sun's direction on
-    screen; 1c adds the Moon's RA/Dec and the sidereal frame for the sky
+    screen; 1c adds the Moon's RA/Dec, the parallactic angle, sidereal time, latitude and
+    the instant, from which the scene builds the sky's frame and places the planets
   - `pointer({ kind, x, y, t })` for drag (the page hit-tests the disc itself), `reset()` for
     a double-click or double-tap, `settle()` once the page has faded the first frame in
-  - `tilt({ x, y })` from device orientation, already normalised
+  - `tilt({ x, y })` from device orientation, already normalised (dead zone and recentring
+    on the page, src/utils/tilt.js); `look({ x, y, inside })` from the mouse, for the depth
+    layers and the stars' pointer light; `setVisible({ visible })` so nothing twinkles unseen
+  - As built in 1c, the canvas covers the screen behind the interface and `resize` carries the
+    Moon's area on it; the Moon renders into a box of its own and the sky pass lays it down
   - `resize({ width, height, dpr })`, `setReducedMotion()`, `setQuality(level)`, `dispose()`
   - events back: `firstFrame`, `rotated` (offset present or not), `contextLost`, `fallback`
 - **Worker where supported.** If `HTMLCanvasElement.prototype.transferControlToOffscreen`
@@ -403,8 +408,9 @@ Plain and observer-first: "Tonight", "Rises 6:40 pm in the east", "Back to now".
   composite: a wide field (roughly 60–90° across the viewport) centred on the Moon's position,
   oriented to the observer's horizon, the Moon sitting in front of its actual constellation.
   Magnitude drives size and brightness on a power curve; colour index drives temperature.
-  A few bright stars scintillate, rarely and subtly, on time not frames. Depth layers (G4):
-  faint stars move least, bright stars a little more, the Moon more, the interface not at all.
+  A few bright stars scintillate, rarely and subtly, on time not frames. Depth layers (G4, as
+  settled in chat on 7 Oct 2026): the Moon holds still with the interface, and the sky slides
+  behind it, the faintest stars most, the brightest less.
 - **Tilt (G5, G6)**: on phones, device orientation drives the same depth layers: small,
   spring-damped, a small dead zone, a recentre within about a second of settling. On iOS it
   starts only from the "Tilt to look around" control, which asks for permission; elsewhere it is

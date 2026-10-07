@@ -43,6 +43,8 @@ const DeepDiveContent = ({
           <br />
           Moon imagery: NASA&rsquo;s Scientific Visualization Studio.
           <br />
+          Stars: the Bright Star Catalogue (Hoffleit &amp; Warren), via CDS Strasbourg. Planets: JPL.
+          <br />
           <button type="button" className="text-link" onClick={onShowPrivacy}>
             Privacy
           </button>
