@@ -75,8 +75,9 @@ void main() {
     gl_PointSize = 1.0;
     return;
   }
-  // Device pixels, y down, as the page lays things out
-  vec2 p = center + parallax * look.z + focal * vec2(v.x, -v.y) / v.z;
+  // Device pixels, y down, as the page lays things out; the sky slides behind
+  // the still Moon by each star's distance behind it
+  vec2 p = center + parallax * (1.0 - look.z) + focal * vec2(v.x, -v.y) / v.z;
 
   float peak = look.x;
   float near = 1.0 - smoothstep(0.0, pointerRadius, distance(p, pointer.xy));
@@ -258,7 +259,7 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
     vertexShader: glowVertex,
     fragmentShader: glowFragment,
     uniforms: {
-      // The glow moves with the Moon, so it keeps its own centre
+      // On the Moon, which holds still while the stars slide
       center: { value: new Vector2() },
       viewport: shared.viewport,
       halfSize: { value: 0 },
@@ -283,10 +284,6 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
   moon.visible = false;
   scene.add(moon);
 
-  const center = new Vector2();
-  const drift = new Vector2();
-  const placeGlow = () => glowMaterial.uniforms.center.value.copy(center).add(drift);
-
   return {
     scene,
     camera,
@@ -300,24 +297,21 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
       position.needsUpdate = true;
       fillLooks(planetGeometry, list.map((p) => p.magnitude), list.map((p) => p.colorIndex));
     },
-    // Device pixels: the canvas, the Moon's centre on it before any parallax,
-    // the Moon's outline radius, and the projection's focal length
+    // Device pixels: the canvas, the Moon's centre on it, the Moon's outline
+    // radius, and the projection's focal length
     setLayout({ width, height, ratio, center: at, outline, focal }) {
       shared.viewport.value.set(width, height);
       shared.pixelRatio.value = ratio;
       shared.focal.value = focal;
       shared.center.value.set(at[0], at[1]);
-      center.set(at[0], at[1]);
+      glowMaterial.uniforms.center.value.set(at[0], at[1]);
       glowMaterial.uniforms.halfSize.value = 1.9 * outline;
       shared.pointerRadius.value = POINTER_RADIUS * ratio;
-      placeGlow();
     },
-    // How far the Moon (depth 1) has drifted, in device pixels. The glow goes with
-    // it; each star moves by its own depth's share.
+    // How far the sky has slid behind the Moon, in device pixels, at the very
+    // back; each star slides by its own distance behind the Moon
     setParallax(x, y) {
       shared.parallax.value.set(x, y);
-      drift.set(x, y);
-      placeGlow();
     },
     setPointer(x, y, strength) {
       shared.pointer.value.set(x, y, strength);

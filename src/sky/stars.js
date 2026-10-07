@@ -53,8 +53,9 @@ export const starLight = (magnitude) => {
   return { peak, sigma, halo };
 };
 
-// Depth layers (G4): the faintest stars sit furthest back and move least, the
-// brightest a little more; the Moon, at 1, moves most
+// Depth layers (G4): how far back each star sits, with the Moon at 1. The Moon
+// holds still, as the interface does, and the sky slides behind it, each star by
+// how far behind the Moon it sits: the faintest, furthest back, slide most
 export const starDepth = (magnitude) => {
   const t = Math.min(1, Math.max(0, (magnitude - 1) / 5));
   return 0.6 - 0.3 * t * t * (3 - 2 * t);

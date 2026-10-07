@@ -13,7 +13,7 @@
 //
 // Nothing renders unless something changed: a new view, a drag and the spin that
 // follows it, a reset, the settle after the first frame, a sharper texture
-// arriving, a resize, the sky drifting with the pointer or the phone's tilt, or a
+// arriving, a resize, the sky sliding with the pointer or the phone's tilt, or a
 // star twinkling (at most fifteen times a second, and only now and then). With
 // software WebGL (PageSpeed, blocklisted GPUs) a frame costs tens of
 // milliseconds, so a loop running at rest would hold its thread for the life of
@@ -78,10 +78,15 @@ const MOON_SAMPLES = 4;
 // The low tier draws the bright stars only, about 900 of them
 const LOW_TIER_MAGNITUDE = 4.5;
 
-// Depth layers (G4): at full deflection the Moon drifts this many CSS pixels and
-// each star its depth's share (src/sky/stars.js), the interface not at all. The
-// pull is a spring, a little short of critically damped, so it settles in about
-// half a second.
+// Depth layers (G4): the Moon holds still with the interface, the subject the
+// eye rests on, and the sky slides behind it, the way the background moves when a
+// camera circles its subject. At full deflection the very back of the sky would
+// slide this many CSS pixels; each star slides by its distance behind the Moon
+// (src/sky/stars.js), so the faintest move about 7 and the brightest about 4. The
+// owner chose this on 7 Oct 2026 over moving the Moon most, which read as a
+// gimmick: a Moon that follows the hand is a target that slides away from a drag.
+// The pull is a spring, a little short of critically damped, so it settles in
+// about half a second.
 const PARALLAX_PX = 10;
 const SPRING_RATE = 7;
 const SPRING_DAMPING = 0.9;
@@ -259,7 +264,7 @@ export const createScene = async (canvas, options) => {
   let moonDirty = true;
 
   // Where the sky is being pulled: by the pointer on a desktop, by the tilt on a
-  // phone, as -1…1 across the screen. The drift follows on a spring.
+  // phone, as -1…1 across the screen. The slide follows on a spring.
   const look = { x: 0, y: 0, inside: false, mouse: false };
   let tilt = null; // { x, y } while tilt is on
   const drift = { x: 0, y: 0, vx: 0, vy: 0 };
@@ -407,7 +412,7 @@ export const createScene = async (canvas, options) => {
     sky.setTwinkle(-1, 1, [1, 1, 1]);
   };
 
-  // The drift's spring, stepped by elapsed time; true while still moving
+  // The slide's spring, stepped by elapsed time; true while still moving
   const stepDrift = (seconds) => {
     const target = reducedMotion ? { x: 0, y: 0 } : tilt ?? (look.inside && look.mouse ? look : { x: 0, y: 0 });
     // While the Moon is being dragged the sky holds still
@@ -531,14 +536,13 @@ export const createScene = async (canvas, options) => {
       }
     }
 
-    // Lay the Moon at its true position plus its drift: the whole pixels move the
-    // box, the fraction is rendered into it
+    // The sky slides; the Moon stays where the page put it. Its box sits at whole
+    // pixels, with the fraction rendered into it, so the Moon only renders again
+    // when it changes, never because the stars moved.
+    sky.setParallax(drift.x * PARALLAX_PX * scale, drift.y * PARALLAX_PX * scale);
     const m = layout.moon;
-    const px = drift.x * PARALLAX_PX * scale;
-    const py = drift.y * PARALLAX_PX * scale;
-    sky.setParallax(px, py);
-    const mx = m.x * scale + px;
-    const my = m.y * scale + py;
+    const mx = m.x * scale;
+    const my = m.y * scale;
     const bx = Math.floor(mx) - 1;
     const by = Math.floor(my) - 1;
     const fx = bx - mx;
@@ -681,16 +685,17 @@ export const createScene = async (canvas, options) => {
       if (look.inside) {
         look.px = x;
         look.py = y;
-        // Pulled away from the pointer: the far sky lags behind the near
-        look.x = -clampUnit((x - layout.width / 2) / (layout.width / 2));
-        look.y = -clampUnit((y - layout.height / 2) / (layout.height / 2));
+        // Towards the pointer, as if the eye moved that way around the Moon: what
+        // lies behind it shifts with the eye
+        look.x = clampUnit((x - layout.width / 2) / (layout.width / 2));
+        look.y = clampUnit((y - layout.height / 2) / (layout.height / 2));
       }
       invalidate();
     },
     // The phone's tilt, -1…1 on each screen axis, already past its dead zone and
     // recentred by the page; null once tilt is off
     tilt(message) {
-      tilt = message && message.x !== undefined ? { x: -clampUnit(message.x), y: -clampUnit(message.y) } : null;
+      tilt = message && message.x !== undefined ? { x: clampUnit(message.x), y: clampUnit(message.y) } : null;
       invalidate();
     },
     pointer({ kind, x, y, t }) {
