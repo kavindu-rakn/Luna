@@ -478,7 +478,9 @@ when the page opens.
   still shows while scrubbing with the sheet open. The grabber and the sheet's top drag it,
   timed by the events themselves; a release's speed, carried on 220 ms, decides open or
   closed; at the top of scrolled contents a pull down takes it down. A press on the close
-  button is never taken for a drag. The drag code loads as its own chunk after first paint.
+  button is never taken for a drag. The drag code is its own chunk, fetched once the Moon has
+  settled and the browser is idle (fetched with the Moon still loading, it cost 0.3–0.45 s
+  of mobile speed index); a first touch before then fetches it at once.
   The stage doesn't re-frame on phones; the Moon keeps its size, less the grabber's 16 px
   where the height is tight.
 - 3a made `--panel` opaque: at 98% the header's date ghosted through the full-height sheet.
