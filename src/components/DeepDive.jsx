@@ -40,22 +40,41 @@ const DeepDive = ({ isOpen, setIsOpen, panelRef, headingRef, children }) => {
     latest.current = { isOpen, setIsOpen };
   });
 
-  // Phones: the drag arrives just after the page has painted
+  // Phones: the drag arrives once the page has loaded and the browser is idle, so
+  // it never competes with the Moon for the network. A first touch before then
+  // fetches it at once; until it is here a tap on the grabber still opens.
+  const loadDrag = useRef(null);
   useEffect(() => {
     if (wide) return undefined;
     let cancelled = false;
     let unfollow = null;
-    import('../utils/sheetDrag').then(({ createSheetDrag, followContents }) => {
-      if (cancelled) return;
-      dragRef.current = createSheetDrag({ latest, panelRef });
-      unfollow = followContents(bodyRef.current, dragRef.current);
-    }).catch(() => {
-      // Without it the grabber, the phase name and the close button still work
-    });
+    let loading = null;
+    const load = () => {
+      loading ??= import('../utils/sheetDrag').then(({ createSheetDrag, followContents }) => {
+        if (cancelled) return;
+        dragRef.current = createSheetDrag({ latest, panelRef });
+        unfollow = followContents(bodyRef.current, dragRef.current);
+      }).catch(() => {
+        // Without it the grabber, the phase name and the close button still work
+        loading = null;
+      });
+    };
+    loadDrag.current = load;
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
+    const cancelIdle = window.cancelIdleCallback || clearTimeout;
+    let handle = null;
+    const whenLoaded = () => {
+      handle = idle(load, { timeout: 4000 });
+    };
+    if (document.readyState === 'complete') whenLoaded();
+    else window.addEventListener('load', whenLoaded, { once: true });
     return () => {
       cancelled = true;
+      window.removeEventListener('load', whenLoaded);
+      if (handle) cancelIdle(handle);
       unfollow?.();
       dragRef.current = null;
+      loadDrag.current = null;
     };
   }, [wide, panelRef]);
 
@@ -64,6 +83,7 @@ const DeepDive = ({ isOpen, setIsOpen, panelRef, headingRef, children }) => {
   const onHandleDown = (event) => {
     if (wide || (event.pointerType === 'mouse' && event.button > 0)) return;
     if (event.target instanceof Element && event.target.closest('button')) return;
+    if (!dragRef.current) loadDrag.current?.();
     if (!dragRef.current?.begin(event.clientY, event.timeStamp)) return;
     // Touch keeps its own pointer on the handle; a mouse needs holding on to
     if (event.pointerType === 'mouse') event.currentTarget.setPointerCapture?.(event.pointerId);
