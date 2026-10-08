@@ -50,6 +50,7 @@ import LocationPicker from './components/LocationPicker';
 import Icon from './components/icons/Icon';
 import ShareToast from './components/ShareToast';
 import AppMenu from './components/AppMenu';
+import DeepDive from './components/DeepDive';
 import BrandMark from './components/BrandMark';
 import { useShare } from './hooks/useShare';
 import UpdatePrompt from './components/UpdatePrompt';
@@ -478,52 +479,78 @@ function App({ prerender = false }) {
           </div>
         </header>
 
-        {/* Center Canvas Area: 3D Moon & Hero Phase Name */}
-        <div className="main-canvas-area observatory-stage">
-          {/* One accessible name for whichever Moon is showing, 3D or the 2D stand-in.
-              Dragging to rotate is exploration, not information: the phase and
-              illumination it shows are all available as text. */}
-          <div
-            ref={moonAreaRef}
-            className="moon-container"
-            role="img"
-            aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated${constellation ? `, in ${constellation}` : ''}`}
-          >
-            <MoonGlow view={moonView} hidden={moonReady} />
-            <MoonFallback view={moonView} hidden={moonReady} />
-            {hasWebGL && skyHost && (
-              <SceneBoundary name="Moon scene" onError={markFailed} fallback={null}>
-                <Suspense fallback={null}>
-                  <MoonScene
-                    view={moonView}
-                    isReady={moonReady}
-                    skyHost={skyHost}
-                    tilt={tilt.on}
-                    onScene={markScene}
-                    onReady={markReady}
-                    onFail={markFailed}
-                    onLost={markLost}
-                  />
-                </Suspense>
-              </SceneBoundary>
-            )}
+        {/* The stage, down to the timeline: the Moon and the phase name, and on
+            phones Deep Dive's sheet, which stands on the timeline and rises over
+            the stage. Laid out with the stage, so it meets the timeline exactly. */}
+        <div className="stage-region">
+          <div className="main-canvas-area observatory-stage">
+            {/* One accessible name for whichever Moon is showing, 3D or the 2D stand-in.
+                Dragging to rotate is exploration, not information: the phase and
+                illumination it shows are all available as text. */}
+            <div
+              ref={moonAreaRef}
+              className="moon-container"
+              role="img"
+              aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated${constellation ? `, in ${constellation}` : ''}`}
+            >
+              <MoonGlow view={moonView} hidden={moonReady} />
+              <MoonFallback view={moonView} hidden={moonReady} />
+              {hasWebGL && skyHost && (
+                <SceneBoundary name="Moon scene" onError={markFailed} fallback={null}>
+                  <Suspense fallback={null}>
+                    <MoonScene
+                      view={moonView}
+                      isReady={moonReady}
+                      skyHost={skyHost}
+                      tilt={tilt.on}
+                      onScene={markScene}
+                      onReady={markReady}
+                      onFail={markFailed}
+                      onLost={markLost}
+                    />
+                  </Suspense>
+                </SceneBoundary>
+              )}
+            </div>
+
+            {/* The phase name: the one line of type on the stage, and the way into
+                Deep Dive, as a quiet link (D2, settled in chat) */}
+            <button
+              type="button"
+              className="hero-phase-name"
+              onClick={() => setIsDrawerOpen(true)}
+              aria-expanded={isDrawerOpen}
+              aria-controls="deep-dive"
+              aria-describedby="phase-name-hint"
+            >
+              <span className="font-serif">
+                {lunarDetails.name}
+              </span>
+            </button>
+            <span id="phase-name-hint" className="sr-only">Opens Deep Dive</span>
           </div>
 
-          {/* The phase name: the one line of type on the stage, and the way into
-              Deep Dive, as a quiet link (D2, settled in chat) */}
-          <button
-            type="button"
-            className="hero-phase-name"
-            onClick={() => setIsDrawerOpen(true)}
-            aria-expanded={isDrawerOpen}
-            aria-controls="telemetry-drawer"
-            aria-describedby="phase-name-hint"
+          {/* Deep Dive (E1, E2): a panel beside the stage on wide screens; on phones
+              a sheet that rises from a grabber above the timeline */}
+          <DeepDive
+            isOpen={isDrawerOpen}
+            setIsOpen={setIsDrawerOpen}
+            settled={isSettled}
+            panelRef={drawerRef}
+            headingRef={drawerHeadingRef}
           >
-            <span className="font-serif">
-              {lunarDetails.name}
-            </span>
-          </button>
-          <span id="phase-name-hint" className="sr-only">Opens Deep Dive</span>
+            {mountDeepDive && (
+              <Suspense fallback={null}>
+                <DeepDiveContent
+                  currentDate={currentDate}
+                  location={location}
+                  lunarDetails={lunarDetails}
+                  preferences={preferences}
+                  onShowPrivacy={showPrivacy}
+                />
+              </Suspense>
+            )}
+          </DeepDive>
         </div>
 
         {/* Bottom Bar: Timeline */}
@@ -533,51 +560,6 @@ function App({ prerender = false }) {
       </main>
 
       {!prerender && <ShareToast status={shareStatus} />}
-
-      {/* ═══ TELEMETRY DATA DRAWER / BOTTOM SHEET ═══ */}
-      <aside
-        ref={drawerRef}
-        id="telemetry-drawer"
-        className={`data-drawer ${isDrawerOpen ? 'is-open' : ''}`}
-        aria-labelledby="telemetry-heading"
-      >
-        {/* Mobile Drag Indicator Handle */}
-        <div className="drawer-handle" aria-hidden="true" />
-
-        {/* Drawer Header & Close Button */}
-        <div className="drawer-header">
-          <div className="drawer-heading">
-            <h2
-              id="telemetry-heading"
-              ref={drawerHeadingRef}
-              tabIndex={-1}
-              className="drawer-title"
-            >
-              Deep Dive
-            </h2>
-          </div>
-          <button
-            onClick={() => setIsDrawerOpen(false)}
-            className="glass-button icon-button drawer-close"
-            aria-label="Close Deep Dive (Esc)"
-            title="Close (Esc)"
-          >
-            <Icon name="close" />
-          </button>
-        </div>
-
-        {mountDeepDive && (
-          <Suspense fallback={null}>
-            <DeepDiveContent
-              currentDate={currentDate}
-              location={location}
-              lunarDetails={lunarDetails}
-              preferences={preferences}
-              onShowPrivacy={showPrivacy}
-            />
-          </Suspense>
-        )}
-      </aside>
     </div>
   );
 }

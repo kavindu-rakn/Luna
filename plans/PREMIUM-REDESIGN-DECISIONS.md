@@ -120,7 +120,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | ID | Question | Decision | Notes |
 |---|---|---|---|
 | D1 | Control language | **Hairline instrument** (rec) | No fill at rest, 1 px engraved edge; fill on hover and press. |
-| D2 | Desktop header | **Wordmark only; everything in one menu** | **Settled in chat:** the location shows as a quiet caption under the date (tap to change); tapping the phase name opens Deep Dive (also the D key and the menu); on phones the sheet's peek detent is the entry. |
+| D2 | Desktop header | **Wordmark only; everything in one menu** | **Settled in chat:** the location shows as a quiet caption under the date (tap to change); tapping the phase name opens Deep Dive (also the D key and the menu); on phones a slim grabber above the timeline is the entry (changed from the sheet's peek on 8 Oct 2026, see E2). |
 | D3 | Idle fade | **None** | **Settled in chat (8 Oct 2026):** dropped in 2b's review. Built as a 4 s fade, it left nothing to do but look at a still Moon, like an awkward silence; Luna's motion is already enough. The controls stay. |
 | D4 | Date navigation | **Five buttons, redrawn as one bar attached to the date** | |
 | D5 | Today | **⊙ icon always visible** | Owner's note: combine the icon and the live indicator. When live, ⊙ is brighter (in the warm "now" accent); when not live, it matches the other four. Keeps the symmetry. |
@@ -132,7 +132,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | ID | Question | Decision | Notes |
 |---|---|---|---|
 | E1 | Deep Dive on desktop | **Panel over the stage, stage re-frames** (rec) | Owner: "The timeline cut-off should also be fixed." The whole stage re-centres in the space left of the panel. |
-| E2 | Deep Dive on phones | **Sheet with detents** (rec) | Peek, half, full; the handle drags; swipe down closes. |
+| E2 | Deep Dive on phones | **One sheet, from a grabber above the timeline** | **Settled in chat (8 Oct 2026), after testing on the owner's phones:** the peek and the half height are gone. The peek's numbers repeated Deep Dive and cluttered the stage, nothing said it could be lifted, it covered the timeline's tags and sat on the timeline like a block; half height showed little. Now a slim grabber in the timeline's own colour is the way up, and the sheet rises to just under the top of the screen, stopping at the timeline so it can still be scrubbed. The grabber and the sheet's top drag it; swipe or flick down, ✕ and Esc close it. Deep Dive stays in the menu everywhere. |
 | E3 | Content | **Three chapters: Tonight, The Moon, The Orbit** (rec) | Each number once. |
 | E4 | 12h/24h and km/mi | **Default from locale, override in a small settings menu** (rec) | |
 | E5 | Numbers | **Serif figures for hero numbers, tabular sans in tables** (rec) | |
@@ -276,8 +276,10 @@ when the page opens.
 | 1c | The observed sky: real stars around the Moon, planets, depth layers, scintillation, tilt | Done: PR #58 merged 7 Oct 2026 |
 | 2a | The instrument: tokens, hairline controls with the light bloom, the custom icon set, copy | Done: PR #60 merged 7 Oct 2026 |
 | 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive | Done: PR #61 merged 8 Oct 2026 |
-| 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | In review |
-| 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
+| 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Done: PR #63 merged 8 Oct 2026 (with the settings fix, #62) |
+| 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | In review |
+| 3b | Deep Dive's three chapters: Tonight, The Moon, The Orbit; each number once; settled cross-fades | Not started |
+| 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
@@ -456,3 +458,29 @@ when the page opens.
   tick. Date sounds follow the view rather than the control: whatever moved the date (a
   button, a key, the timeline), a day crossed ticks at the pitch of that day's illumination
   and an exact phase reached by scrub, step or jump rings its chord (`src/audio/cues.js`).
+- Phase 3 in three parts, as with Phases 1 and 2 (agreed in chat on 8 Oct 2026): 3a the frame,
+  3b the chapters, 3c the overlays. On phones the sheet sits above the timeline until Phase 4's
+  dock slots in beneath it.
+- 3a, wide screens (960 px and up): Deep Dive is an opaque panel, 31 rem, on the right. The
+  stage (header, Moon, phase name, timeline) narrows to the space beside it with the panel's
+  own easing, so nothing is cut off (E1). The scene follows the Moon's area a frame at a time;
+  a Moon that only moved is laid down again rather than rendered, and its box only grows
+  while the stage moves, fitting itself again 400 ms after it stops.
+- 3a, phones (E2, as changed in chat on 8 Oct 2026): one sheet, open or closed. 3a's first
+  build had a peek of three numbers and a half height; on the owner's iPhone and Android the
+  peek cluttered the stage and covered the timeline's tags, half height showed little, and the
+  sheet, sized from measurements, left a gap above the timeline and once would not close.
+  Now a slim grabber (a 36 × 4 px pill in the timeline's colour, with a 120 × 28 px reach)
+  sits just above the timeline, and the sheet rises from there to just under the top of the
+  screen. It is laid out inside the stage's own box, which ends where the timeline begins,
+  so it meets the timeline exactly on every phone with nothing measured; closed, it is
+  hidden, not just moved out of sight. The timeline sits above it, so its tag over the thumb
+  still shows while scrubbing with the sheet open. The grabber and the sheet's top drag it,
+  timed by the events themselves; a release's speed, carried on 220 ms, decides open or
+  closed; at the top of scrolled contents a pull down takes it down. A press on the close
+  button is never taken for a drag. The drag code is its own chunk, fetched once the Moon has
+  settled and the browser is idle (fetched with the Moon still loading, it cost 0.3–0.45 s
+  of mobile speed index); a first touch before then fetches it at once.
+  The stage doesn't re-frame on phones; the Moon keeps its size, less the grabber's 16 px
+  where the height is tight.
+- 3a made `--panel` opaque: at 98% the header's date ghosted through the full-height sheet.

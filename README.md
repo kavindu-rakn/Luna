@@ -98,6 +98,7 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 
 ### A Quiet Stage
 * **Nothing but the Moon:** The header holds the wordmark, the date block and one menu. The date opens the calendar, the place beneath it opens the location picker, and five controls step by phase and by day, with ⊙ lit in amber while the view follows the clock. The phase name opens Deep Dive.
+* **Deep Dive Beside the Moon:** On a wide screen Deep Dive is a panel on the right, and the whole stage re-centres beside it, so the Moon and the timeline are never cut off. On a phone a slim grabber sits above the timeline: lift it, or tap the phase name, and Deep Dive rises as a sheet that stops at the timeline, so you can still scrub through the month and watch every number change. Swipe it down to put it away.
 * **One Menu:** Deep Dive, sharing, Sound, *Tilt to look around* on phones, keyboard shortcuts where there is a keyboard, privacy, and the 12/24-hour and km/mile settings.
 * **Calendar:** A monthly calendar, anchored to the date, for instant date jumping.
 * **Month & Year Pickers:** Go straight to any month from 1900 to 2100, or type a year to jump to it.
@@ -174,8 +175,8 @@ Luna is built with a keyboard navigation system:
 | <kbd>Shift</kbd> + <kbd>→</kbd> | **Next Major Phase** | Jump to the computed instant of the next primary quarter (*New ➔ 1st Q ➔ Full ➔ Last Q*) |
 | <kbd>Shift</kbd> + <kbd>←</kbd> | **Previous Major Phase** | Jump to the computed instant of the preceding primary quarter (*Last Q ➔ Full ➔ 1st Q ➔ New*) |
 | <kbd>T</kbd> | **Realtime Reset** | Snap back to current date & time |
-| <kbd>D</kbd> | **Deep Dive** | Toggle astronomical telemetry drawer |
-| <kbd>Esc</kbd> | **Dismiss** | Close modals, drawer, and popups |
+| <kbd>D</kbd> | **Deep Dive** | Open or close Deep Dive |
+| <kbd>Esc</kbd> | **Dismiss** | Close dialogs, popovers and Deep Dive |
 | <kbd>?</kbd> | **Shortcuts** | Show every shortcut, including the timeline and calendar keys |
 
 ---
@@ -243,7 +244,7 @@ graph TD
 
     C --> C1[Date Controls & Chevrons]
     C --> C2[Synodic Cycle Scrubber]
-    C --> C3[Slide-out Telemetry Drawer]
+    C --> C3[Deep Dive Panel & Phone Sheet]
     C --> C4[Moonlight Halo, Moon Ring & Generated Sound]
 
     D --> D1[Meeus Longitude & Distance Series]
@@ -342,7 +343,7 @@ npm run build && npm run check:bundle
 
 The page paints before any JavaScript arrives. The build renders the app's first frame to HTML with the stylesheet inlined, and a 2 KB inline script brings its date, phase and flat Moon up to today before the first paint. The live app then replaces it, and the 3D Moon fades in over the flat one once its texture is drawn. There is no loading screen.
 
-Three.js is most of Luna's JavaScript, but only the 3D Moon needs it. It loads after the first paint inside the scene's worker, where it parses, compiles and draws without touching the main thread; browsers whose workers can't draw WebGL load it on the main thread instead. Deep Dive's panels and GSAP also load after first paint. The entry chunk is **86 KB gzipped**, down from 354 KB.
+Three.js is most of Luna's JavaScript, but only the 3D Moon needs it. It loads after the first paint inside the scene's worker, where it parses, compiles and draws without touching the main thread; browsers whose workers can't draw WebGL load it on the main thread instead. Deep Dive's panels and GSAP also load after first paint. The entry chunk is **87 KB gzipped**, down from 354 KB.
 
 CI fails the build if that chunk crosses 90 KB, if the prerendered first frame is missing, if the content security policy doesn't allow the inline script by its hash, if the 3D engine is preloaded by the document, or if the entry imports it statically. That last case is not hypothetical: a chunking change once pulled React into the 3D chunk, which made the entry look *smaller* while forcing all of Three.js back onto the critical path.
 

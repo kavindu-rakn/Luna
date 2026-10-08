@@ -4,7 +4,7 @@
 const NOT_SKY = [
   'button', 'a', 'input', 'select', 'textarea', 'label', 'dialog',
   '[role="slider"]', '[role="dialog"]',
-  '.app-brand', '.date-controls', '.app-menu', '.timeline-dock', '.data-drawer',
+  '.app-brand', '.date-controls', '.app-menu', '.timeline-dock', '.deep-dive', '.deep-dive-grabber',
   '.hero-phase-name', '.update-prompt', '.share-toast'
 ].join(', ');
 

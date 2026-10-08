@@ -33,7 +33,7 @@ const DeepDiveContent = ({
 
         <OrbitalView lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
 
-        <footer className="drawer-footer">
+        <footer className="deep-dive-footer">
           Moon and Sun positions from Meeus&rsquo; <em>Astronomical Algorithms</em> and SunCalc.
           <br />
           Moon imagery: NASA&rsquo;s Scientific Visualization Studio.
