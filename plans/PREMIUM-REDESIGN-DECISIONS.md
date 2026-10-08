@@ -275,8 +275,8 @@ when the page opens.
 | 1b | The photographed Moon: NASA textures (KTX2, 2K/4K, normal map), lunar shader, glow, quality tiers | Done: PR #57 merged 7 Oct 2026 |
 | 1c | The observed sky: real stars around the Moon, planets, depth layers, scintillation, tilt | Done: PR #58 merged 7 Oct 2026 |
 | 2a | The instrument: tokens, hairline controls with the light bloom, the custom icon set, copy | Done: PR #60 merged 7 Oct 2026 |
-| 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive | In review |
-| 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Not started |
+| 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive | Done: PR #61 merged 8 Oct 2026 |
+| 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | In review |
 | 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
@@ -430,3 +430,29 @@ when the page opens.
   header and the timeline faded, leaving the Moon, the sky and the phase name. In review the
   owner dropped it: with nothing to do but look at a still Moon, it felt like an awkward
   silence, and Luna's motion is already enough. The controls stay.
+- 2c replaces the comet cursor (C1–C3). The native pointer stays. With a mouse, a moonlight
+  halo (480 px, transform only) trails it on a critically damped spring, beneath the scene's
+  canvas so the Moon covers it and only sky is lit; it fades over controls, text and panels.
+  The scene steps the same spring (`src/utils/spring.js`) for the stars it brightens, so the
+  light and the stars move as one, and stops drawing once both settle.
+- Over the Moon's disc a hairline ring replaces the pointer, closing a little while the Moon
+  is held. "Drag to rotate" shows beside it until the first turn (remembered on the device as
+  `luna_moon_hint`, listed in the privacy dialog); while the Moon is turned it reads
+  "Double-click to reset" (F7). Labels wait 300 ms, so passing over the Moon says nothing.
+- The fling (C2): a flick of at least 300 px (or 22% of the width) at 3 px/ms or faster, nearly
+  straight, all of it over open sky at least 32 px clear of the Moon's limb, launches a meteor
+  along its path and on past it while the sky ahead stays empty. Once per 45 s at most. The
+  streak lasts 0.95 s, matched to its sound's spark. None of this with touch or reduced motion.
+- Sound (A7, the master prompt 4.4): the lab's recipes, ported unchanged into
+  `src/audio/engine.js`, which loads only once sound is first turned on. The AudioContext is
+  made inside the Sound switch's press, or, when sound was left on last visit, inside the
+  first press of the new one; nothing plays as the page loads. One change, a parameter not a
+  recipe: the meteor pans the way the streak on screen crosses, where the lab always panned
+  left to right. Sound rests while the page is hidden.
+- One action, one sound. Cues raised together are weighed and only the most telling plays:
+  Deep Dive's sheet, then a phase chime, the meteor, a switch (Sound, Tilt, the settings, a
+  saved place), a glass tap (menu items, calendar days and months, places), leaving or
+  returning to now, the felt press (closing a panel, grabbing the Moon), a day tick, a hover
+  tick. Date sounds follow the view rather than the control: whatever moved the date (a
+  button, a key, the timeline), a day crossed ticks at the pitch of that day's illumination
+  and an exact phase reached by scrub, step or jump rings its chord (`src/audio/cues.js`).

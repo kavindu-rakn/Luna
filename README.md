@@ -98,7 +98,7 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 
 ### A Quiet Stage
 * **Nothing but the Moon:** The header holds the wordmark, the date block and one menu. The date opens the calendar, the place beneath it opens the location picker, and five controls step by phase and by day, with ⊙ lit in amber while the view follows the clock. The phase name opens Deep Dive.
-* **One Menu:** Deep Dive, sharing, *Tilt to look around* on phones, keyboard shortcuts where there is a keyboard, privacy, and the 12/24-hour and km/mile settings.
+* **One Menu:** Deep Dive, sharing, Sound, *Tilt to look around* on phones, keyboard shortcuts where there is a keyboard, privacy, and the 12/24-hour and km/mile settings.
 * **Calendar:** A monthly calendar, anchored to the date, for instant date jumping.
 * **Month & Year Pickers:** Go straight to any month from 1900 to 2100, or type a year to jump to it.
 * **A Moon on Every Day:** Each day shows its phase at local noon, the days of New, First Quarter, Full and Last Quarter Moons are ringed, and the month's exact phase times sit below, each one click from its precise moment.
@@ -107,9 +107,11 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 </td>
 <td width="50%" valign="top">
 
-### Celestial Particle Comet Cursor
-* **Dynamic Plasma Tail:** Multi-stage particle comet trailing mouse velocity.
-* **Difference-Blending Core:** Inverts celestial canvas elements for tactile hover feedback.
+### Moonlight and Sound
+* **A Moonlight Halo:** With a mouse, a soft light trails the pointer across the sky, brightening the stars inside it, and steps aside over controls and text. The pointer itself stays.
+* **A Ring on the Moon:** Over the Moon a hairline ring stands in for the pointer: *Drag to rotate* the first time, *Double-click to reset* once it's turned.
+* **A Meteor, Now and Then:** Fling the pointer fast across empty sky and a meteor may streak along its path. At most once every 45 seconds.
+* **Sound, Generated:** Off until you turn it on. Every sound is synthesised in the browser, with no audio files: a glass tap on presses, a tick for each day crossed pitched by how much of the Moon is lit, each exact phase's own chime, and a quiet ambient bed that brightens toward Full Moon.
 
 </td>
 </tr>
@@ -221,7 +223,7 @@ Luna has no accounts, cookies, analytics or ads, and every calculation runs on t
 * **Your location** is asked for only when you press *Use my location*, and is rounded to about a kilometre the moment it arrives. The exact position is never stored, sent or put in a link. The rounded position is sent to OpenStreetMap's Nominatim to name the place.
 * **Place search** sends what you type to Nominatim, which, like any web service, sees your IP address.
 * **Motion:** on a phone the sky drifts with its tilt, read from the motion sensor; the readings move the sky and are never stored or sent. On an iPhone it starts only from *Tilt to look around*, in the menu, and iOS asks first.
-* **Stored on the device:** your chosen place, saved places, clock and distance settings, whether tilt is on, and the name of the last place located. Older versions also kept a name for every place ever located; that history is deleted on the first visit after updating.
+* **Stored on the device:** your chosen place, saved places, clock and distance settings, whether sound and tilt are on, whether the Moon has been turned yet (so *Drag to rotate* shows once), and the name of the last place located. Older versions also kept a name for every place ever located; that history is deleted on the first visit after updating.
 * **Share links** carry the date, the place name and coordinates rounded to about a kilometre.
 
 ---
@@ -242,7 +244,7 @@ graph TD
     C --> C1[Date Controls & Chevrons]
     C --> C2[Synodic Cycle Scrubber]
     C --> C3[Slide-out Telemetry Drawer]
-    C --> C4[Custom Particle Comet Cursor]
+    C --> C4[Moonlight Halo, Moon Ring & Generated Sound]
 
     D --> D1[Meeus Longitude & Distance Series]
     D --> D2[Golden-Section Phase Solver]

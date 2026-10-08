@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import DateControls from './components/DateControls';
 import LunarTimeline from './components/LunarTimeline';
-import CustomCursor from './components/CustomCursor';
 import SceneBoundary from './components/SceneBoundary';
 import MoonDisc from './components/MoonDisc';
 import { hasWebGLApi } from './utils/webgl';
@@ -10,6 +9,8 @@ import { glowStyle } from './utils/moonPath';
 import { useTilt } from './hooks/useTilt';
 import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion';
 import { installPressBloom } from './utils/pressBloom';
+import { installSound, useSound } from './audio/sound';
+import { useSoundCues } from './audio/useSoundCues';
 
 // The 3D Moon's component starts the scene; three.js itself loads inside the
 // scene's worker (or on the main thread where workers can't draw WebGL). Even the
@@ -18,6 +19,10 @@ const MoonScene = lazy(() => import('./components/MoonScene'));
 
 // Without WebGL the sky is drawn once, flat, from the same catalogue
 const SkyFallback = lazy(() => import('./components/SkyFallback'));
+
+// The moonlight halo and the flung meteor: for a mouse only, once the page has
+// settled
+const SkyPointer = lazy(() => import('./components/SkyPointer'));
 
 // Deep Dive's panels, and GSAP with them, are only needed once the drawer opens.
 // They load after first paint and are mounted, hidden, once the page is idle, so
@@ -100,9 +105,14 @@ function App({ prerender = false }) {
   // "Tilt to look around": the phone's motion sensor moves the sky's depth layers
   const tilt = useTilt(!prerender);
   const reducedMotion = usePrefersReducedMotion();
+  const [hasMouse] = useState(() => !prerender && Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)').matches));
 
   // The light bloom on every pressed control (decision D7)
   useEffect(() => (prerender ? undefined : installPressBloom()), [prerender]);
+
+  // Sound (A7): off until turned on in the menu, and nothing loads until then
+  const sound = useSound();
+  useEffect(() => (prerender ? undefined : installSound()), [prerender]);
 
   // 12- or 24-hour clock, km or miles. How this viewer reads, not what they are
   // looking at, so these stay on the device and out of the URL.
@@ -155,6 +165,15 @@ function App({ prerender = false }) {
   const mountDeepDive = !prerender && hasOpenedDrawer;
 
   const { share, status: shareStatus } = useShare(currentDate, location);
+
+  // Day ticks, phase chimes, now, Deep Dive and the panels, however they changed
+  useSoundCues({
+    date: currentDate,
+    isLive,
+    timeZone: location.timeZone,
+    drawerOpen: isDrawerOpen,
+    panelsOpen: [isMenuOpen, isCalendarOpen, isLocationOpen, isShortcutsOpen, isPrivacyOpen]
+  });
 
   // The constellation behind the Moon, so the label can say what the sky shows.
   // Its boundary table loads once the page has settled.
@@ -391,8 +410,16 @@ function App({ prerender = false }) {
           {/* What is sent, what stays on the device, and a way to forget it */}
           <PrivacyDialog isOpen={isPrivacyOpen} onClose={closePrivacy} />
 
-          {/* Custom Particle Comet Cursor */}
-          <CustomCursor />
+          {/* Over the sky, a mouse carries a soft moonlight halo (C1), and a fling
+              across empty sky now and then throws a meteor (C2). The native
+              pointer stays; over the Moon a ring stands in for it (MoonScene). */}
+          {hasMouse && !reducedMotion && isSettled && skyHost && (
+            <SceneBoundary name="Sky pointer" fallback={null}>
+              <Suspense fallback={null}>
+                <SkyPointer skyHost={skyHost} />
+              </Suspense>
+            </SceneBoundary>
+          )}
         </>
       )}
 
@@ -440,6 +467,7 @@ function App({ prerender = false }) {
               setIsOpen={setIsMenuOpen}
               onDeepDive={() => setIsDrawerOpen(true)}
               onShare={share}
+              sound={sound}
               tilt={tilt}
               showTilt={tilt.supported && !reducedMotion}
               onShortcuts={() => setIsShortcutsOpen(true)}

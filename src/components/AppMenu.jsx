@@ -5,12 +5,13 @@ import DisplayPreferences from './DisplayPreferences';
 // The one menu (decision D2): everything the header used to hold, plus the small
 // settings E4 asked for. A disclosure rather than an ARIA menu: it holds actions,
 // a switch and two radio groups, which plain buttons and fieldsets already make
-// keyboard- and screen-reader-friendly. Sound joins it in 2c; About in Phase 5.
+// keyboard- and screen-reader-friendly. About joins it in Phase 5.
 const AppMenu = ({
   isOpen,
   setIsOpen,
   onDeepDive,
   onShare,
+  sound,
   tilt,
   showTilt,
   onShortcuts,
@@ -71,21 +72,38 @@ const AppMenu = ({
         <div id="app-menu-panel" ref={panelRef} className="menu-panel" role="group" aria-label="Menu">
           <ul className="menu-list">
             <li>
-              <button type="button" className="menu-item" onClick={act(onDeepDive)} aria-keyshortcuts="D">
+              <button type="button" className="menu-item" onClick={act(onDeepDive)} aria-keyshortcuts="D" data-sound="glass">
                 <Icon name="readings" />
                 <span>Deep Dive</span>
                 <kbd className="menu-key" aria-hidden="true">D</kbd>
               </button>
             </li>
             <li>
-              <button type="button" className="menu-item" onClick={act(onShare)}>
+              <button type="button" className="menu-item" onClick={act(onShare)} data-sound="glass">
                 <Icon name="share" />
                 <span>Share this view</span>
               </button>
             </li>
+            {/* Plays its own switch sound, once the sounds have arrived */}
+            {sound.supported && (
+              <li>
+                <button type="button" className="menu-item" role="switch" aria-checked={sound.on} onClick={sound.toggle}>
+                  <Icon name={sound.on ? 'soundOn' : 'soundOff'} />
+                  <span>Sound</span>
+                  <span className="menu-switch" aria-hidden="true" />
+                </button>
+              </li>
+            )}
             {showTilt && (
               <li>
-                <button type="button" className="menu-item" role="switch" aria-checked={tilt.on} onClick={tilt.toggle}>
+                <button
+                  type="button"
+                  className="menu-item"
+                  role="switch"
+                  aria-checked={tilt.on}
+                  onClick={tilt.toggle}
+                  data-sound={tilt.on ? 'switch-off' : 'switch-on'}
+                >
                   <Icon name="tilt" />
                   <span>Tilt to look around</span>
                   <span className="menu-switch" aria-hidden="true" />
@@ -94,14 +112,14 @@ const AppMenu = ({
             )}
             {/* Only where there is a keyboard to use them with (see .menu-keyboard) */}
             <li className="menu-keyboard">
-              <button type="button" className="menu-item" onClick={act(onShortcuts)} aria-keyshortcuts="?">
+              <button type="button" className="menu-item" onClick={act(onShortcuts)} aria-keyshortcuts="?" data-sound="glass">
                 <Icon name="keyboard" />
                 <span>Keyboard shortcuts</span>
                 <kbd className="menu-key" aria-hidden="true">?</kbd>
               </button>
             </li>
             <li>
-              <button type="button" className="menu-item" onClick={act(onPrivacy)}>
+              <button type="button" className="menu-item" onClick={act(onPrivacy)} data-sound="glass">
                 <Icon name="privacy" />
                 <span>Privacy</span>
               </button>

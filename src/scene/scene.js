@@ -42,6 +42,7 @@ import { CATALOGUE_FILE, countBrighterThan, decodeStars } from '../sky/stars.js'
 import { apply, focalLength, skyFrame, zenithDirection } from '../sky/frame.js';
 import { getPlanets } from '../sky/planets.js';
 import { GLOW_LEAN, GLOW_MAX } from '../utils/moonPath.js';
+import { placeSpring, stepSpring } from '../utils/spring.js';
 
 // The camera stands far off with a narrow lens. From Earth the Moon is seen as good
 // as face-on, which is also how the flat Moon's photograph is projected; a near
@@ -265,10 +266,13 @@ export const createScene = async (canvas, options) => {
 
   // Where the sky is being pulled: by the pointer on a desktop, by the tilt on a
   // phone, as -1…1 across the screen. The slide follows on a spring.
-  const look = { x: 0, y: 0, inside: false, mouse: false };
+  const look = { x: 0, y: 0, inside: false, mouse: false, lit: false };
   let tilt = null; // { x, y } while tilt is on
   const drift = { x: 0, y: 0, vx: 0, vy: 0 };
   const halo = { x: -1e4, y: -1e4, strength: 0 };
+  // Where the halo is, in CSS pixels: it trails the pointer on the same spring as
+  // the halo the page draws (src/utils/spring.js)
+  const haloSpring = { x: 0, y: 0, vx: 0, vy: 0 };
   let twinkle = null; // { index, start, length, amount, colour, shown }
   let twinkleTimer = null;
   let twinkleFrame = null;
@@ -500,8 +504,12 @@ export const createScene = async (canvas, options) => {
 
     if (stepDrift(elapsed / 1000)) animating = true;
 
-    // The cursor's light on the stars
-    const haloTarget = look.inside && look.mouse && !reducedMotion ? 1 : 0;
+    // The cursor's light on the stars: under the halo, so only over open sky, and
+    // following it on its spring
+    const haloTarget = look.inside && look.mouse && look.lit && !reducedMotion ? 1 : 0;
+    // Nearly out: where it comes up again, it starts at the pointer (as the page's
+    // halo does once it has faded, SkyPointer.jsx)
+    const wasDark = halo.strength < 0.05;
     if (halo.strength !== haloTarget) {
       const k = 1 - Math.exp(-elapsed / 1000 / POINTER_FADE_S);
       halo.strength += (haloTarget - halo.strength) * k;
@@ -509,8 +517,12 @@ export const createScene = async (canvas, options) => {
       else animating = true;
     }
     if (look.inside) {
-      halo.x = look.px * scale;
-      halo.y = look.py * scale;
+      const point = { x: look.px, y: look.py };
+      // Where the light comes up, it starts at the pointer rather than flying in
+      if (wasDark) placeSpring(haloSpring, point);
+      else if (!stepSpring(haloSpring, point, elapsed / 1000)) animating = true;
+      halo.x = haloSpring.x * scale;
+      halo.y = haloSpring.y * scale;
     }
     sky.setPointer(halo.x, halo.y, halo.strength);
 
@@ -678,9 +690,11 @@ export const createScene = async (canvas, options) => {
       }
     },
     // Where a mouse is over the page, in CSS pixels, for the depth layers and the
-    // cursor's light; inside is false once it leaves the window
-    look({ x, y, inside }) {
+    // cursor's light; inside is false once it leaves the window, and lit is false
+    // over controls, text and panels, where the halo fades
+    look({ x, y, inside, lit = true }) {
       look.inside = Boolean(inside);
+      look.lit = Boolean(lit);
       look.mouse = true;
       if (look.inside) {
         look.px = x;
