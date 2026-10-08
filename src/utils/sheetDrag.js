@@ -1,83 +1,79 @@
-import { offsetFor, settleAt } from './sheet';
+import { settlesOpen } from './sheet';
 
 // Dragging Deep Dive's sheet on phones (decision E2), loaded once the page has
-// painted: the peek and the contents only need it once a finger is on them.
+// painted: the grabber, the sheet's top and its contents only need it once a finger
+// is on them.
 
 const TAP_PX = 6;
-// Past the top or the peek, the sheet follows the finger this much
+// Above its open height the sheet follows the finger this much
 const RUBBER = 0.3;
 
-// Begin, move and end a drag of the sheet, from its peek or its contents. What it
-// needs to know at the moment comes through `latest`: { room, detent, isOpen,
-// setIsOpen }.
-export const createSheetDrag = ({ latest, panelRef, setTall }) => {
+// Begin, move and end a drag of the sheet: up from the grabber above the timeline,
+// or down from the sheet's own top or its contents. What it needs to know at the
+// moment comes through `latest`: { isOpen, setIsOpen }.
+export const createSheetDrag = ({ latest, panelRef }) => {
   let gesture = null;
   const drag = {
     draggedAt: -Infinity,
     active: () => Boolean(gesture),
-    begin(y) {
-      const { room } = latest.current;
+    // y in pixels; t is the event's own time, which a busy page doesn't skew
+    begin(y, t = performance.now()) {
       const sheet = panelRef.current;
-      if (!room || !sheet) return false;
-      // From wherever it is, even mid-settle
-      const top = new DOMMatrixReadOnly(getComputedStyle(sheet).transform).m42;
+      if (!sheet) return false;
+      const height = sheet.offsetHeight;
+      // From wherever it is, even mid-slide
+      const offset = Math.min(height, Math.max(0, new DOMMatrixReadOnly(getComputedStyle(sheet).transform).m42));
       sheet.classList.add('is-dragging');
-      sheet.style.transform = `translate3d(0, ${top}px, 0)`;
-      gesture = { y0: y, top0: top, top, moved: false, samples: [{ y, t: performance.now() }] };
+      sheet.style.transform = `translate3d(0, ${offset}px, 0)`;
+      gesture = { y0: y, offset0: offset, offset, height, moved: false, samples: [{ y, t }] };
       return true;
     },
-    move(y) {
-      const { room } = latest.current;
-      if (!gesture || !room) return;
+    move(y, t = performance.now()) {
+      if (!gesture) return;
       if (Math.abs(y - gesture.y0) > TAP_PX) gesture.moved = true;
-      const lowest = offsetFor('closed', room);
-      let top = gesture.top0 + (y - gesture.y0);
-      if (top < 0) top *= RUBBER;
-      if (top > lowest) top = lowest + (top - lowest) * RUBBER;
-      gesture.top = top;
-      panelRef.current.style.transform = `translate3d(0, ${top}px, 0)`;
-      const now = performance.now();
-      gesture.samples.push({ y, t: now });
-      while (gesture.samples.length > 2 && now - gesture.samples[0].t > 100) gesture.samples.shift();
+      let offset = gesture.offset0 + (y - gesture.y0);
+      if (offset < 0) offset *= RUBBER;
+      offset = Math.min(offset, gesture.height);
+      gesture.offset = offset;
+      panelRef.current.style.transform = `translate3d(0, ${offset}px, 0)`;
+      gesture.samples.push({ y, t });
+      while (gesture.samples.length > 2 && t - gesture.samples[0].t > 100) gesture.samples.shift();
     },
+    // Returns whether it was a drag (rather than a tap)
     end() {
       const g = gesture;
       gesture = null;
-      const { room, detent, isOpen, setIsOpen } = latest.current;
       const sheet = panelRef.current;
-      if (!g || !room || !sheet) return;
+      if (!g || !sheet) return false;
+      let open = latest.current.isOpen;
+      if (g.moved) {
+        drag.draggedAt = performance.now();
+        const first = g.samples[0];
+        const last = g.samples[g.samples.length - 1];
+        const speed = last.t > first.t ? (last.y - first.y) / (last.t - first.t) : 0;
+        open = settlesOpen(g.offset, speed, g.height);
+      }
+      // Hand the sheet back to its class, open or closed, and it slides there from
+      // where the finger left it
+      sheet.classList.toggle('is-open', open);
       sheet.classList.remove('is-dragging');
-      if (!g.moved) {
-        // A tap: back where it was, and the press is the summary's to handle
-        sheet.style.transform = `translate3d(0, ${offsetFor(detent, room)}px, 0)`;
-        return;
-      }
-      drag.draggedAt = performance.now();
-      const first = g.samples[0];
-      const last = g.samples[g.samples.length - 1];
-      const speed = last.t > first.t ? (last.y - first.y) / (last.t - first.t) : 0;
-      const next = settleAt(g.top, speed, room);
-      sheet.style.transform = `translate3d(0, ${offsetFor(next, room)}px, 0)`;
-      if (next === 'closed') {
-        if (isOpen) setIsOpen(false);
-      } else {
-        setTall(next === 'full');
-        if (!isOpen) setIsOpen(true);
-      }
+      sheet.style.transform = '';
+      if (open !== latest.current.isOpen) latest.current.setIsOpen(open);
+      return g.moved;
     }
   };
   return drag;
 };
 
-// The contents: at half height a drag moves the sheet; at full they scroll, and a
-// pull down from their top hands the drag back to the sheet. Touch events, since
-// only they can stop the scroll once a finger has started. Returns the undo.
-export const followContents = (body, drag, latest) => {
+// The contents: when they are scrolled to the top, a pull down hands the drag to the
+// sheet; otherwise they scroll. Touch events, since only they can stop the scroll
+// once a finger has started. Returns the undo.
+export const followContents = (body, drag) => {
   let start = null;
   let decided = null;
   const onStart = (event) => {
     if (event.touches.length !== 1) return;
-    start = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    start = { x: event.touches[0].clientX, y: event.touches[0].clientY, t: event.timeStamp };
     decided = null;
   };
   const onMove = (event) => {
@@ -87,14 +83,12 @@ export const followContents = (body, drag, latest) => {
       const dx = x - start.x;
       const dy = y - start.y;
       if (Math.hypot(dx, dy) < 4) return;
-      const { detent } = latest.current;
-      const vertical = Math.abs(dy) > Math.abs(dx);
-      const takes = vertical && (detent === 'half' || (detent === 'full' && body.scrollTop <= 0 && dy > 0));
-      decided = takes && drag.begin(start.y) ? 'sheet' : 'scroll';
+      const takes = dy > 0 && Math.abs(dy) > Math.abs(dx) && body.scrollTop <= 0;
+      decided = takes && drag.begin(start.y, start.t) ? 'sheet' : 'scroll';
     }
     if (decided === 'sheet') {
       event.preventDefault();
-      drag.move(y);
+      drag.move(y, event.timeStamp);
     }
   };
   const onEnd = () => {

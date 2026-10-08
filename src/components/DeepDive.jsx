@@ -1,23 +1,20 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Icon from './icons/Icon';
-import { offsetFor, shownAt } from '../utils/sheet';
 
 // Deep Dive's frame (decisions E1, E2; the master prompt 6.5). On a wide screen it
 // is a panel on the right, and the stage re-centres in the space beside it
-// (.main-view-container.drawer-open in index.css). On a phone it is a sheet above
-// the timeline with three heights:
-// - peek: a row of the key numbers, always there, and the way in
-// - half: the Moon re-framed above it, the timeline still in reach
-// - full: the contents scroll
-// The peek drags the sheet, as do its contents at half height; how fast a drag is
-// let go decides where it settles (src/utils/sheetDrag.js). At full height the
-// contents scroll, and a pull down from their top takes the sheet down with it.
+// (.main-view-container.drawer-open in index.css).
+//
+// On a phone it is a sheet with one height, as settled in chat on 8 Oct 2026: a
+// slim grabber above the timeline is the way up, and the sheet rises from there to
+// just under the top of the screen, stopping at the timeline so the timeline can
+// still be scrubbed while it is open. Its top and, from the top of its contents, a
+// pull down take it back down; how fast a drag is let go decides open or closed
+// (src/utils/sheetDrag.js). The sheet is laid out with the stage, not measured, so
+// it meets the timeline the same way on every phone. The phase name, the menu and
+// D open it too.
 
 const WIDE = '(min-width: 960px)';
-// A phone on its side: too short for a peek or a half height (index.css matches)
-const SHORT = '(max-width: 959px) and (max-height: 560px) and (orientation: landscape)';
-// At half height the Moon keeps at least this much room above the sheet
-const MIN_MOON = 140;
 
 const matches = (query) => typeof window !== 'undefined' && Boolean(window.matchMedia?.(query).matches);
 
@@ -33,77 +30,15 @@ const useMedia = (query) => {
   return match;
 };
 
-const sameRoom = (a, b) => a && a.height === b.height && a.peek === b.peek && a.short === b.short && a.halfMax === b.halfMax;
-
-const DeepDive = ({ isOpen, setIsOpen, summary, panelRef, headingRef, children }) => {
+const DeepDive = ({ isOpen, setIsOpen, panelRef, headingRef, children }) => {
   const wide = useMedia(WIDE);
-  const short = useMedia(SHORT);
-  const frameRef = useRef(null);
-  const peekRef = useRef(null);
   const bodyRef = useRef(null);
   const dragRef = useRef(null);
-  // Phones: at full height rather than half
-  const [tall, setTall] = useState(false);
-  // Phones: the sheet's room above the timeline, and its peek's height
-  const [measured, setMeasured] = useState(null);
-  const room = wide ? null : measured;
-
-  // Closing always reopens at half; on its side a phone has only full height
-  if (!isOpen && tall) setTall(false);
-  const detent = !isOpen ? 'closed' : tall || short ? 'full' : 'half';
 
   const latest = useRef(null);
   useLayoutEffect(() => {
-    latest.current = { room, detent, isOpen, setIsOpen };
+    latest.current = { isOpen, setIsOpen };
   });
-
-  // The room: from just under the top of the screen down to the timeline
-  useLayoutEffect(() => {
-    if (wide) return undefined;
-    const frame = frameRef.current;
-    const peek = peekRef.current;
-    const dock = document.querySelector('.timeline-dock');
-    const moon = document.querySelector('.moon-container');
-    const stage = moon?.parentElement;
-    const measure = () => {
-      // The timeline's height: the sheet stands on it, and the toasts clear both
-      document.documentElement.style.setProperty('--dock-height', `${dock ? dock.offsetHeight : 0}px`);
-      const height = frame.clientHeight;
-      // Half height stops where the Moon would have less than MIN_MOON: below the
-      // Moon's top, it needs that and what sits under it (the phase name)
-      let halfMax = Infinity;
-      if (dock && moon && stage) {
-        const moonBox = moon.getBoundingClientRect();
-        const under = stage.getBoundingClientRect().bottom - moonBox.bottom;
-        halfMax = Math.round(dock.getBoundingClientRect().top - moonBox.top - MIN_MOON - under);
-      }
-      const next = { height, peek: peek.offsetHeight, short: matches(SHORT), halfMax };
-      setMeasured((current) => (sameRoom(current, next) ? current : next));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(frame);
-    observer.observe(peek);
-    if (dock) observer.observe(dock);
-    return () => observer.disconnect();
-  }, [wide, short]);
-
-  // Set the sheet at its height, and keep that much of the stage clear for it:
-  // the peek's height when closed, half when open (at full it covers the Moon)
-  useLayoutEffect(() => {
-    const sheet = panelRef.current;
-    const root = document.documentElement;
-    if (!room) {
-      sheet.style.transform = '';
-      root.style.removeProperty('--sheet-reserve');
-      return;
-    }
-    sheet.style.transform = `translate3d(0, ${offsetFor(detent, room)}px, 0)`;
-    const reserve = room.short ? 0 : detent === 'closed' ? room.peek : shownAt('half', room);
-    root.style.setProperty('--sheet-reserve', `${reserve}px`);
-  }, [room, detent, panelRef]);
-
-  useEffect(() => () => document.documentElement.style.removeProperty('--sheet-reserve'), []);
 
   // Phones: the drag arrives just after the page has painted
   useEffect(() => {
@@ -112,10 +47,10 @@ const DeepDive = ({ isOpen, setIsOpen, summary, panelRef, headingRef, children }
     let unfollow = null;
     import('../utils/sheetDrag').then(({ createSheetDrag, followContents }) => {
       if (cancelled) return;
-      dragRef.current = createSheetDrag({ latest, panelRef, setTall });
-      unfollow = followContents(bodyRef.current, dragRef.current, latest);
+      dragRef.current = createSheetDrag({ latest, panelRef });
+      unfollow = followContents(bodyRef.current, dragRef.current);
     }).catch(() => {
-      // Without it the peek still opens and closes the sheet with a press
+      // Without it the grabber, the phase name and the close button still work
     });
     return () => {
       cancelled = true;
@@ -124,101 +59,83 @@ const DeepDive = ({ isOpen, setIsOpen, summary, panelRef, headingRef, children }
     };
   }, [wide, panelRef]);
 
-  const onPeekDown = (event) => {
+  // The grabber and the sheet's top both drag it. A press on a button (the close
+  // button) is the button's own.
+  const onHandleDown = (event) => {
     if (wide || (event.pointerType === 'mouse' && event.button > 0)) return;
-    if (!dragRef.current?.begin(event.clientY)) return;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    if (event.target instanceof Element && event.target.closest('button')) return;
+    if (!dragRef.current?.begin(event.clientY, event.timeStamp)) return;
+    // Touch keeps its own pointer on the handle; a mouse needs holding on to
+    if (event.pointerType === 'mouse') event.currentTarget.setPointerCapture?.(event.pointerId);
   };
-  const onPeekMove = (event) => {
-    if (dragRef.current?.active()) dragRef.current.move(event.clientY);
+  const onHandleMove = (event) => {
+    if (dragRef.current?.active()) dragRef.current.move(event.clientY, event.timeStamp);
   };
-  const onPeekUp = () => {
+  const onHandleUp = () => {
     if (dragRef.current?.active()) dragRef.current.end();
   };
-
-  // A wheel at half height means "show me more"
-  const onWheel = (event) => {
-    if (!wide && detent === 'half' && event.deltaY > 0) setTall(true);
+  const handle = {
+    onPointerDown: onHandleDown,
+    onPointerMove: onHandleMove,
+    onPointerUp: onHandleUp,
+    onPointerCancel: onHandleUp
   };
-
-  // A press on the peek opens or closes; the end of a drag isn't a press
-  const onSummary = () => {
-    if (performance.now() - (dragRef.current?.draggedAt ?? -Infinity) < 350) return;
-    setIsOpen(!isOpen);
-  };
-
-  // Closed on a phone, only the peek is there to reach; on its side, nothing is
-  const hidden = !wide && !isOpen;
-  const label = summary
-    ? `Deep Dive: ${summary.lit}% lit, ${summary.age} days old, ${summary.next.name} ${summary.next.when}`
-    : 'Deep Dive';
+  // A tap, not the end of a drag
+  const tapped = () => performance.now() - (dragRef.current?.draggedAt ?? -Infinity) > 350;
 
   return (
-    <div ref={frameRef} className="deep-dive-frame">
-      <aside
-        ref={panelRef}
-        id="deep-dive"
-        className={`deep-dive is-${detent}${isOpen ? ' is-open' : ''}`}
-        aria-labelledby="deep-dive-heading"
-        inert={hidden && short}
+    <>
+      {/* Phones: the grabber above the timeline. For keyboards and screen readers
+          the phase name, just above it, does the same. */}
+      <div
+        className="deep-dive-grabber"
+        aria-hidden="true"
+        {...handle}
+        onClick={() => {
+          if (tapped()) setIsOpen(true);
+        }}
       >
-        {/* Phones: the handle, and the numbers at a glance */}
-        <div
-          ref={peekRef}
-          className="deep-dive-peek"
-          onPointerDown={onPeekDown}
-          onPointerMove={onPeekMove}
-          onPointerUp={onPeekUp}
-          onPointerCancel={onPeekUp}
+        <span className="deep-dive-pill" />
+      </div>
+
+      <div className="deep-dive-frame">
+        <aside
+          ref={panelRef}
+          id="deep-dive"
+          className={`deep-dive${isOpen ? ' is-open' : ''}`}
+          aria-labelledby="deep-dive-heading"
         >
-          <span className="deep-dive-grip" aria-hidden="true" />
-          <button
-            type="button"
-            className="deep-dive-summary"
-            onClick={onSummary}
-            aria-expanded={isOpen}
-            aria-controls="deep-dive-body"
-            aria-label={label}
-          >
-            {summary && (
-              <>
-                <span className="deep-dive-figure">
-                  <span className="deep-dive-value">{summary.lit}%</span>
-                  <span className="deep-dive-key">lit</span>
-                </span>
-                <span className="deep-dive-figure">
-                  <span className="deep-dive-value">{summary.age} days</span>
-                  <span className="deep-dive-key">old</span>
-                </span>
-                <span className="deep-dive-figure">
-                  <span className="deep-dive-value">{summary.next.name}</span>
-                  <span className="deep-dive-key">{summary.next.when}</span>
-                </span>
-              </>
-            )}
-          </button>
-        </div>
+          <div className="deep-dive-top" {...handle}>
+            {/* Phones: the sheet's own grabber; a tap on it lets the sheet down */}
+            <span
+              className="deep-dive-pill deep-dive-grip"
+              aria-hidden="true"
+              onClick={() => {
+                if (tapped()) setIsOpen(false);
+              }}
+            />
+            <div className="deep-dive-header">
+              <h2 id="deep-dive-heading" ref={headingRef} tabIndex={-1} className="deep-dive-title">
+                Deep Dive
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="glass-button icon-button deep-dive-close"
+                aria-label="Close Deep Dive (Esc)"
+                title="Close (Esc)"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+          </div>
 
-        <div className="deep-dive-header" inert={hidden}>
-          <h2 id="deep-dive-heading" ref={headingRef} tabIndex={-1} className="deep-dive-title">
-            Deep Dive
-          </h2>
-          <button
-            type="button"
-            onClick={() => setIsOpen(false)}
-            className="glass-button icon-button deep-dive-close"
-            aria-label="Close Deep Dive (Esc)"
-            title="Close (Esc)"
-          >
-            <Icon name="close" />
-          </button>
-        </div>
-
-        <div ref={bodyRef} id="deep-dive-body" className="deep-dive-body" inert={hidden} onWheel={onWheel}>
-          {children}
-        </div>
-      </aside>
-    </div>
+          <div ref={bodyRef} id="deep-dive-body" className="deep-dive-body">
+            {children}
+          </div>
+        </aside>
+      </div>
+    </>
   );
 };
 

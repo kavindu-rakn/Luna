@@ -61,14 +61,6 @@ import { getLunarDetails, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
 
-// The next exact phases, as getNextMajorPhases names them
-const NEXT_PHASE_NAMES = [
-  ['nextNewMoon', 'New Moon'],
-  ['nextFirstQuarter', 'First Quarter'],
-  ['nextFullMoon', 'Full Moon'],
-  ['nextLastQuarter', 'Last Quarter']
-];
-
 // Keys that controls like the timeline and the calendar grid use to move around
 const NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
 
@@ -366,22 +358,6 @@ function App({ prerender = false }) {
     [constellationOf, moonView]
   );
 
-  // The sheet's peek on phones: how much of the Moon is lit, its age, and the next
-  // exact phase. Left out of the prerendered page, which would show the build's day.
-  const deepDiveSummary = useMemo(() => {
-    if (prerender) return null;
-    const phases = lunarDetails.nextPhases || {};
-    let next = null;
-    for (const [key, name] of NEXT_PHASE_NAMES) {
-      if (phases[key] && (!next || phases[key].msRemaining < next.msRemaining)) next = { name, ...phases[key] };
-    }
-    return {
-      lit: Math.round(lunarDetails.fractionValue * 100),
-      age: lunarDetails.age,
-      next: { name: next?.name ?? '', when: next?.countdown ?? '' }
-    };
-  }, [prerender, lunarDetails]);
-
   // What a screen reader hears when the view changes. It names the date and place,
   // which the old announcement left out, and waits for the view to settle: a drag
   // across the timeline would otherwise queue an announcement for every step.
@@ -503,57 +479,78 @@ function App({ prerender = false }) {
           </div>
         </header>
 
-        {/* Center Canvas Area: 3D Moon & Hero Phase Name */}
-        <div className="main-canvas-area observatory-stage">
-          {/* One accessible name for whichever Moon is showing, 3D or the 2D stand-in.
-              Dragging to rotate is exploration, not information: the phase and
-              illumination it shows are all available as text. */}
-          <div
-            ref={moonAreaRef}
-            className="moon-container"
-            role="img"
-            aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated${constellation ? `, in ${constellation}` : ''}`}
-          >
-            <MoonGlow view={moonView} hidden={moonReady} />
-            <MoonFallback view={moonView} hidden={moonReady} />
-            {hasWebGL && skyHost && (
-              <SceneBoundary name="Moon scene" onError={markFailed} fallback={null}>
-                <Suspense fallback={null}>
-                  <MoonScene
-                    view={moonView}
-                    isReady={moonReady}
-                    skyHost={skyHost}
-                    tilt={tilt.on}
-                    onScene={markScene}
-                    onReady={markReady}
-                    onFail={markFailed}
-                    onLost={markLost}
-                  />
-                </Suspense>
-              </SceneBoundary>
-            )}
+        {/* The stage, down to the timeline: the Moon and the phase name, and on
+            phones Deep Dive's sheet, which stands on the timeline and rises over
+            the stage. Laid out with the stage, so it meets the timeline exactly. */}
+        <div className="stage-region">
+          <div className="main-canvas-area observatory-stage">
+            {/* One accessible name for whichever Moon is showing, 3D or the 2D stand-in.
+                Dragging to rotate is exploration, not information: the phase and
+                illumination it shows are all available as text. */}
+            <div
+              ref={moonAreaRef}
+              className="moon-container"
+              role="img"
+              aria-label={`The Moon: ${lunarDetails.name}, ${lunarDetails.fraction} percent illuminated${constellation ? `, in ${constellation}` : ''}`}
+            >
+              <MoonGlow view={moonView} hidden={moonReady} />
+              <MoonFallback view={moonView} hidden={moonReady} />
+              {hasWebGL && skyHost && (
+                <SceneBoundary name="Moon scene" onError={markFailed} fallback={null}>
+                  <Suspense fallback={null}>
+                    <MoonScene
+                      view={moonView}
+                      isReady={moonReady}
+                      skyHost={skyHost}
+                      tilt={tilt.on}
+                      onScene={markScene}
+                      onReady={markReady}
+                      onFail={markFailed}
+                      onLost={markLost}
+                    />
+                  </Suspense>
+                </SceneBoundary>
+              )}
+            </div>
+
+            {/* The phase name: the one line of type on the stage, and the way into
+                Deep Dive, as a quiet link (D2, settled in chat) */}
+            <button
+              type="button"
+              className="hero-phase-name"
+              onClick={() => setIsDrawerOpen(true)}
+              aria-expanded={isDrawerOpen}
+              aria-controls="deep-dive"
+              aria-describedby="phase-name-hint"
+            >
+              <span className="font-serif">
+                {lunarDetails.name}
+              </span>
+            </button>
+            <span id="phase-name-hint" className="sr-only">Opens Deep Dive</span>
           </div>
 
-          {/* The phase name: the one line of type on the stage, and the way into
-              Deep Dive, as a quiet link (D2, settled in chat) */}
-          <button
-            type="button"
-            className="hero-phase-name"
-            onClick={() => setIsDrawerOpen(true)}
-            aria-expanded={isDrawerOpen}
-            aria-controls="deep-dive"
-            aria-describedby="phase-name-hint"
+          {/* Deep Dive (E1, E2): a panel beside the stage on wide screens; on phones
+              a sheet that rises from a grabber above the timeline */}
+          <DeepDive
+            isOpen={isDrawerOpen}
+            setIsOpen={setIsDrawerOpen}
+            panelRef={drawerRef}
+            headingRef={drawerHeadingRef}
           >
-            <span className="font-serif">
-              {lunarDetails.name}
-            </span>
-          </button>
-          <span id="phase-name-hint" className="sr-only">Opens Deep Dive</span>
+            {mountDeepDive && (
+              <Suspense fallback={null}>
+                <DeepDiveContent
+                  currentDate={currentDate}
+                  location={location}
+                  lunarDetails={lunarDetails}
+                  preferences={preferences}
+                  onShowPrivacy={showPrivacy}
+                />
+              </Suspense>
+            )}
+          </DeepDive>
         </div>
-
-        {/* Phones: room kept clear above the timeline for Deep Dive's sheet, its peek
-            when closed and half its height when open, so the Moon re-frames above it */}
-        <div className="deep-dive-space" aria-hidden="true" />
 
         {/* Bottom Bar: Timeline */}
         <div className="timeline-dock">
@@ -562,28 +559,6 @@ function App({ prerender = false }) {
       </main>
 
       {!prerender && <ShareToast status={shareStatus} />}
-
-      {/* Deep Dive (E1, E2): a panel beside the stage on wide screens, a sheet
-          above the timeline on phones */}
-      <DeepDive
-        isOpen={isDrawerOpen}
-        setIsOpen={setIsDrawerOpen}
-        summary={deepDiveSummary}
-        panelRef={drawerRef}
-        headingRef={drawerHeadingRef}
-      >
-        {mountDeepDive && (
-          <Suspense fallback={null}>
-            <DeepDiveContent
-              currentDate={currentDate}
-              location={location}
-              lunarDetails={lunarDetails}
-              preferences={preferences}
-              onShowPrivacy={showPrivacy}
-            />
-          </Suspense>
-        )}
-      </DeepDive>
     </div>
   );
 }

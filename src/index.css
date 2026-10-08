@@ -572,19 +572,28 @@ h1, h2, h3, h4 {
   grid-column: 2;
 }
 
-/* Deep Dive (E1, E2; DeepDive.jsx). A frame over everything but the header's
-   popovers, taking no clicks itself; inside it, a panel on wide screens and a
-   sheet above the timeline on phones. Opaque, so nothing ghosts through. */
+/* Deep Dive (E1, E2; DeepDive.jsx): a panel beside the stage on wide screens, a
+   sheet rising from a grabber above the timeline on phones. Its frame takes no
+   clicks itself and clips, never scrolls, what slides out of it. Opaque, so
+   nothing ghosts through. */
 :root {
   --deep-dive-width: min(31rem, 100vw);
-  --peek-height: 4.5rem;
+}
+
+/* The stage down to the timeline. On phones the sheet is laid out in it, so it
+   meets the timeline exactly, whatever the browser's toolbars are doing. */
+.stage-region {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .deep-dive-frame {
-  position: fixed;
-  inset: 0;
   z-index: 50;
   overflow: hidden;
+  overflow: clip;
   pointer-events: none;
 }
 
@@ -624,8 +633,9 @@ h1, h2, h3, h4 {
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
-/* The peek: a handle and the numbers at a glance, phones only */
-.deep-dive-peek {
+/* The grabbers are for phones */
+.deep-dive-grabber,
+.deep-dive-grip {
   display: none;
 }
 
@@ -1104,6 +1114,11 @@ h1, h2, h3, h4 {
 /* Wide screens: a panel on the right, and the stage (header, Moon, phase name,
    timeline) narrows to the space beside it, moving with the panel (E1) */
 @media (min-width: 960px) {
+  .deep-dive-frame {
+    position: fixed;
+    inset: 0;
+  }
+
   .deep-dive {
     top: 0;
     right: 0;
@@ -1140,98 +1155,77 @@ h1, h2, h3, h4 {
   .main-view-container.drawer-open {
     width: calc(100% - var(--deep-dive-width));
   }
-
-  .deep-dive-space {
-    display: none;
-  }
 }
 
-/* Phones: a sheet above the timeline (E2). DeepDive.jsx sets its height with a
-   transform; until it has measured, it shows just its peek. */
+/* Phones: one sheet, open or closed (E2, settled in chat on 8 Oct 2026). It stands
+   on the timeline and rises to just under the top of the screen. */
 @media (max-width: 959px) {
+  /* The way up: a slim pill just above the timeline, in the timeline's own quiet
+     colour, with no panel or edge of its own. Its reach for a thumb is wider and
+     taller than the pill, and it borrows most of that from the stage above. */
+  .deep-dive-grabber {
+    display: flex;
+    flex: none;
+    align-self: center;
+    align-items: flex-end;
+    justify-content: center;
+    width: 7.5rem;
+    height: 1.75rem;
+    margin-top: -0.75rem;
+    padding-bottom: 0.375rem;
+    touch-action: none;
+    cursor: grab;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .deep-dive-pill {
+    display: block;
+    width: 2.25rem;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: rgba(226, 232, 240, 0.28);
+  }
+
   .deep-dive-frame {
-    top: max(0.5rem, env(safe-area-inset-top, 0px));
-    bottom: var(--dock-height, 0px);
+    position: absolute;
+    inset: 0;
   }
 
   .deep-dive {
-    inset: 0;
+    top: max(0.5rem, env(safe-area-inset-top, 0px));
+    right: 0;
+    bottom: 0;
+    left: 0;
     border-top: 1px solid var(--hairline);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.5);
-    transform: translate3d(0, calc(100% - var(--peek-height)), 0);
-    transition: transform 0.38s var(--ease-out);
-    will-change: transform;
+    transform: translate3d(0, 100%, 0);
+    visibility: hidden;
+    transition: transform 0.38s var(--ease-out), visibility 0s linear 0.38s;
   }
 
+  .deep-dive.is-open {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.38s var(--ease-out), visibility 0s;
+  }
+
+  /* Following a finger */
   .deep-dive.is-dragging {
+    visibility: visible;
     transition: none;
   }
 
-  .deep-dive-peek {
-    display: block;
+  .deep-dive-top {
     flex: none;
-    height: var(--peek-height);
-    padding: 0.5rem max(0.75rem, env(safe-area-inset-right, 0px)) 0 max(0.75rem, env(safe-area-inset-left, 0px));
+    padding-top: 0.5rem;
     touch-action: none;
     cursor: grab;
   }
 
-  .deep-dive.is-dragging .deep-dive-peek {
-    cursor: grabbing;
-  }
-
   .deep-dive-grip {
     display: block;
-    width: 2.5rem;
-    height: 4px;
-    margin: 0 auto 0.375rem;
-    border-radius: var(--radius-pill);
-    background: rgba(226, 232, 240, 0.32);
-  }
-
-  .deep-dive-summary {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1.3fr;
-    align-items: center;
-    width: 100%;
-    min-height: 44px;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: inherit;
-    font: inherit;
-    cursor: inherit;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .deep-dive-summary:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
-    border-radius: var(--radius-sm);
-  }
-
-  .deep-dive-figure {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.125rem;
-    min-width: 0;
-  }
-
-  .deep-dive-value {
-    color: var(--ink-1);
-    font-size: var(--text-15);
-    font-variant-numeric: tabular-nums;
-    line-height: 1.2;
-    white-space: nowrap;
-  }
-
-  .deep-dive-key {
-    color: var(--ink-3);
-    font-size: var(--text-12);
-    line-height: 1.2;
-    white-space: nowrap;
+    margin: 0 auto;
   }
 
   .deep-dive-header {
@@ -1242,35 +1236,8 @@ h1, h2, h3, h4 {
     font-size: var(--text-24);
   }
 
-  /* The contents scroll only at full height; below it, a drag moves the sheet */
   .deep-dive-body {
-    padding: 0 max(1.25rem, env(safe-area-inset-right, 0px)) calc(1.5rem + env(safe-area-inset-bottom, 0px)) max(1.25rem, env(safe-area-inset-left, 0px));
-    overflow-y: hidden;
-  }
-
-  .deep-dive.is-full .deep-dive-body {
-    overflow-y: auto;
-  }
-
-  /* The stage keeps the sheet's resting height clear, so the Moon re-frames
-     above it as the sheet settles */
-  .deep-dive-space {
-    flex: none;
-    height: var(--sheet-reserve, var(--peek-height));
-    transition: height 0.38s var(--ease-out);
-  }
-}
-
-/* A phone on its side: no peek and no half height. Deep Dive opens from the phase
-   name, the menu or D straight to full height above the timeline, and the Moon
-   keeps its size. */
-@media (max-width: 959px) and (max-height: 560px) and (orientation: landscape) {
-  .deep-dive {
-    transform: translate3d(0, 100%, 0);
-  }
-
-  .deep-dive-space {
-    display: none;
+    padding: 0 max(1.25rem, env(safe-area-inset-right, 0px)) 1.5rem max(1.25rem, env(safe-area-inset-left, 0px));
   }
 }
 
@@ -2010,13 +1977,6 @@ h1, h2, h3, h4 {
    takes the lane above, so the two never cover each other. */
 :root {
   --toast-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
-}
-
-/* Phones: above Deep Dive's peek, which sits on the timeline */
-@media (max-width: 959px) and (min-height: 561px), (max-width: 959px) and (orientation: portrait) {
-  :root {
-    --toast-bottom: calc(var(--dock-height, 5.75rem) + var(--peek-height) + 0.75rem);
-  }
 }
 
 .share-toast {
@@ -2958,7 +2918,10 @@ h1, h2, h3, h4 {
 /* The timeline's place at the foot of the stage */
 .timeline-dock {
   width: 100%;
-  z-index: 20;
+  /* Above Deep Dive's sheet, which stands on it on phones, so the tag over the
+     thumb still shows while scrubbing with the sheet open; below the header's
+     popovers */
+  z-index: 55;
 }
 
 @media (max-width: 768px) {

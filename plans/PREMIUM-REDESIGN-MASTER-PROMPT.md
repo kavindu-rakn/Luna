@@ -449,11 +449,12 @@ Plain and observer-first: "Tonight", "Rises 6:40 pm in the east", "Back to now".
 - **Desktop**: a panel on the right, opaque (`--panel`). When it opens, the whole stage (Moon,
   phase name, date block, timeline) re-centres in the space left of it, animated with the
   panel; nothing is cut off (E1 and the owner's note on the timeline).
-- **Phones**: a bottom sheet above the dock with three detents: peek (a row of key numbers:
-  illumination, age, next phase), half (the Moon moves up and shrinks; the timeline stays
-  usable) and full. The handle drags; a downward swipe or flick closes; velocity decides the
-  detent; content scrolls only at full height, with a clean hand-off between sheet drag and
-  scroll.
+- **Phones** (E2, as changed in chat on 8 Oct 2026): one sheet, open or closed. A slim
+  grabber just above the dock is the way up; the sheet rises to just under the top of the
+  screen and stops at the dock, so the timeline can be scrubbed while it is open. The grabber
+  and the sheet's top drag it; a downward swipe or flick, ✕ or Esc closes it; velocity
+  decides open or closed; at the top of its scrolled contents a pull down takes it down. No
+  peek and no half height.
 - **Content**, three chapters, each number shown once (E3):
   - **Tonight**: the 24-hour altitude chart as the centrepiece (E7): full width, horizon line,
     civil/nautical/astronomical twilight bands from SunCalc, moonrise and moonset marked on the
@@ -475,7 +476,7 @@ Plain and observer-first: "Tonight", "Rises 6:40 pm in the east", "Back to now".
 
 - Top: the wordmark and the menu. Middle: the Moon and the phase name. Bottom dock, within
   thumb reach: the date, the location caption, the five-button bar and the timeline.
-- The Deep Dive peek sits just above the dock.
+- Deep Dive's grabber sits just above the dock.
 - Safe areas respected on every edge; `dvh` units; no horizontal scroll at 320 px.
 
 ### 6.7 Overlays (E9, E10)
@@ -591,7 +592,7 @@ complete; sound is off by default and nothing loads until it's turned on.
 
 ### Phase 3: Deep Dive and overlays
 
-- The desktop re-framing panel and the phone detent sheet (§6.5).
+- The desktop re-framing panel and the phone sheet (§6.5).
 - The three chapters, the Tonight chart, the SVG orbit, serif hero figures, settled
   cross-fades, locale defaults with overrides in Settings.
 - The overlay system (§6.7): calendar, location, menu, settings, shortcuts, privacy and about,
