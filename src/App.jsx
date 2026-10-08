@@ -42,7 +42,11 @@ const MoonFallback = ({ view, hidden }) => (
   </div>
 );
 import LocationPicker from './components/LocationPicker';
-import ShareButton from './components/ShareButton';
+import Icon from './components/icons/Icon';
+import ShareToast from './components/ShareToast';
+import AppMenu from './components/AppMenu';
+import BrandMark from './components/BrandMark';
+import { useShare } from './hooks/useShare';
 import UpdatePrompt from './components/UpdatePrompt';
 import ShortcutsDialog from './components/ShortcutsDialog';
 import PrivacyDialog from './components/PrivacyDialog';
@@ -50,7 +54,6 @@ import { usePreferences } from './hooks/usePreferences';
 import { getLunarDetails, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
-import Icon from './components/icons/Icon';
 
 // Keys that controls like the timeline and the calendar grid use to move around
 const NAVIGATION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown']);
@@ -86,6 +89,7 @@ function App({ prerender = false }) {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const closeShortcuts = useCallback(() => setIsShortcutsOpen(false), []);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const showPrivacy = useCallback(() => setIsPrivacyOpen(true), []);
   const closePrivacy = useCallback(() => setIsPrivacyOpen(false), []);
 
@@ -149,6 +153,8 @@ function App({ prerender = false }) {
     return () => cancel(handle);
   }, [prerender, isSettled]);
   const mountDeepDive = !prerender && hasOpenedDrawer;
+
+  const { share, status: shareStatus } = useShare(currentDate, location);
 
   // The constellation behind the Moon, so the label can say what the sky shows.
   // Its boundary table loads once the page has settled.
@@ -275,7 +281,8 @@ function App({ prerender = false }) {
           }
         }
         // Dismiss the innermost surface first, then the drawer behind it.
-        if (isCalendarOpen) setIsCalendarOpen(false);
+        if (isMenuOpen) setIsMenuOpen(false);
+        else if (isCalendarOpen) setIsCalendarOpen(false);
         else if (isLocationOpen) setIsLocationOpen(false);
         else setIsDrawerOpen(false);
         return;
@@ -317,7 +324,7 @@ function App({ prerender = false }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCalendarOpen, isLocationOpen, isShortcutsOpen, isPrivacyOpen, selectDate, goLive]);
+  }, [isMenuOpen, isCalendarOpen, isLocationOpen, isShortcutsOpen, isPrivacyOpen, selectDate, goLive]);
 
   // Derive lunar details. The 24-hour sky data is worked out inside Deep Dive,
   // which is the only place it is shown.
@@ -392,86 +399,53 @@ function App({ prerender = false }) {
       {/* ═══ MAIN APPLICATION VIEWPORT ═══ */}
       <main
         ref={mainViewRef}
-        className={`main-view-container ${isDrawerOpen ? 'drawer-open' : ''}`}
+        className={`main-view-container${isDrawerOpen ? ' drawer-open' : ''}`}
       >
-        {/* Header Bar. Raised while one of its popovers is open, so the calendar or
-            the location picker opens above the Deep Dive sheet, not beneath it. */}
-        <header className={`app-header${isCalendarOpen || isLocationOpen ? ' has-popover' : ''}`}>
-          {/* Left: Brand / Title */}
+        {/* The header (decision D2): the wordmark, the date block and one menu.
+            Raised while one of its popovers is open, so the calendar, the location
+            picker or the menu opens above the Deep Dive sheet, not beneath it. */}
+        <header className={`app-header${isCalendarOpen || isLocationOpen || isMenuOpen ? ' has-popover' : ''}`}>
           <div className="app-brand">
-            <img
-              className="app-brand-mark"
-              src={`${import.meta.env.BASE_URL}brand-mark.png`}
-              alt=""
-              aria-hidden="true"
-              width="28"
-              height="28"
-            />
+            <BrandMark />
             <h1 className="text-gradient hero-title">
               Luna
             </h1>
           </div>
 
-          {/* Center: DateControls */}
+          {/* When and where: the date block */}
           <div className="controls-panel">
             <DateControls
               currentDate={currentDate}
               setCurrentDate={selectDate}
               onToday={goLive}
+              isLive={isLive}
               isCalendarOpen={isCalendarOpen}
               setIsCalendarOpen={setIsCalendarOpen}
               timeZone={location.timeZone}
               clock={clock}
-            />
+            >
+              <LocationPicker
+                location={location}
+                setLocation={chooseLocation}
+                isOpen={isLocationOpen}
+                setIsOpen={setIsLocationOpen}
+                onShowPrivacy={showPrivacy}
+              />
+            </DateControls>
           </div>
 
-          {/* Right: Location & Deep Dive */}
           <div className="app-header-actions">
-            <LocationPicker
-              location={location}
-              setLocation={chooseLocation}
-              isOpen={isLocationOpen}
-              setIsOpen={setIsLocationOpen}
-              onShowPrivacy={showPrivacy}
+            <AppMenu
+              isOpen={isMenuOpen}
+              setIsOpen={setIsMenuOpen}
+              onDeepDive={() => setIsDrawerOpen(true)}
+              onShare={share}
+              tilt={tilt}
+              showTilt={tilt.supported && !reducedMotion}
+              onShortcuts={() => setIsShortcutsOpen(true)}
+              onPrivacy={showPrivacy}
+              preferences={preferences}
             />
-            <ShareButton date={currentDate} location={location} />
-            {/* Phones only, and only where motion is welcome. Moves into the menu
-                with the redesigned header. */}
-            {tilt.supported && !reducedMotion && (
-              <button
-                type="button"
-                className={`glass-button icon-button tilt-trigger${tilt.on ? ' is-active' : ''}`}
-                onClick={tilt.toggle}
-                aria-pressed={tilt.on}
-                aria-label="Tilt to look around"
-                title="Tilt to look around"
-              >
-                <Icon name="tilt" />
-              </button>
-            )}
-            {/* Hidden on touch-only devices, which have no keyboard to use it with */}
-            <button
-              type="button"
-              className="glass-button icon-button shortcuts-trigger"
-              onClick={() => setIsShortcutsOpen(true)}
-              aria-label="Keyboard shortcuts"
-              title="Keyboard shortcuts (?)"
-            >
-              <Icon name="keyboard" />
-            </button>
-            <button
-              type="button"
-              className={`glass-button deep-dive-trigger ${isDrawerOpen ? 'is-active' : ''}`}
-              onClick={() => setIsDrawerOpen(prev => !prev)}
-              aria-label="Deep Dive"
-              aria-expanded={isDrawerOpen}
-              aria-controls="telemetry-drawer"
-              aria-keyshortcuts="D"
-            >
-              {/* Shown only where the label is hidden and the icon has to stand alone */}
-              <Icon name="readings" />
-              <span>Deep Dive</span>
-            </button>
           </div>
         </header>
 
@@ -506,18 +480,30 @@ function App({ prerender = false }) {
             )}
           </div>
 
-          <div className="hero-phase-name">
+          {/* The phase name: the one line of type on the stage, and the way into
+              Deep Dive, as a quiet link (D2, settled in chat) */}
+          <button
+            type="button"
+            className="hero-phase-name"
+            onClick={() => setIsDrawerOpen(true)}
+            aria-expanded={isDrawerOpen}
+            aria-controls="telemetry-drawer"
+            aria-describedby="phase-name-hint"
+          >
             <span className="font-serif">
               {lunarDetails.name}
             </span>
-          </div>
+          </button>
+          <span id="phase-name-hint" className="sr-only">Opens Deep Dive</span>
         </div>
 
         {/* Bottom Bar: Timeline */}
-        <div style={{ width: '100%', zIndex: 20 }}>
+        <div className="timeline-dock">
           <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} isLive={isLive} />
         </div>
       </main>
+
+      {!prerender && <ShareToast status={shareStatus} />}
 
       {/* ═══ TELEMETRY DATA DRAWER / BOTTOM SHEET ═══ */}
       <aside

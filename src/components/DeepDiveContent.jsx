@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import DisplayPreferences from './DisplayPreferences';
 import LunarData from './LunarData';
 import SkyPosition from './SkyPosition';
 import OrbitalView from './OrbitalView';
@@ -12,7 +11,6 @@ const DeepDiveContent = ({
   location,
   lunarDetails,
   preferences,
-  setPreference,
   onShowPrivacy
 }) => {
   const { clock, distanceUnit } = preferences;
@@ -25,9 +23,6 @@ const DeepDiveContent = ({
 
   return (
     <>
-      {/* Every time and distance on this panel follows these */}
-      <DisplayPreferences preferences={preferences} setPreference={setPreference} />
-
       {/* Telemetry Cards Stack */}
       <div className="telemetry-content">
         <LunarData lunarDetails={lunarDetails} distanceUnit={distanceUnit} />

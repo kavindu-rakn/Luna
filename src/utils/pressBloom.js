@@ -3,7 +3,7 @@
 // is CSS (.is-blooming in index.css); this only says where the press landed and
 // restarts the animation. A key press blooms from the middle.
 
-export const BLOOM_SELECTOR = '.glass-button, .ghost-control-btn, .calendar-day, .location-row, .calendar-phase';
+export const BLOOM_SELECTOR = '.glass-button, .ghost-control-btn, .date-display-btn, .date-place, .menu-item, .calendar-day, .location-row, .calendar-phase';
 
 const bloom = (control, x, y) => {
   if (!control || control.disabled) return;

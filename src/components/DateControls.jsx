@@ -26,7 +26,7 @@ const PICKER_SCROLLBAR_CSS = `
     .calendar-select::picker(select)::-webkit-scrollbar { width: 6px; }
     .calendar-select::picker(select)::-webkit-scrollbar-button { display: none; }
     .calendar-select::picker(select)::-webkit-scrollbar-track { background: transparent; }
-    .calendar-select::picker(select)::-webkit-scrollbar-thumb { border-radius: 3px; background: rgba(129, 140, 248, 0.5); }
+    .calendar-select::picker(select)::-webkit-scrollbar-thumb { border-radius: 3px; background: rgba(226, 232, 240, 0.35); }
   }
 }`;
 
@@ -38,7 +38,10 @@ const LAST_YEAR = 2100;
 // Every date here is a date on the observing place's clock, like the rest of the
 // app. Reading them off the viewer's device instead put the header a day away from
 // the sky chart, and a click on the 26th could select the 25th at the place.
-const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, setIsCalendarOpen, timeZone, clock }) => {
+// The date block (decisions D4, D5): the date, which opens the calendar; the place
+// as a quiet caption beneath it (children: the location picker); and the five
+// controls as one hairline instrument bar, ⊙ lit in the "now" colour while live.
+const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendarOpen, setIsCalendarOpen, timeZone, clock, children }) => {
   // The month on show, as { year, month }
   const [view, setView] = useState(() => getZonedDay(currentDate, timeZone));
   const calendarModalRef = useRef(null);
@@ -220,19 +223,22 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           }
           setIsCalendarOpen(!isCalendarOpen);
         }}
-        className={`glass-button date-display-btn ${isCalendarOpen ? 'is-open' : ''}`}
+        className={`date-display-btn${isCalendarOpen ? ' is-open' : ''}`}
         // No aria-label: the button is named by the date it shows, so voice control
         // users can say what they see. The title still describes what it does.
         title="Open the calendar"
         aria-expanded={isCalendarOpen}
       >
-        <span className="font-serif date-text-desktop">
+        <span className="date-text-desktop">
           {formatDateDesktop(currentDate)}
         </span>
-        <span className="font-serif date-text-mobile">
+        <span className="date-text-mobile">
           {formatDateMobile(currentDate)}
         </span>
       </button>
+
+      {/* Where: the place the view is for, opening the location picker */}
+      {children}
 
       {/* ═══ CUSTOM CELESTIAL DARK CALENDAR ═══ */}
       {isCalendarOpen && (
@@ -405,12 +411,10 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
         </div>
       )}
 
-      {/* Control Navigation Bar. What the eye compares is the drawn chevrons, not the
-          38px buttons around them: with a uniform gap, the pairs of chevrons sat 35px
-          apart but only 21px from the Today pill. The icon buttons now touch, so their
-          touch targets never overlap, and the pill's margin makes up the difference:
-          every glyph-to-glyph gap is the same 31px. */}
-      <div className="date-nav">
+      {/* The instrument bar: five controls in one hairline capsule. The buttons
+          touch, so their targets never overlap, and every glyph sits one button's
+          width from the next. */}
+      <div className="date-nav" role="group" aria-label="Move through time">
         {/* Previous Major Phase (New, 1st Q, Full, Last Q) */}
         <button
           className="ghost-control-btn"
@@ -433,12 +437,13 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isCalendarOpen, se
           <Icon name="previousDay" />
         </button>
 
-        {/* Today: a centre dot between the arrows, drawn just like them */}
+        {/* ⊙ is always there: brighter, in the "now" colour, while the view
+            follows the clock; otherwise drawn just like the other four (D5) */}
         <button
-          className="ghost-control-btn"
-          title="Back to now (T)"
+          className={`ghost-control-btn date-now${isLive ? ' is-live' : ''}`}
+          title={isLive ? 'Following the clock now (T)' : 'Back to now (T)'}
           onClick={onToday ?? (() => setCurrentDate(new Date()))}
-          aria-label="Back to now"
+          aria-label={isLive ? 'Now, following the clock' : 'Back to now'}
           aria-keyshortcuts="T"
         >
           <Icon name="now" />
