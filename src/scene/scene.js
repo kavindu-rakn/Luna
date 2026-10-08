@@ -51,6 +51,8 @@ import { placeSpring, stepSpring } from '../utils/spring.js';
 // 40° lens had from 5.8 units, from 300 units away, where perspective moves nothing
 // on the disc by more than a fraction of a pixel.
 const CAMERA_Z = 300;
+// How long the stage must be still before the Moon's box fits it exactly again
+const BOX_FIT_MS = 400;
 const VISIBLE_HEIGHT = 2 * 5.8 * Math.tan((40 * Math.PI) / 360);
 const CAMERA_FOV = (2 * Math.atan(VISIBLE_HEIGHT / 2 / CAMERA_Z) * 180) / Math.PI;
 
@@ -284,12 +286,28 @@ export const createScene = async (canvas, options) => {
   const buffer = new Vector2();
   let scale = 1;
   let boxSize = [1, 1];
+  // The box's spare pixels on each side of what the Moon needs
+  let boxPad = [0, 0];
+  let fitTimer = null;
+  let canvasKey = '';
+  let areaKey = '';
   let placed = null; // the Moon's last box: { x, y, fx, fy }
 
-  const setSize = () => {
+  // `fit` sizes the Moon's box exactly. Otherwise, while the stage moves (Deep
+  // Dive opening re-frames it, a frame at a time), the box only grows, with room to
+  // spare, so a Moon changing size over a few hundred milliseconds isn't a new
+  // render target every frame; once the stage has been still a moment it fits
+  // itself again.
+  const setSize = (fit = false) => {
     const { width: w, height: h, dpr: ratio, moon: m } = layout;
-    renderer.setPixelRatio(Math.min(ratio || 1, ratioCap));
-    renderer.setSize(Math.max(1, Math.round(w)), Math.max(1, Math.round(h)), false);
+    const pixelRatio = Math.min(ratio || 1, ratioCap);
+    const key = `${Math.round(w)}x${Math.round(h)}@${pixelRatio}`;
+    // Setting a canvas's size, even to the size it has, clears it
+    if (key !== canvasKey) {
+      canvasKey = key;
+      renderer.setPixelRatio(pixelRatio);
+      renderer.setSize(Math.max(1, Math.round(w)), Math.max(1, Math.round(h)), false);
+    }
     renderer.getDrawingBufferSize(buffer);
     scale = buffer.x / Math.max(1, Math.round(w));
 
@@ -302,8 +320,26 @@ export const createScene = async (canvas, options) => {
 
     // The box is a pixel wider than the area on each side, so the area can sit at
     // any fraction of a pixel inside it
-    boxSize = [Math.ceil(m.width * scale) + 2, Math.ceil(m.height * scale) + 2];
-    moonBox.setSize(boxSize[0], boxSize[1]);
+    const need = [Math.ceil(m.width * scale) + 2, Math.ceil(m.height * scale) + 2];
+    let next = boxSize;
+    if (fit || boxSize[0] === 1) next = need;
+    else if (need[0] > boxSize[0] || need[1] > boxSize[1]) {
+      next = [Math.max(boxSize[0], Math.ceil(need[0] * 1.12)), Math.max(boxSize[1], Math.ceil(need[1] * 1.12))];
+    }
+    if (next !== boxSize) {
+      boxSize = next;
+      moonBox.setSize(boxSize[0], boxSize[1]);
+    }
+    boxPad = [Math.floor((boxSize[0] - need[0]) / 2), Math.floor((boxSize[1] - need[1]) / 2)];
+    clearTimeout(fitTimer);
+    fitTimer = null;
+    if (boxSize[0] !== need[0] || boxSize[1] !== need[1]) {
+      fitTimer = setTimeout(() => {
+        if (disposed) return;
+        setSize(true);
+        invalidate();
+      }, BOX_FIT_MS);
+    }
 
     const outline = (Math.min(OUTLINE_OF_HEIGHT * m.height, OUTLINE_OF_WIDTH * m.width) / 2) * scale;
     sky.setLayout({
@@ -314,8 +350,14 @@ export const createScene = async (canvas, options) => {
       outline,
       focal: focalLength(w, h) * scale
     });
-    placed = null;
-    moonDirty = true;
+    // A Moon that only moved is laid down again where it now is; it renders again
+    // only if its size changed, or the move left it at a new fraction of a pixel
+    const nextAreaKey = `${m.width}x${m.height}@${scale}|${boxSize}`;
+    if (nextAreaKey !== areaKey) {
+      areaKey = nextAreaKey;
+      placed = null;
+      moonDirty = true;
+    }
   };
 
   const applyView = (v) => {
@@ -555,17 +597,17 @@ export const createScene = async (canvas, options) => {
     const m = layout.moon;
     const mx = m.x * scale;
     const my = m.y * scale;
-    const bx = Math.floor(mx) - 1;
-    const by = Math.floor(my) - 1;
-    const fx = bx - mx;
-    const fy = by - my;
+    const bx = Math.floor(mx) - 1 - boxPad[0];
+    const by = Math.floor(my) - 1 - boxPad[1];
+    const fx = Math.floor(mx) - 1 - mx;
+    const fy = Math.floor(my) - 1 - my;
     if (!placed || Math.abs(placed.fx - fx) > 1e-3 || Math.abs(placed.fy - fy) > 1e-3) moonDirty = true;
     placed = { x: bx, y: by, fx, fy };
 
     if (moonDirty) {
       shownTurn.slerpQuaternions(meanTurn, trueTurn, easeInOut(settleProgress));
       moon.quaternion.multiplyQuaternions(drag, shownTurn);
-      camera.setViewOffset(m.width * scale, m.height * scale, fx, fy, boxSize[0], boxSize[1]);
+      camera.setViewOffset(m.width * scale, m.height * scale, fx - boxPad[0], fy - boxPad[1], boxSize[0], boxSize[1]);
       renderer.setRenderTarget(moonBox);
       renderer.clear();
       renderer.render(moonScene, camera);
@@ -767,6 +809,7 @@ export const createScene = async (canvas, options) => {
       disposed = true;
       clearTimeout(twinkleTimer);
       clearTimeout(twinkleFrame);
+      clearTimeout(fitTimer);
       moon.geometry.dispose();
       material.uniforms.map.value?.dispose();
       material.uniforms.normalMap.value?.dispose();

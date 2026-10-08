@@ -16,7 +16,7 @@
   --hairline-active: rgba(226, 232, 240, 0.5);   /* pressed, selected */
   --fill-hover: rgba(241, 243, 247, 0.04);       /* the 4% a control gains on hover */
   --fill-selected: rgba(241, 243, 247, 0.12);
-  --panel: rgba(8, 11, 17, 0.98); /* panels and sheets: nothing ghosts through */
+  --panel: rgb(8, 11, 17);       /* panels and sheets: opaque, so nothing ghosts through */
   --scrim: rgba(3, 5, 9, 0.6);    /* behind modal overlays: dim only, no blur */
   --now: #e9c27d;                 /* earthshine amber: live and "now", nothing else */
   --now-glow: rgba(233, 194, 125, 0.35);
@@ -132,7 +132,7 @@ body {
 
 /* Text fields too: iOS Safari won't take typing into a field whose ancestor
    forbids selection */
-.data-drawer,
+.deep-dive,
 .modal-dialog,
 input,
 select,
@@ -572,54 +572,39 @@ h1, h2, h3, h4 {
   grid-column: 2;
 }
 
-/* Data Drawer / Telemetry Inspector */
-.data-drawer {
-  position: absolute;
-  background: var(--panel);
-  box-shadow: -20px 0 70px rgba(0, 0, 0, 0.64);
+/* Deep Dive (E1, E2; DeepDive.jsx). A frame over everything but the header's
+   popovers, taking no clicks itself; inside it, a panel on wide screens and a
+   sheet above the timeline on phones. Opaque, so nothing ghosts through. */
+:root {
+  --deep-dive-width: min(31rem, 100vw);
+  --peek-height: 4.5rem;
+}
+
+.deep-dive-frame {
+  position: fixed;
+  inset: 0;
   z-index: 50;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-  /* Hide only once the slide-out has finished... */
-  transition: transform 0.42s var(--ease-observe), opacity 0.3s ease, visibility 0s linear 0.42s;
-  visibility: hidden;
-  opacity: 0;
+  overflow: hidden;
   pointer-events: none;
 }
 
-/* ...but become visible the instant it opens. A transitioning visibility holds
-   its start value at the first instant, so focus moved into the drawer on open
-   would otherwise land on a still-hidden element and silently fail. */
-.data-drawer.is-open {
-  transition: transform 0.42s var(--ease-observe), opacity 0.3s ease, visibility 0s;
+.deep-dive {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  pointer-events: auto;
 }
 
-.drawer-handle {
-  width: 2.5rem;
-  height: 3px;
-  margin: 0 auto 1.1rem;
-  border-radius: var(--radius-pill);
-  background: rgba(226, 232, 240, 0.32);
-}
-
-.drawer-header {
+.deep-dive-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  flex: none;
 }
 
-.drawer-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-
-.drawer-title {
+.deep-dive-title {
   margin: 0;
   color: var(--ink-1);
   font-family: var(--font-serif);
@@ -627,6 +612,21 @@ h1, h2, h3, h4 {
   font-weight: 400;
   line-height: 1.1;
   outline: none;
+}
+
+.deep-dive-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* The peek: a handle and the numbers at a glance, phones only */
+.deep-dive-peek {
+  display: none;
 }
 
 /* Deep Dive: each topic is its own quiet panel, a faint tint with no border, glow
@@ -1101,62 +1101,180 @@ h1, h2, h3, h4 {
   }
 }
 
-/* Desktop Drawer */
+/* Wide screens: a panel on the right, and the stage (header, Moon, phase name,
+   timeline) narrows to the space beside it, moving with the panel (E1) */
 @media (min-width: 960px) {
-  .data-drawer {
+  .deep-dive {
     top: 0;
     right: 0;
-    width: min(31rem, 100vw);
-    height: 100vh;
-    height: 100dvh;
-    padding: 2.5rem max(2rem, env(safe-area-inset-right, 0px)) 2.5rem max(2rem, env(safe-area-inset-left, 0px));
-    border-left: 1px solid var(--border-medium);
+    bottom: 0;
+    width: var(--deep-dive-width);
+    padding: 2.5rem max(2rem, env(safe-area-inset-right, 0px)) 0 2rem;
+    border-left: 1px solid var(--hairline);
+    box-shadow: -20px 0 70px rgba(0, 0, 0, 0.64);
     transform: translateX(100%);
+    visibility: hidden;
+    /* Hidden only once it has slid out, but shown the instant it opens, so focus
+       moved into it on open lands on something visible */
+    transition: transform 0.42s var(--ease-observe), visibility 0s linear 0.42s;
   }
 
-  .drawer-handle {
-    display: none;
-  }
-
-  .data-drawer.is-open {
+  .deep-dive.is-open {
+    transform: none;
     visibility: visible;
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
+    transition: transform 0.42s var(--ease-observe), visibility 0s;
+  }
+
+  .deep-dive-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .deep-dive-body {
+    padding-bottom: 2.5rem;
   }
 
   .main-view-container {
-    transform: none;
+    transition: width 0.42s var(--ease-observe);
   }
 
   .main-view-container.drawer-open {
-    transform: none;
+    width: calc(100% - var(--deep-dive-width));
+  }
+
+  .deep-dive-space {
+    display: none;
   }
 }
 
-/* Mobile Bottom Sheet */
+/* Phones: a sheet above the timeline (E2). DeepDive.jsx sets its height with a
+   transform; until it has measured, it shows just its peek. */
 @media (max-width: 959px) {
-  .data-drawer {
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 85vh;
-    height: min(85dvh, calc(100dvh - 1rem));
-    border-top: 1px solid var(--border-medium);
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    padding: 1.25rem max(1.25rem, env(safe-area-inset-right, 0px)) calc(1.5rem + env(safe-area-inset-bottom, 0px)) max(1.25rem, env(safe-area-inset-left, 0px));
-    transform: translateY(100%);
+  .deep-dive-frame {
+    top: max(0.5rem, env(safe-area-inset-top, 0px));
+    bottom: var(--dock-height, 0px);
   }
 
-  .data-drawer.is-open {
-    visibility: visible;
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+  .deep-dive {
+    inset: 0;
+    border-top: 1px solid var(--hairline);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.5);
+    transform: translate3d(0, calc(100% - var(--peek-height)), 0);
+    transition: transform 0.38s var(--ease-out);
+    will-change: transform;
+  }
+
+  .deep-dive.is-dragging {
+    transition: none;
+  }
+
+  .deep-dive-peek {
+    display: block;
+    flex: none;
+    height: var(--peek-height);
+    padding: 0.5rem max(0.75rem, env(safe-area-inset-right, 0px)) 0 max(0.75rem, env(safe-area-inset-left, 0px));
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .deep-dive.is-dragging .deep-dive-peek {
+    cursor: grabbing;
+  }
+
+  .deep-dive-grip {
+    display: block;
+    width: 2.5rem;
+    height: 4px;
+    margin: 0 auto 0.375rem;
+    border-radius: var(--radius-pill);
+    background: rgba(226, 232, 240, 0.32);
+  }
+
+  .deep-dive-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.3fr;
+    align-items: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .deep-dive-summary:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  .deep-dive-figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  .deep-dive-value {
+    color: var(--ink-1);
+    font-size: var(--text-15);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .deep-dive-key {
+    color: var(--ink-3);
+    font-size: var(--text-12);
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .deep-dive-header {
+    padding: 0.5rem max(1.25rem, env(safe-area-inset-right, 0px)) 0.75rem max(1.25rem, env(safe-area-inset-left, 0px));
+  }
+
+  .deep-dive-title {
+    font-size: var(--text-24);
+  }
+
+  /* The contents scroll only at full height; below it, a drag moves the sheet */
+  .deep-dive-body {
+    padding: 0 max(1.25rem, env(safe-area-inset-right, 0px)) calc(1.5rem + env(safe-area-inset-bottom, 0px)) max(1.25rem, env(safe-area-inset-left, 0px));
+    overflow-y: hidden;
+  }
+
+  .deep-dive.is-full .deep-dive-body {
+    overflow-y: auto;
+  }
+
+  /* The stage keeps the sheet's resting height clear, so the Moon re-frames
+     above it as the sheet settles */
+  .deep-dive-space {
+    flex: none;
+    height: var(--sheet-reserve, var(--peek-height));
+    transition: height 0.38s var(--ease-out);
   }
 }
 
-.drawer-footer {
+/* A phone on its side: no peek and no half height. Deep Dive opens from the phase
+   name, the menu or D straight to full height above the timeline, and the Moon
+   keeps its size. */
+@media (max-width: 959px) and (max-height: 560px) and (orientation: landscape) {
+  .deep-dive {
+    transform: translate3d(0, 100%, 0);
+  }
+
+  .deep-dive-space {
+    display: none;
+  }
+}
+
+.deep-dive-footer {
   margin: 1.5rem 0 1rem;
   color: var(--text-muted);
   font-size: 0.75rem;
@@ -1892,6 +2010,13 @@ h1, h2, h3, h4 {
    takes the lane above, so the two never cover each other. */
 :root {
   --toast-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Phones: above Deep Dive's peek, which sits on the timeline */
+@media (max-width: 959px) and (min-height: 561px), (max-width: 959px) and (orientation: portrait) {
+  :root {
+    --toast-bottom: calc(var(--dock-height, 5.75rem) + var(--peek-height) + 0.75rem);
+  }
 }
 
 .share-toast {
@@ -2915,7 +3040,7 @@ h1, h2, h3, h4 {
 
 @media (min-width: 769px) and (max-width: 1039px) and (hover: none),
        (min-width: 769px) and (max-width: 1039px) and (pointer: coarse) {
-  .data-drawer .drawer-close,
+  .deep-dive-close,
   .modal-dialog .ghost-control-btn,
   .location-panel .ghost-control-btn {
     width: 44px;
@@ -3059,14 +3184,14 @@ h1, h2, h3, h4 {
   .location-row,
   .calendar-phase,
   .privacy-actions .glass-button,
-  .data-drawer .drawer-close,
+  .deep-dive-close,
   .modal-dialog .ghost-control-btn,
   .update-prompt .ghost-control-btn,
   .update-prompt .glass-button {
     min-height: 44px;
   }
 
-  .data-drawer .drawer-close,
+  .deep-dive-close,
   .modal-dialog .ghost-control-btn {
     min-width: 44px;
   }

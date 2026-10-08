@@ -276,8 +276,10 @@ when the page opens.
 | 1c | The observed sky: real stars around the Moon, planets, depth layers, scintillation, tilt | Done: PR #58 merged 7 Oct 2026 |
 | 2a | The instrument: tokens, hairline controls with the light bloom, the custom icon set, copy | Done: PR #60 merged 7 Oct 2026 |
 | 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive | Done: PR #61 merged 8 Oct 2026 |
-| 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | In review |
-| 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
+| 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Done: PR #63 merged 8 Oct 2026 (with the settings fix, #62) |
+| 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | In review |
+| 3b | Deep Dive's three chapters: Tonight, The Moon, The Orbit; each number once; settled cross-fades | Not started |
+| 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
@@ -456,3 +458,25 @@ when the page opens.
   tick. Date sounds follow the view rather than the control: whatever moved the date (a
   button, a key, the timeline), a day crossed ticks at the pitch of that day's illumination
   and an exact phase reached by scrub, step or jump rings its chord (`src/audio/cues.js`).
+- Phase 3 in three parts, as with Phases 1 and 2 (agreed in chat on 8 Oct 2026): 3a the frame,
+  3b the chapters, 3c the overlays. On phones the sheet sits above the timeline until Phase 4's
+  dock slots in beneath it.
+- 3a, wide screens (960 px and up): Deep Dive is an opaque panel, 31 rem, on the right. The
+  stage (header, Moon, phase name, timeline) narrows to the space beside it with the panel's
+  own easing, so nothing is cut off (E1). The scene follows the Moon's area a frame at a time;
+  a Moon that only moved is laid down again rather than rendered, and its box only grows
+  while the stage moves, fitting itself again 400 ms after it stops.
+- 3a, phones (E2): a sheet above the timeline with three heights. The peek (72 px) shows how
+  much is lit, the age and the next exact phase, and is always there: the way in, as settled
+  for D2. Half height shows 45% of the room, capped so the Moon keeps at least 140 px above
+  it (on a 320 × 640 phone the sheet's own minimum, the peek plus 100 px, wins); the stage
+  keeps the resting height clear, so the Moon re-frames above the sheet as it settles. Full
+  height covers the stage, and only there do the contents scroll. The peek drags the sheet,
+  as do the contents at half height; a release's speed, carried on 220 ms, picks the height;
+  a pull down from the top of scrolled contents takes the sheet down. The drag code loads as
+  its own chunk just after first paint. On its side (560 px tall or less) a phone has no
+  peek and no half: Deep Dive opens from the phase name, the menu or D straight to full
+  height, and the Moon keeps its size.
+- 3a made `--panel` opaque: at 98% the header's date ghosted through the full-height sheet.
+- Each number once (E3) is 3b's: until then the peek repeats three numbers that Deep Dive's
+  contents also show.
