@@ -89,8 +89,6 @@ keyboard:
   the date it shows.
 - `prefers-reduced-motion`: no travel, parallax, idle drift, inertia or intro choreography;
   opacity fades up to 200 ms are fine. The Moon still renders; the sky is static.
-- Idle fade (D3) must not hide anything that has focus, and faded chrome stays in the
-  accessibility tree.
 - Everything the Moon and sky show is also available as text.
 
 ### 2.4 Privacy
@@ -415,9 +413,8 @@ Plain and observer-first: "Tonight", "Rises 6:40 pm in the east", "Back to now".
   spring-damped, a small dead zone, a recentre within about a second of settling. On iOS it
   starts only from the "Tilt to look around" control, which asks for permission; elsewhere it is
   on by default and the same control turns it off.
-- **Idle (D3)**: after about 4 s with no input, the header, date block and timeline fade out,
-  leaving the Moon and sky. Any pointer move, tap or key brings them back. Never while something
-  has focus or a panel is open.
+- **No idle fade (D3, settled in chat on 8 Oct 2026)**: the header, date block and timeline
+  stay. A fade left nothing to do but look at a still Moon.
 
 ### 6.2 Header and menu (D2)
 
@@ -583,7 +580,7 @@ Moon; reduced motion shows a static sky; 4K loads only on the high tier.
 ### Phase 2: Design language, header and controls
 
 - Tokens (§5), the hairline controls with the light bloom, the custom icon set.
-- The header and menu (§6.2), the date block with the live ⊙ (§6.3), idle fade (§6.1).
+- The header and menu (§6.2), the date block with the live ⊙ (§6.3).
 - The cursor (§5.6): remove `CustomCursor.jsx` and its 39 elements; add the halo, the Moon ring
   and the fling easter egg.
 - The sound engine (§4.4), with every existing control wired to its sound.

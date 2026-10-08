@@ -121,7 +121,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 |---|---|---|---|
 | D1 | Control language | **Hairline instrument** (rec) | No fill at rest, 1 px engraved edge; fill on hover and press. |
 | D2 | Desktop header | **Wordmark only; everything in one menu** | **Settled in chat:** the location shows as a quiet caption under the date (tap to change); tapping the phase name opens Deep Dive (also the D key and the menu); on phones the sheet's peek detent is the entry. |
-| D3 | Idle fade | **Fade after about 4 s idle** (rec) | Never while something has focus or a panel is open. |
+| D3 | Idle fade | **None** | **Settled in chat (8 Oct 2026):** dropped in 2b's review. Built as a 4 s fade, it left nothing to do but look at a still Moon, like an awkward silence; Luna's motion is already enough. The controls stay. |
 | D4 | Date navigation | **Five buttons, redrawn as one bar attached to the date** | |
 | D5 | Today | **⊙ icon always visible** | Owner's note: combine the icon and the live indicator. When live, ⊙ is brighter (in the warm "now" accent); when not live, it matches the other four. Keeps the symmetry. |
 | D6 | Icons | **Fully custom set** | |
@@ -275,7 +275,7 @@ when the page opens.
 | 1b | The photographed Moon: NASA textures (KTX2, 2K/4K, normal map), lunar shader, glow, quality tiers | Done: PR #57 merged 7 Oct 2026 |
 | 1c | The observed sky: real stars around the Moon, planets, depth layers, scintillation, tilt | Done: PR #58 merged 7 Oct 2026 |
 | 2a | The instrument: tokens, hairline controls with the light bloom, the custom icon set, copy | Done: PR #60 merged 7 Oct 2026 |
-| 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive, idle fade | In review |
+| 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive | In review |
 | 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Not started |
 | 3 | Deep Dive and overlays: re-framing stage, detent sheet, three chapters, anchored popovers | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
@@ -426,7 +426,7 @@ when the page opens.
   (E4), which moved out of Deep Dive. Sound joins in 2c, About in Phase 5.
 - The phase name is a real button that opens Deep Dive, drawn as text with a hairline
   underline on hover and focus.
-- Idle fade (D3): after 4 s with no pointer, touch, scroll or key, the header and the timeline
-  fade over 1.2 s and come back in 0.2 s. Never while a panel or popover is open, or while
-  something has keyboard focus or a text field is in use; faded controls stay in the
-  accessibility tree and only stop taking clicks.
+- No idle fade (D3, settled in chat on 8 Oct 2026). 2b built one: after 4 s untouched the
+  header and the timeline faded, leaving the Moon, the sky and the phase name. In review the
+  owner dropped it: with nothing to do but look at a still Moon, it felt like an awkward
+  silence, and Luna's motion is already enough. The controls stay.

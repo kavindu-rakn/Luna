@@ -47,7 +47,6 @@ import ShareToast from './components/ShareToast';
 import AppMenu from './components/AppMenu';
 import BrandMark from './components/BrandMark';
 import { useShare } from './hooks/useShare';
-import { useIdle } from './hooks/useIdle';
 import UpdatePrompt from './components/UpdatePrompt';
 import ShortcutsDialog from './components/ShortcutsDialog';
 import PrivacyDialog from './components/PrivacyDialog';
@@ -156,11 +155,6 @@ function App({ prerender = false }) {
   const mountDeepDive = !prerender && hasOpenedDrawer;
 
   const { share, status: shareStatus } = useShare(currentDate, location);
-
-  // Idle fade (D3): the chrome steps back after a few seconds untouched, never
-  // while a panel or popover is open
-  const anyOpen = isDrawerOpen || isMenuOpen || isCalendarOpen || isLocationOpen || isShortcutsOpen || isPrivacyOpen;
-  const isIdle = useIdle({ enabled: !prerender, blocked: anyOpen });
 
   // The constellation behind the Moon, so the label can say what the sky shows.
   // Its boundary table loads once the page has settled.
@@ -405,7 +399,7 @@ function App({ prerender = false }) {
       {/* ═══ MAIN APPLICATION VIEWPORT ═══ */}
       <main
         ref={mainViewRef}
-        className={`main-view-container${isDrawerOpen ? ' drawer-open' : ''}${isIdle ? ' is-idle' : ''}`}
+        className={`main-view-container${isDrawerOpen ? ' drawer-open' : ''}`}
       >
         {/* The header (decision D2): the wordmark, the date block and one menu.
             Raised while one of its popovers is open, so the calendar, the location

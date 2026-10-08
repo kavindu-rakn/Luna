@@ -2697,25 +2697,6 @@ h1, h2, h3, h4 {
   z-index: 20;
 }
 
-/* Idle (decision D3): the header and the timeline step back, leaving the Moon, the
-   sky and the phase name. They return quickly and fade slowly. Still in the
-   accessibility tree; only their look and their clicks go. */
-.app-header,
-.timeline-dock {
-  transition: opacity var(--dur-2) var(--ease-out);
-}
-
-.main-view-container.is-idle .app-header,
-.main-view-container.is-idle .timeline-dock {
-  opacity: 0;
-  transition: opacity 1.2s var(--ease-in-out);
-}
-
-.main-view-container.is-idle .app-header > *,
-.main-view-container.is-idle .timeline-dock {
-  pointer-events: none;
-}
-
 @media (max-width: 768px) {
   .hero-phase-name {
     margin-top: 0;

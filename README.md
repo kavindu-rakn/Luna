@@ -97,7 +97,7 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 <td width="50%" valign="top">
 
 ### A Quiet Stage
-* **Nothing but the Moon:** The header holds the wordmark, the date block and one menu. The date opens the calendar, the place beneath it opens the location picker, and five controls step by phase and by day, with ⊙ lit in amber while the view follows the clock. The phase name opens Deep Dive. After a few seconds untouched, everything but the Moon, the sky and the phase name fades away.
+* **Nothing but the Moon:** The header holds the wordmark, the date block and one menu. The date opens the calendar, the place beneath it opens the location picker, and five controls step by phase and by day, with ⊙ lit in amber while the view follows the clock. The phase name opens Deep Dive.
 * **One Menu:** Deep Dive, sharing, *Tilt to look around* on phones, keyboard shortcuts where there is a keyboard, privacy, and the 12/24-hour and km/mile settings.
 * **Calendar:** A monthly calendar, anchored to the date, for instant date jumping.
 * **Month & Year Pickers:** Go straight to any month from 1900 to 2100, or type a year to jump to it.
