@@ -68,9 +68,10 @@ const PrivacyDialog = ({ isOpen, onClose }) => {
 
       <Section title="Kept on this device">
         <p>
-          Your chosen place, your saved places, your clock and distance settings, whether Tilt to
-          look around is on, and the name of the last place found with Use my location. They stay
-          in this browser and are never sent anywhere. Luna also keeps a copy of its own files so that it works offline.
+          Your chosen place, your saved places, your clock and distance settings, whether Sound and
+          Tilt to look around are on, whether you have turned the Moon yet (so its &ldquo;Drag to
+          rotate&rdquo; hint shows only once), and the name of the last place found with Use my
+          location. They stay in this browser and are never sent anywhere. Luna also keeps a copy of its own files so that it works offline.
         </p>
         <div className="privacy-actions">
           <button

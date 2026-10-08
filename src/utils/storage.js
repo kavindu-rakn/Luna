@@ -1,7 +1,8 @@
 // Everything Luna keeps in this browser's storage lives under keys beginning luna_:
-// the chosen place, saved places, clock and distance settings, whether "Tilt to look
-// around" is on, and the name of the last place found with "Use my location". Nothing else is written, and none of it
-// leaves the device.
+// the chosen place, saved places, clock and distance settings, whether Sound and
+// "Tilt to look around" are on, whether the Moon has been turned yet (its "Drag to
+// rotate" hint shows once), and the name of the last place found with "Use my
+// location". Nothing else is written, and none of it leaves the device.
 export const STORAGE_PREFIX = 'luna_';
 
 // Keys in storage that begin with a prefix. Collected before anything is removed,

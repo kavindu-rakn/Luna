@@ -3,11 +3,9 @@ import { createPortal } from 'react-dom';
 import { startScene } from '../scene/client';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { createTiltReader } from '../utils/tilt';
+import { isOpenSky, moonRadius } from '../utils/skyTarget';
+import { cue } from '../audio/sound';
 
-// The scene's own geometry, repeated here so the page can tell synchronously
-// whether a press landed on the Moon (src/scene/scene.js sizes it the same way)
-const OUTLINE_OF_HEIGHT = 0.92;
-const OUTLINE_OF_WIDTH = 0.83;
 // A little beyond the limb still counts, as it always has
 const HIT_SLOP = 1.05;
 // The page's fade-in (.sky-scene in index.css) plus a beat, before the Moon nods
@@ -18,6 +16,27 @@ const DOUBLE_TAP_MS = 320;
 const DOUBLE_TAP_PX = 30;
 // Tilt changes smaller than this aren't worth a frame
 const TILT_STEP = 0.002;
+
+// "Drag to rotate" shows beside the Moon's ring until the first turn; that it has
+// been seen stays on this device
+const HINT_KEY = 'luna_moon_hint';
+const readHintSeen = () => {
+  try {
+    return localStorage.getItem(HINT_KEY) === 'seen';
+  } catch {
+    return false;
+  }
+};
+const storeHintSeen = () => {
+  try {
+    localStorage.setItem(HINT_KEY, 'seen');
+  } catch {
+    // Storage unavailable: it shows again next visit
+  }
+};
+// The ring is for a mouse; touch screens keep their own way of turning the Moon
+const hasMouse = () => typeof window !== 'undefined'
+  && Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)').matches);
 
 const TEXTURE_PATH = `${import.meta.env.BASE_URL}assets/textures/`;
 const SKY_PATH = `${import.meta.env.BASE_URL}assets/sky/`;
@@ -65,6 +84,16 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
   const dragRef = useRef(null);
   const lastTap = useRef(null);
 
+  // Over the Moon a hairline ring stands in for the pointer (C3), with a word on
+  // what it does: "Drag to rotate" until the first turn, then "Double-click to
+  // reset" while the Moon is turned (F7)
+  const [mouse] = useState(hasMouse);
+  const [hintSeen, setHintSeen] = useState(readHintSeen);
+  const [rotated, setRotated] = useState(false);
+  const cursorRef = useRef(null);
+  const showRing = mouse && isReady;
+  const ringLabel = !hintSeen ? 'Drag to rotate' : rotated ? 'Double-click to reset' : null;
+
   // The latest props, for callbacks made once at start
   const latest = useRef({ view, reducedMotion });
   useLayoutEffect(() => {
@@ -105,7 +134,10 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
           console.warn('Keeping the flat Moon:', data?.reason || 'no WebGL 2');
           latest.current.onFail?.();
         } else if (type === 'contextLost') latest.current.onLost?.();
-        else if (type === 'rotated') latest.current.onRotated?.(data.rotated);
+        else if (type === 'rotated') {
+          setRotated(Boolean(data.rotated));
+          latest.current.onRotated?.(data.rotated);
+        }
       },
       replaceCanvas: () => new Promise((resolve) => {
         canvasWaiter.current = resolve;
@@ -127,11 +159,11 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
     }
     window.addEventListener('resize', relayout);
 
-    // A mouse pulls the depth layers and lights the stars near it. Touch doesn't:
-    // a tap would throw the sky towards the finger.
+    // A mouse pulls the depth layers and, over open sky, lights the stars near it.
+    // Touch doesn't: a tap would throw the sky towards the finger.
     const onMove = (event) => {
       if (event.pointerType !== 'mouse') return;
-      handle.send('look', { x: event.clientX, y: event.clientY, inside: true });
+      handle.send('look', { x: event.clientX, y: event.clientY, inside: true, lit: isOpenSky(event.target) });
     };
     const onLeave = (event) => {
       if (!event.relatedTarget) handle.send('look', { inside: false });
@@ -189,13 +221,26 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    const radius = (Math.min(OUTLINE_OF_HEIGHT * rect.height, OUTLINE_OF_WIDTH * rect.width) / 2) * HIT_SLOP;
+    const radius = moonRadius(rect) * HIT_SLOP;
     return { x, y, onMoon: Math.hypot(x - rect.width / 2, y - rect.height / 2) <= radius };
   };
 
   const sendPointer = (kind, event, at) => {
     sceneRef.current?.send('pointer', { kind, x: at.x, y: at.y, t: event.timeStamp || performance.now() });
   };
+
+  // The ring follows the mouse exactly: it is the pointer, not something chasing it
+  const placeRing = (event, over) => {
+    const cursor = cursorRef.current;
+    if (!showRing || event.pointerType !== 'mouse' || !cursor) return;
+    cursor.style.transform = `translate3d(${event.clientX}px, ${event.clientY}px, 0)`;
+    cursor.classList.toggle('is-shown', over);
+    event.currentTarget.classList.toggle('is-on-moon', over);
+  };
+
+  useEffect(() => {
+    if (!showRing) areaRef.current?.classList.remove('is-on-moon');
+  }, [showRing]);
 
   const onPointerDown = (event) => {
     if (event.button > 0) return;
@@ -205,14 +250,21 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
     // Keep the drag when the finger or mouse runs off the Moon's edge mid-swipe
     event.currentTarget.setPointerCapture?.(event.pointerId);
     sendPointer('down', event, at);
+    cursorRef.current?.classList.add('is-grabbing');
+    cue('felt');
   };
 
   const onPointerMove = (event) => {
     const drag = dragRef.current;
-    if (!drag || drag.id !== event.pointerId) return;
     const at = locate(event);
+    placeRing(event, at.onMoon || Boolean(drag));
+    if (!drag || drag.id !== event.pointerId) return;
     if (Math.hypot(at.x - drag.x, at.y - drag.y) > 6) drag.moved = true;
     sendPointer('move', event, at);
+  };
+
+  const onPointerLeave = (event) => {
+    if (!dragRef.current) placeRing(event, false);
   };
 
   const onPointerEnd = (event) => {
@@ -221,6 +273,12 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
     dragRef.current = null;
     const at = locate(event);
     sendPointer(event.type === 'pointercancel' ? 'cancel' : 'up', event, at);
+    cursorRef.current?.classList.remove('is-grabbing');
+    placeRing(event, at.onMoon);
+    if (drag.moved && !hintSeen) {
+      setHintSeen(true);
+      storeHintSeen();
+    }
     // A double-tap springs the Moon back. Mice have dblclick for that.
     if (event.pointerType !== 'mouse' && event.type === 'pointerup' && !drag.moved) {
       const tap = { t: event.timeStamp, x: at.x, y: at.y };
@@ -249,8 +307,16 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
+        onPointerLeave={onPointerLeave}
         onDoubleClick={onDoubleClick}
       />
+      {showRing && createPortal(
+        <div ref={cursorRef} className="moon-cursor" aria-hidden="true">
+          <span className="moon-cursor-ring" />
+          {ringLabel && <span className="moon-cursor-label">{ringLabel}</span>}
+        </div>,
+        document.body
+      )}
       {/* Transparent until the scene has drawn its first frame, then faded in over
           the flat Moon */}
       {createPortal(

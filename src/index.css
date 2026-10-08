@@ -192,9 +192,71 @@ textarea {
 .sky > canvas {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* The moonlight halo a mouse carries (C1): beneath the scene, so the Moon covers
+   it and only the sky is lit, while the stars inside it brighten on the canvas
+   above. Moved by transform alone (SkyPointer.jsx); out over controls and text. */
+.sky-halo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 0;
+  width: 480px;
+  height: 480px;
+  margin: -240px 0 0 -240px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    rgba(206, 218, 244, 0.095),
+    rgba(206, 218, 244, 0.042) 45%,
+    rgba(206, 218, 244, 0.014) 72%,
+    transparent);
+  opacity: 0;
+  transition: opacity var(--dur-3) var(--ease-out);
+  will-change: transform;
+}
+
+.sky-halo.is-lit {
+  opacity: 1;
+}
+
+/* A flung meteor (C2): a streak whose bright head leads, and a spark where it
+   burns out. Above the scene, below the interface; it only crosses empty sky. */
+.meteor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: 150px;
+  height: 2px;
+  border-radius: 1px;
+  transform-origin: 100% 50%;
+  background: linear-gradient(90deg,
+    rgba(200, 214, 245, 0),
+    rgba(214, 226, 252, 0.55) 70%,
+    rgba(246, 249, 255, 0.95));
+  filter: drop-shadow(0 0 3px rgba(196, 212, 250, 0.7));
+  opacity: 0;
+}
+
+.meteor-spark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    rgba(255, 255, 255, 0.95),
+    rgba(214, 226, 252, 0.5) 45%,
+    transparent);
+  opacity: 0;
 }
 
 /* Transparent until the scene's first frame is drawn, then faded in over the flat
@@ -2644,6 +2706,83 @@ h1, h2, h3, h4 {
      the swipe as a page pan a few pixels in and cancelled the drag, so a full
      turn took many swipes. Two fingers still pinch-zoom the page. */
   touch-action: pinch-zoom;
+}
+
+/* Over the Moon, with a mouse, a hairline ring stands in for the pointer (C3).
+   It follows the mouse exactly, closes a little while the Moon is held, and says
+   what it does: "Drag to rotate" until the first turn, then "Double-click to
+   reset" while the Moon is turned (MoonScene.jsx). */
+.moon-hit.is-on-moon {
+  cursor: none;
+}
+
+.moon-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-1) var(--ease-out);
+}
+
+.moon-cursor.is-shown {
+  opacity: 1;
+}
+
+.moon-cursor-ring {
+  position: absolute;
+  left: -15px;
+  top: -15px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(238, 241, 248, 0.72);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(205, 216, 242, 0.22);
+  transition: transform var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
+}
+
+/* The hotspot, so the ring still points */
+.moon-cursor-ring::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 2px;
+  margin: -1px 0 0 -1px;
+  border-radius: 50%;
+  background: rgba(238, 241, 248, 0.9);
+}
+
+.moon-cursor.is-grabbing .moon-cursor-ring {
+  transform: scale(0.78);
+  border-color: rgba(250, 251, 255, 0.95);
+}
+
+/* Only once the pointer rests on the Moon, so passing over it says nothing */
+.moon-cursor-label {
+  position: absolute;
+  left: 26px;
+  top: 0;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: var(--text-12);
+  color: var(--ink-2);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+
+.moon-cursor.is-shown .moon-cursor-label {
+  opacity: 1;
+  transition-delay: 300ms;
+}
+
+.moon-cursor.is-grabbing .moon-cursor-label {
+  opacity: 0;
+  transition-delay: 0s;
 }
 
 /* The phase name: the stage's one line of type, and a quiet way into Deep Dive. A

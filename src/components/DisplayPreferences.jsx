@@ -1,5 +1,6 @@
 import React from 'react';
 import { CLOCKS, DISTANCE_UNITS } from '../utils/units';
+import { cue } from '../audio/sound';
 
 // A two-way choice drawn as a pill. Underneath it is a plain radio group, so the
 // browser supplies what a custom widget would have to rebuild: one Tab stop, arrow
@@ -15,7 +16,10 @@ const Segmented = ({ legend, name, options, value, onChange }) => (
             name={name}
             value={option}
             checked={value === option}
-            onChange={() => onChange(option)}
+            onChange={() => {
+              onChange(option);
+              cue('switch-on');
+            }}
           />
           <span>{option}</span>
         </label>

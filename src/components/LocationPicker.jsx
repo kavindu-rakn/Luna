@@ -182,7 +182,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
           </div>
 
           {/* Use my location */}
-          <button type="button" className="location-row" onClick={useMyLocation} disabled={isLocating}>
+          <button type="button" className="location-row" onClick={useMyLocation} disabled={isLocating} data-sound="glass">
             {isLocating
               ? <Icon name="spinner" size={18} className="is-spinning" />
               : <Icon name="locateMe" size={18} />}
@@ -216,6 +216,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                   className="location-row"
                   onClick={() => applyPlace(place)}
                   title={place.detail}
+                  data-sound="glass"
                 >
                   <Icon name="location" size={18} className="is-muted" />
                   <span className="location-row-name">
@@ -235,6 +236,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                 onClick={toggleSaved}
                 className="ghost-control-btn"
                 aria-pressed={isCurrentSaved}
+                data-sound={isCurrentSaved ? 'switch-off' : 'switch-on'}
                 aria-label={isCurrentSaved ? 'Remove this location from saved places' : 'Save this location'}
                 title={isCurrentSaved ? 'Remove from saved places' : 'Save this location'}
               >
@@ -253,6 +255,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                     type="button"
                     className="location-row"
                     onClick={() => applyPlace(place)}
+                    data-sound="glass"
                   >
                     <Icon name="savedPlaceFilled" size={18} className="is-muted" />
                     <span className="location-row-name">
@@ -263,6 +266,7 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
                     type="button"
                     onClick={() => removeSaved(place)}
                     className="ghost-control-btn"
+                    data-sound="glass"
                     aria-label={`Remove ${place.name} from saved places`}
                   >
                     <Icon name="close" size={16} />

@@ -255,6 +255,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendar
               <button
                 onClick={handlePrevMonth}
                 className="ghost-control-btn"
+                data-sound="glass"
                 title="Previous month"
                 aria-label="Previous month"
               >
@@ -285,6 +286,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendar
               <button
                 onClick={handleNextMonth}
                 className="ghost-control-btn"
+                data-sound="glass"
                 title="Next month"
                 aria-label="Next month"
               >
@@ -353,6 +355,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendar
                   aria-current={today ? 'date' : undefined}
                   onFocus={() => setFocusedDay(day)}
                   onClick={() => handleSelectDay(day)}
+                  data-sound="glass"
                 >
                   <span>{day}</span>
                   {/* The day's Moon at local noon. A ring marks the day a principal
