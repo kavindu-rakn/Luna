@@ -535,6 +535,7 @@ function App({ prerender = false }) {
           <DeepDive
             isOpen={isDrawerOpen}
             setIsOpen={setIsDrawerOpen}
+            settled={isSettled}
             panelRef={drawerRef}
             headingRef={drawerHeadingRef}
           >

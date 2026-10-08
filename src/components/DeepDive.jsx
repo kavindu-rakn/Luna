@@ -30,7 +30,7 @@ const useMedia = (query) => {
   return match;
 };
 
-const DeepDive = ({ isOpen, setIsOpen, panelRef, headingRef, children }) => {
+const DeepDive = ({ isOpen, setIsOpen, settled, panelRef, headingRef, children }) => {
   const wide = useMedia(WIDE);
   const bodyRef = useRef(null);
   const dragRef = useRef(null);
@@ -40,12 +40,12 @@ const DeepDive = ({ isOpen, setIsOpen, panelRef, headingRef, children }) => {
     latest.current = { isOpen, setIsOpen };
   });
 
-  // Phones: the drag arrives once the page has loaded and the browser is idle, so
+  // Phones: the drag arrives once the Moon has settled and the browser is idle, so
   // it never competes with the Moon for the network. A first touch before then
   // fetches it at once; until it is here a tap on the grabber still opens.
   const loadDrag = useRef(null);
   useEffect(() => {
-    if (wide) return undefined;
+    if (wide || !settled) return undefined;
     let cancelled = false;
     let unfollow = null;
     let loading = null;
@@ -62,21 +62,15 @@ const DeepDive = ({ isOpen, setIsOpen, panelRef, headingRef, children }) => {
     loadDrag.current = load;
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
     const cancelIdle = window.cancelIdleCallback || clearTimeout;
-    let handle = null;
-    const whenLoaded = () => {
-      handle = idle(load, { timeout: 4000 });
-    };
-    if (document.readyState === 'complete') whenLoaded();
-    else window.addEventListener('load', whenLoaded, { once: true });
+    const handle = idle(load, { timeout: 4000 });
     return () => {
       cancelled = true;
-      window.removeEventListener('load', whenLoaded);
-      if (handle) cancelIdle(handle);
+      cancelIdle(handle);
       unfollow?.();
       dragRef.current = null;
       loadDrag.current = null;
     };
-  }, [wide, panelRef]);
+  }, [wide, settled, panelRef]);
 
   // The grabber and the sheet's top both drag it. A press on a button (the close
   // button) is the button's own.
