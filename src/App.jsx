@@ -445,6 +445,7 @@ function App({ prerender = false }) {
               onShortcuts={() => setIsShortcutsOpen(true)}
               onPrivacy={showPrivacy}
               preferences={preferences}
+              setPreference={setPreference}
             />
           </div>
         </header>
@@ -544,7 +545,6 @@ function App({ prerender = false }) {
               location={location}
               lunarDetails={lunarDetails}
               preferences={preferences}
-              setPreference={setPreference}
               onShowPrivacy={showPrivacy}
             />
           </Suspense>
