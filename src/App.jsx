@@ -29,6 +29,12 @@ const SkyPointer = lazy(() => import('./components/SkyPointer'));
 // the drawer still opens instantly.
 const loadDeepDive = () => import('./components/DeepDiveContent');
 const DeepDiveContent = lazy(loadDeepDive);
+// The keyboard shortcuts and privacy are text nobody needs until they ask for it,
+// so they arrive with Deep Dive's panels once the page has settled
+const loadShortcuts = () => import('./components/ShortcutsDialog');
+const ShortcutsDialog = lazy(loadShortcuts);
+const loadPrivacy = () => import('./components/PrivacyDialog');
+const PrivacyDialog = lazy(loadPrivacy);
 
 // A photographic flat Moon at the right phase. It is what the prerendered page shows
 // first, it holds the stage while the 3D Moon loads, and it stays if WebGL is
@@ -54,9 +60,8 @@ import DeepDive from './components/DeepDive';
 import BrandMark from './components/BrandMark';
 import { useShare } from './hooks/useShare';
 import UpdatePrompt from './components/UpdatePrompt';
-import ShortcutsDialog from './components/ShortcutsDialog';
-import PrivacyDialog from './components/PrivacyDialog';
 import { usePreferences } from './hooks/usePreferences';
+import { closeTopOverlay, isModalOpen } from './components/overlay/overlayStack';
 import { getLunarDetails, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
@@ -90,14 +95,13 @@ function App({ prerender = false }) {
     return loadStoredLocation() || DEFAULT_LOCATION;
   });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const closeShortcuts = useCallback(() => setIsShortcutsOpen(false), []);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const showPrivacy = useCallback(() => setIsPrivacyOpen(true), []);
   const closePrivacy = useCallback(() => setIsPrivacyOpen(false), []);
+  // The menu button: focus comes back to it when a dialog opened from the menu closes
+  const menuTriggerRef = useRef(null);
 
   // The sky's canvas sits behind the whole interface; the scene draws into it
   const [skyHost, setSkyHost] = useState(null);
@@ -160,10 +164,19 @@ function App({ prerender = false }) {
     if (prerender || !isSettled) return undefined;
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
     const cancel = window.cancelIdleCallback || clearTimeout;
-    const handle = idle(() => { loadDeepDive().catch(() => {}); }, { timeout: 4000 });
+    const handle = idle(() => {
+      Promise.all([loadDeepDive(), loadShortcuts(), loadPrivacy()]).catch(() => {});
+    }, { timeout: 4000 });
     return () => cancel(handle);
   }, [prerender, isSettled]);
   const mountDeepDive = !prerender && hasOpenedDrawer;
+
+  // The dialogs likewise mount the first time they open, and stay, so they can
+  // close the way they came
+  const [hasOpenedShortcuts, setHasOpenedShortcuts] = useState(false);
+  if (isShortcutsOpen && !hasOpenedShortcuts) setHasOpenedShortcuts(true);
+  const [hasOpenedPrivacy, setHasOpenedPrivacy] = useState(false);
+  if (isPrivacyOpen && !hasOpenedPrivacy) setHasOpenedPrivacy(true);
 
   const { share, status: shareStatus } = useShare(currentDate, location);
 
@@ -172,8 +185,7 @@ function App({ prerender = false }) {
     date: currentDate,
     isLive,
     timeZone: location.timeZone,
-    drawerOpen: isDrawerOpen,
-    panelsOpen: [isMenuOpen, isCalendarOpen, isLocationOpen, isShortcutsOpen, isPrivacyOpen]
+    drawerOpen: isDrawerOpen
   });
 
   // The constellation behind the Moon, so the label can say what the sky shows.
@@ -273,15 +285,13 @@ function App({ prerender = false }) {
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // The dialogs are modal, so nothing behind them reacts to keys. Esc is closed
-      // here as well as natively: the browser's close request keys off the hardware
-      // key code, and an Esc that arrives without one would otherwise leave a dialog
-      // stuck open. Closing one twice is harmless.
-      if (isShortcutsOpen || isPrivacyOpen) {
-        if (e.key === 'Escape') {
-          setIsShortcutsOpen(false);
-          setIsPrivacyOpen(false);
-        }
+      // A modal overlay (a dialog, or any overlay on a phone) shuts off the page
+      // behind, so nothing there reacts to keys. Esc is closed here as well as
+      // natively: the browser's close request keys off the hardware key code, and
+      // an Esc that arrives without one would otherwise leave it stuck open.
+      // Closing one twice is harmless.
+      if (isModalOpen()) {
+        if (e.key === 'Escape') closeTopOverlay();
         return;
       }
 
@@ -300,11 +310,8 @@ function App({ prerender = false }) {
             // Browsers without :open show a native list, whose keys never reach the page
           }
         }
-        // Dismiss the innermost surface first, then the drawer behind it.
-        if (isMenuOpen) setIsMenuOpen(false);
-        else if (isCalendarOpen) setIsCalendarOpen(false);
-        else if (isLocationOpen) setIsLocationOpen(false);
-        else setIsDrawerOpen(false);
+        // The top overlay first (overlayStack.js), then Deep Dive behind it
+        if (!closeTopOverlay()) setIsDrawerOpen(false);
         return;
       }
 
@@ -344,7 +351,7 @@ function App({ prerender = false }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMenuOpen, isCalendarOpen, isLocationOpen, isShortcutsOpen, isPrivacyOpen, selectDate, goLive]);
+  }, [selectDate, goLive]);
 
   // Derive lunar details. The 24-hour sky data is worked out inside Deep Dive,
   // which is the only place it is shown.
@@ -406,10 +413,18 @@ function App({ prerender = false }) {
           <UpdatePrompt />
 
           {/* Every keyboard shortcut, on ? or the keyboard button */}
-          <ShortcutsDialog isOpen={isShortcutsOpen} onClose={closeShortcuts} />
+          {hasOpenedShortcuts && (
+            <Suspense fallback={null}>
+              <ShortcutsDialog isOpen={isShortcutsOpen} onClose={closeShortcuts} returnFocusRef={menuTriggerRef} />
+            </Suspense>
+          )}
 
           {/* What is sent, what stays on the device, and a way to forget it */}
-          <PrivacyDialog isOpen={isPrivacyOpen} onClose={closePrivacy} />
+          {hasOpenedPrivacy && (
+            <Suspense fallback={null}>
+              <PrivacyDialog isOpen={isPrivacyOpen} onClose={closePrivacy} returnFocusRef={menuTriggerRef} />
+            </Suspense>
+          )}
 
           {/* Over the sky, a mouse carries a soft moonlight halo (C1), and a fling
               across empty sky now and then throws a meteor (C2). The native
@@ -430,9 +445,8 @@ function App({ prerender = false }) {
         className={`main-view-container${isDrawerOpen ? ' drawer-open' : ''}`}
       >
         {/* The header (decision D2): the wordmark, the date block and one menu.
-            Raised while one of its popovers is open, so the calendar, the location
-            picker or the menu opens above the Deep Dive sheet, not beneath it. */}
-        <header className={`app-header${isCalendarOpen || isLocationOpen || isMenuOpen ? ' has-popover' : ''}`}>
+            Their popovers open on <body>, above Deep Dive (Overlay). */}
+        <header className="app-header">
           <div className="app-brand">
             <BrandMark />
             <h1 className="text-gradient hero-title">
@@ -447,16 +461,12 @@ function App({ prerender = false }) {
               setCurrentDate={selectDate}
               onToday={goLive}
               isLive={isLive}
-              isCalendarOpen={isCalendarOpen}
-              setIsCalendarOpen={setIsCalendarOpen}
               timeZone={location.timeZone}
               clock={clock}
             >
               <LocationPicker
                 location={location}
                 setLocation={chooseLocation}
-                isOpen={isLocationOpen}
-                setIsOpen={setIsLocationOpen}
                 onShowPrivacy={showPrivacy}
               />
             </DateControls>
@@ -464,8 +474,6 @@ function App({ prerender = false }) {
 
           <div className="app-header-actions">
             <AppMenu
-              isOpen={isMenuOpen}
-              setIsOpen={setIsMenuOpen}
               onDeepDive={() => setIsDrawerOpen(true)}
               onShare={share}
               sound={sound}
@@ -475,6 +483,7 @@ function App({ prerender = false }) {
               onPrivacy={showPrivacy}
               preferences={preferences}
               setPreference={setPreference}
+              triggerRef={menuTriggerRef}
             />
           </div>
         </header>

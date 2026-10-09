@@ -14,15 +14,15 @@ const describe = (date, timeZone) => {
 };
 
 // Sounds that follow what the view does rather than which control did it: the
-// date (day ticks, phase chimes, leaving and returning to now), Deep Dive opening
-// and closing, and the smaller panels coming and going. Whatever moved the date,
-// a button, a key or the timeline, it sounds the same.
-export const useSoundCues = ({ date, isLive, timeZone, drawerOpen, panelsOpen }) => {
+// date (day ticks, phase chimes, leaving and returning to now) and Deep Dive
+// opening and closing. Whatever moved the date, a button, a key or the timeline, it
+// sounds the same. The overlays sound for themselves (Overlay.jsx).
+export const useSoundCues = ({ date, isLive, timeZone, drawerOpen }) => {
   const last = useRef(null);
 
   useEffect(() => {
     const previous = last.current;
-    last.current = { date, isLive, timeZone, drawerOpen, panelsOpen, view: null };
+    last.current = { date, isLive, timeZone, drawerOpen, view: null };
     if (!isSoundOn()) return;
     const view = describe(date, timeZone);
     last.current.view = view;
@@ -30,9 +30,6 @@ export const useSoundCues = ({ date, isLive, timeZone, drawerOpen, panelsOpen })
     if (!previous) return;
 
     if (previous.drawerOpen !== drawerOpen) cue(drawerOpen ? 'sheet-open' : 'sheet-close');
-    panelsOpen.forEach((open, i) => {
-      if (open !== previous.panelsOpen[i]) cue(open ? 'glass' : 'felt');
-    });
 
     if (previous.isLive !== isLive) cue(isLive ? 'live-on' : 'live-off');
     // The clock moving on while live is not something to hear

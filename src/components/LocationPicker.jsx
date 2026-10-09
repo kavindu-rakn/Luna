@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Icon from './icons/Icon';
+import Overlay from './overlay/Overlay';
+import { useMedia, PHONE_OVERLAYS } from '../hooks/useMedia';
 import {
   searchPlaces,
   resolveTimeZone,
@@ -14,7 +16,10 @@ import {
 const DEBOUNCE_MS = 600;
 const MIN_QUERY = 3;
 
-const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivacy }) => {
+const LocationPicker = ({ location, setLocation, onShowPrivacy }) => {
+  // Its own, so opening the picker re-renders the picker rather than the app
+  const [isOpen, setIsOpen] = useState(false);
+  const phone = useMedia(PHONE_OVERLAYS);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [status, setStatus] = useState('idle'); // idle | searching | error | empty
@@ -22,34 +27,18 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
   const [savedPlaces, setSavedPlaces] = useState(() => loadSavedPlaces());
   const [isLocating, setIsLocating] = useState(false);
 
-  const panelRef = useRef(null);
   const triggerRef = useRef(null);
   const inputRef = useRef(null);
-  const wasOpen = useRef(false);
 
   const close = useCallback(() => setIsOpen(false), [setIsOpen]);
 
-  // Focus the field on open, and hand focus back to the trigger on close
+  // Focus the field on open, on wide screens. On a phone that would raise the
+  // keyboard while the sheet is still rising, and iOS scrolled the whole page to
+  // chase the field; there the field waits for a tap. Closing hands focus back to
+  // the caption (Overlay).
   useEffect(() => {
-    if (isOpen) {
-      inputRef.current?.focus();
-    } else if (wasOpen.current) {
-      triggerRef.current?.focus();
-    }
-    wasOpen.current = isOpen;
-  }, [isOpen]);
-
-  // Close on a click outside the panel
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const onPointerDown = (e) => {
-      if (panelRef.current?.contains(e.target)) return;
-      if (triggerRef.current?.contains(e.target)) return;
-      close();
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
-  }, [isOpen, close]);
+    if (isOpen && !phone) inputRef.current?.focus({ preventScroll: true });
+  }, [isOpen, phone]);
 
   // Debounced search, with the in-flight request cancelled when the query moves on
   useEffect(() => {
@@ -153,142 +142,144 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
         </span>
       </button>
 
-      {isOpen && (
-        <div
-          ref={panelRef}
-          role="dialog"
-          aria-label="Choose an observing location"
-          className="location-panel"
-        >
-          {/* Search */}
-          <div className="location-search-field">
-            <Icon name="search" size={18} />
-            <input
-              className="location-search"
-              ref={inputRef}
-              type="search"
-              value={query}
-              onChange={(e) => {
-                const value = e.target.value;
-                setQuery(value);
-                if (value.trim().length < MIN_QUERY) {
-                  setResults([]);
-                  setStatus('idle');
-                }
-              }}
-              placeholder="Search for a town or city"
-              aria-label="Search for a town or city"
-            />
+      {/* Hangs centred under the caption, or a tall sheet on a phone, so the search
+          field at its top stays above the keyboard */}
+      <Overlay
+        open={isOpen}
+        onClose={close}
+        anchorRef={triggerRef}
+        sheet="tall"
+        label="Choose an observing location"
+        className="location-panel"
+      >
+        {/* Search */}
+        <div className="location-search-field">
+          <Icon name="search" size={18} />
+          <input
+            className="location-search"
+            ref={inputRef}
+            type="search"
+            value={query}
+            onChange={(e) => {
+              const value = e.target.value;
+              setQuery(value);
+              if (value.trim().length < MIN_QUERY) {
+                setResults([]);
+                setStatus('idle');
+              }
+            }}
+            placeholder="Search for a town or city"
+            aria-label="Search for a town or city"
+          />
+        </div>
+
+        {/* Use my location */}
+        <button type="button" className="location-row" onClick={useMyLocation} disabled={isLocating} data-sound="glass">
+          {isLocating
+            ? <Icon name="spinner" size={18} className="is-spinning" />
+            : <Icon name="locateMe" size={18} />}
+          <span>{isLocating ? 'Finding you…' : 'Use my location'}</span>
+        </button>
+
+        {/* Status */}
+        {status === 'searching' && (
+          <div className="location-status">
+            Searching…
+          </div>
+        )}
+        {status === 'empty' && (
+          <div className="location-status">
+            No places matched “{query.trim()}”.
+          </div>
+        )}
+        {status === 'error' && (
+          <div className="location-status is-error">
+            {errorMessage}
+          </div>
+        )}
+
+        {/* Results */}
+        {results.length > 0 && (
+          <div className="location-results">
+            {results.map((place) => (
+              <button
+                key={place.id}
+                type="button"
+                className="location-row"
+                onClick={() => applyPlace(place)}
+                title={place.detail}
+                data-sound="glass"
+              >
+                <Icon name="location" size={18} className="is-muted" />
+                <span className="location-row-name">
+                  {place.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Saved places */}
+        <div className="location-saved">
+          <div className="location-saved-header">
+            <span className="utility-label">Saved places</span>
+            <button
+              type="button"
+              onClick={toggleSaved}
+              className="ghost-control-btn"
+              aria-pressed={isCurrentSaved}
+              data-sound={isCurrentSaved ? 'switch-off' : 'switch-on'}
+              aria-label={isCurrentSaved ? 'Remove this location from saved places' : 'Save this location'}
+              title={isCurrentSaved ? 'Remove from saved places' : 'Save this location'}
+            >
+              <Icon name={isCurrentSaved ? 'savedPlaceFilled' : 'savedPlace'} size={18} />
+            </button>
           </div>
 
-          {/* Use my location */}
-          <button type="button" className="location-row" onClick={useMyLocation} disabled={isLocating} data-sound="glass">
-            {isLocating
-              ? <Icon name="spinner" size={18} className="is-spinning" />
-              : <Icon name="locateMe" size={18} />}
-            <span>{isLocating ? 'Finding you…' : 'Use my location'}</span>
-          </button>
-
-          {/* Status */}
-          {status === 'searching' && (
-            <div className="location-status">
-              Searching…
-            </div>
-          )}
-          {status === 'empty' && (
-            <div className="location-status">
-              No places matched “{query.trim()}”.
-            </div>
-          )}
-          {status === 'error' && (
-            <div className="location-status is-error">
-              {errorMessage}
-            </div>
-          )}
-
-          {/* Results */}
-          {results.length > 0 && (
-            <div className="location-results">
-              {results.map((place) => (
+          {savedPlaces.length === 0 ? (
+            <p className="location-note">
+              Star a location to keep it here.
+            </p>
+          ) : (
+            savedPlaces.map((place) => (
+              <div key={`${place.lat},${place.lon}`} className="location-saved-row">
                 <button
-                  key={place.id}
                   type="button"
                   className="location-row"
                   onClick={() => applyPlace(place)}
-                  title={place.detail}
                   data-sound="glass"
                 >
-                  <Icon name="location" size={18} className="is-muted" />
+                  <Icon name="savedPlaceFilled" size={18} className="is-muted" />
                   <span className="location-row-name">
                     {place.name}
                   </span>
                 </button>
-              ))}
-            </div>
+                <button
+                  type="button"
+                  onClick={() => removeSaved(place)}
+                  className="ghost-control-btn"
+                  data-sound="glass"
+                  aria-label={`Remove ${place.name} from saved places`}
+                >
+                  <Icon name="close" size={16} />
+                </button>
+              </div>
+            ))
           )}
-
-          {/* Saved places */}
-          <div className="location-saved">
-            <div className="location-saved-header">
-              <span className="utility-label">Saved places</span>
-              <button
-                type="button"
-                onClick={toggleSaved}
-                className="ghost-control-btn"
-                aria-pressed={isCurrentSaved}
-                data-sound={isCurrentSaved ? 'switch-off' : 'switch-on'}
-                aria-label={isCurrentSaved ? 'Remove this location from saved places' : 'Save this location'}
-                title={isCurrentSaved ? 'Remove from saved places' : 'Save this location'}
-              >
-                <Icon name={isCurrentSaved ? 'savedPlaceFilled' : 'savedPlace'} size={18} />
-              </button>
-            </div>
-
-            {savedPlaces.length === 0 ? (
-              <p className="location-note">
-                Star a location to keep it here.
-              </p>
-            ) : (
-              savedPlaces.map((place) => (
-                <div key={`${place.lat},${place.lon}`} className="location-saved-row">
-                  <button
-                    type="button"
-                    className="location-row"
-                    onClick={() => applyPlace(place)}
-                    data-sound="glass"
-                  >
-                    <Icon name="savedPlaceFilled" size={18} className="is-muted" />
-                    <span className="location-row-name">
-                      {place.name}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeSaved(place)}
-                    className="ghost-control-btn"
-                    data-sound="glass"
-                    aria-label={`Remove ${place.name} from saved places`}
-                  >
-                    <Icon name="close" size={16} />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-
-          <p className="location-credit">
-            Place search by Nominatim, data ©{' '}
-            <a className="text-link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
-              OpenStreetMap contributors
-            </a>
-            .{' '}
-            {/* Said where the data is handed over, not only in a page nobody opens */}
-            <button type="button" className="text-link" onClick={onShowPrivacy}>
-              What is sent, and what stays on your device
-            </button>
-          </p>
         </div>
-      )}
+
+        <p className="location-credit">
+          Place search by Nominatim, data ©{' '}
+          <a className="text-link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">
+            OpenStreetMap contributors
+          </a>
+          .{' '}
+          {/* Said where the data is handed over, not only in a page nobody opens */}
+          <button type="button" className="text-link" onClick={onShowPrivacy}>
+            What is sent, and what stays on your device
+          </button>
+        </p>
+      </Overlay>
     </div>
   );
 };

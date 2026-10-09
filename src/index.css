@@ -518,13 +518,6 @@ h1, h2, h3, h4 {
   pointer-events: auto;
 }
 
-/* The header's popovers (calendar, location) live inside it, so they can only
-   rise as high as it does. While one is open it sits above the Deep Dive sheet
-   (z-index 50); otherwise a popover opened on a phone slid in underneath. */
-.app-header.has-popover {
-  z-index: 60;
-}
-
 /* Mark and wordmark are sized together from one font size, so they keep their
    proportions at every width */
 .app-brand {
@@ -1262,23 +1255,14 @@ h1, h2, h3, h4 {
   }
 }
 
-/* The header's menu (D2), hanging from its button, right edges aligned */
+/* The header's menu (D2), hanging from its button, right edges aligned (Overlay) */
 .app-menu {
   position: relative;
 }
 
 .menu-panel {
-  position: absolute;
-  top: calc(100% + var(--s2));
-  right: 0;
-  z-index: 120;
+  --overlay-pad: var(--s2);
   width: min(18.5rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-  padding: var(--s2);
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius-popover);
-  background: var(--panel);
-  box-shadow: var(--shadow-overlay);
-  animation: fadeIn var(--dur-2) var(--ease-out);
 }
 
 .menu-list {
@@ -1695,29 +1679,11 @@ h1, h2, h3, h4 {
   border-radius: 2px;
 }
 
-/* The app's modal dialogs (shortcuts, privacy): native <dialog>s, which trap focus,
-   close on Esc and return focus by themselves */
+/* The app's modal dialogs (shortcuts, privacy), centred over the dimmed page
+   (Overlay) */
 .modal-dialog {
-  /* The reset at the top zeroes every margin, and a modal dialog is centred by
-     auto margins, so without this it sits in the top-left corner */
-  margin: auto;
-  /* Draws the scrollbar of a long dialog dark, rather than the default light one */
-  color-scheme: dark;
+  --overlay-pad: 1.35rem;
   width: min(36rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-  max-height: min(42rem, calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
-  overflow: auto;
-  padding: 1.35rem;
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-overlay);
-  animation: fadeIn 0.2s ease-out;
-}
-
-/* Dim only, no blur (decision E10) */
-.modal-dialog::backdrop {
-  background: var(--scrim);
 }
 
 .modal-header {
@@ -1937,25 +1903,15 @@ h1, h2, h3, h4 {
   }
 }
 
-/* Location picker: the panel hangs centred under the place caption that opens it.
-   Centred with translate, not a transform, which the fade-in animation owns. */
+/* Location picker: the panel hangs centred under the place caption that opens it
+   (Overlay) */
 .location-picker {
   position: relative;
 }
 
 .location-panel {
-  z-index: 120;
-  animation: fadeIn var(--dur-2) var(--ease-out);
-  position: absolute;
-  top: calc(100% + var(--s2));
-  left: 50%;
-  translate: -50% 0;
+  --overlay-pad: 0.85rem;
   width: min(21rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-  padding: 0.85rem;
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-md);
-  background: var(--panel);
-  box-shadow: var(--shadow-overlay);
 }
 
 .location-row {
@@ -2103,20 +2059,10 @@ h1, h2, h3, h4 {
   border-color: var(--hairline-active);
 }
 
+/* The calendar hangs centred under the date that opens it (Overlay) */
 .calendar-panel {
-  position: absolute;
-  top: 3rem;
-  left: 50%;
-  translate: -50% 0;
-  z-index: 100;
+  --overlay-pad: 1.1rem;
   width: min(22rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
-  padding: 1.1rem;
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
-  box-shadow: var(--shadow-overlay);
-  color-scheme: dark;
-  animation: fadeIn 0.2s ease-out;
 }
 
 .calendar-header {
@@ -2252,12 +2198,6 @@ h1, h2, h3, h4 {
   margin: 0 0 0.35rem 0.45rem;
 }
 
-@media (max-width: 380px) {
-  .calendar-panel {
-    width: calc(100vw - 1rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
-    padding: 0.75rem;
-  }
-}
 
 @media (max-width: 768px) {
   .calendar-panel .calendar-grid {
@@ -2269,10 +2209,10 @@ h1, h2, h3, h4 {
 /* The calendar always shows whole, never scrolling (only the month and year
    lists inside it scroll). Its tallest month is six weeks and five phase events,
    which is more than a short screen has below the date. So on short screens it
-   rises to the top of the screen, over the header, to use the full height; when
-   there is width to spare the phase list moves beside the grid instead of under
-   it; and the day cells shrink to the height left. Touch targets stay at least
-   32px there, still clear of WCAG's 24px minimum. */
+   rises until it fits, over the header if need be (anchor.js); when there is
+   width to spare the phase list moves beside the grid instead of under it; and
+   the day cells shrink to the height left. Touch targets stay at least 32px
+   there, still clear of WCAG's 24px minimum. */
 .calendar-panel {
   --cal-cell: 44px;
 }
@@ -2284,8 +2224,6 @@ h1, h2, h3, h4 {
 
 @media (max-height: 760px) {
   .calendar-panel {
-    position: fixed;
-    top: max(0.75rem, env(safe-area-inset-top, 0px));
     --cal-cell: 38px;
   }
 
@@ -2307,7 +2245,7 @@ h1, h2, h3, h4 {
 @media (max-height: 640px) {
   .calendar-panel {
     --cal-cell: 33px;
-    padding: 0.85rem;
+    --overlay-pad: 0.85rem;
   }
 
   .calendar-panel .calendar-month-navigation .ghost-control-btn,
@@ -2327,6 +2265,10 @@ h1, h2, h3, h4 {
 /* Wide but short (laptop windows, phones on their side): phases beside the grid */
 @media (min-width: 540px) and (max-height: 760px) {
   .calendar-panel {
+    width: min(42rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+  }
+
+  .calendar {
     display: grid;
     grid-template-columns: minmax(15rem, 1fr) minmax(15.5rem, 17rem);
     grid-template-areas:
@@ -2335,7 +2277,6 @@ h1, h2, h3, h4 {
       "days events";
     align-items: start;
     column-gap: 1.1rem;
-    width: min(42rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   }
 
   /* Each phase on one line: its name, then its time */
@@ -2362,6 +2303,164 @@ h1, h2, h3, h4 {
   .calendar-panel {
     --cal-cell: 30px;
   }
+}
+
+/* One overlay system (decisions E9, E10; src/components/overlay/): the calendar,
+   the location picker, the menu, the keyboard shortcuts and privacy. Each is a
+   <dialog> on <body> filling the screen, so it opens above Deep Dive and the
+   timeline; its panel is all that shows. On wide screens the popovers hang from the
+   control that opened them and grow out of it (their origin is set to that control)
+   with nothing behind them dimmed, and the two dialogs sit in the middle over a
+   dimmed page. On phones every one rises from the bottom as a sheet over a dimmed
+   page, and drags down to close like Deep Dive's. These are the resting, open
+   styles: Overlay.jsx moves the panel and the dimming in and out with the Web
+   Animations API. The dimming, the sheets and the popovers are fixed to the screen
+   itself, never sized from the dialog around them: iOS Safari sized that dialog
+   wrongly for its first quarter second, and a sheet measured from it opened at the
+   top of the screen. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--ink-1);
+  /* Draws the scrollbars of a long panel dark, rather than the default light one */
+  color-scheme: dark;
+}
+
+/* The dimming is the overlay's own, so it fades with the panel */
+.overlay::backdrop {
+  background: transparent;
+}
+
+/* A popover takes no presses but on its panel: the page stays usable around it */
+.overlay.is-popover {
+  overflow: visible;
+  pointer-events: none;
+}
+
+.overlay[open].is-modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Dim only, no blur (decision E10) */
+.overlay-scrim {
+  position: fixed;
+  inset: 0;
+  background: var(--scrim);
+}
+
+.overlay-panel {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 24px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-popover);
+  background: var(--panel);
+  box-shadow: var(--shadow-overlay);
+  pointer-events: auto;
+}
+
+.overlay-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--overlay-pad, var(--s4));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* A dialog's title and close button, above its scrolling contents */
+.overlay-head {
+  flex: none;
+  padding: var(--overlay-pad, var(--s4)) var(--overlay-pad, var(--s4)) var(--s4);
+}
+
+.overlay-head .modal-header {
+  margin-bottom: 0;
+}
+
+.overlay-head + .overlay-body {
+  padding-top: 0;
+}
+
+.overlay.is-modal .overlay-panel {
+  position: relative;
+  max-height: min(42rem, calc(100dvh - 2rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+  border-radius: var(--radius-lg);
+}
+
+/* Phones: a sheet from the bottom, its contents scrolling under a grip */
+.overlay.is-sheet .overlay-panel {
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-height: calc(100dvh - max(0.5rem, env(safe-area-inset-top, 0px)));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-width: 1px 0 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* Tall: to just under the top of the screen, like Deep Dive */
+.overlay.is-sheet.is-tall .overlay-panel {
+  top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
+/* The grip: drags the sheet, and a tap on it closes it */
+.overlay-top {
+  display: flex;
+  flex: none;
+  justify-content: center;
+  touch-action: none;
+  cursor: grab;
+}
+
+.overlay-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.overlay-grip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--radius-pill);
+}
+
+.overlay-pill {
+  display: block;
+  width: 2.25rem;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: rgba(226, 232, 240, 0.28);
+}
+
+.overlay.is-sheet .overlay-body,
+.overlay.is-sheet .overlay-head {
+  padding-top: 0;
 }
 
 /* Lunar-cycle timeline. It has no panel of its own: the rail, its marks and their
