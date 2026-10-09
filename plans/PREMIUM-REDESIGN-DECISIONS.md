@@ -514,6 +514,12 @@ when the page opens.
     readout doesn't wrap, a rise that doesn't happen keeps the line its direction would take,
     "Exact" is no taller than the label beside it, and the zodiac card stacks its two values
     where two columns would be too narrow for "Sagittarius 29.9° sidereal".
+  - Double-tap never zooms the page (`touch-action: manipulation`, with no specificity, so
+    the chart, grabber, timeline and Moon keep their own); pinch-zoom still works. On the
+    owner's iPhone, after Deep Dive had been open, the whole interface could be panned in
+    every direction until a reload. The likely cause is iOS's double-tap zoom: a second tap
+    to stop a scroll, or one landing behind ✕ as the sheet slides away, zooms just enough to
+    fit a card.
   - Each number once: the orbit's old readout (phase, illumination, distance) and the stat
     icons are gone. Values change at once while the date moves; a change that comes on its
     own fades in over 240 ms (E6). The count-up tweens went, and GSAP with them: nothing in
