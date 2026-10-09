@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Icon from './icons/Icon';
+import Overlay from './overlay/Overlay';
 import {
   getAdjacentQuarterPhase,
   getZonedDay,
@@ -44,24 +45,13 @@ const LAST_YEAR = 2100;
 const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendarOpen, setIsCalendarOpen, timeZone, clock, children }) => {
   // The month on show, as { year, month }
   const [view, setView] = useState(() => getZonedDay(currentDate, timeZone));
-  const calendarModalRef = useRef(null);
   const toggleButtonRef = useRef(null);
-  const wasCalendarOpen = useRef(false);
 
   // The grid is one Tab stop. Arrow keys move between days, as in any native date
   // picker; before this every day was its own stop, 33 presses to get past.
   const [focusedDay, setFocusedDay] = useState(1);
   const dayRefs = useRef({});
   const pendingFocus = useRef(false);
-
-  // Send focus back to the toggle when the calendar closes, so a keyboard user
-  // pressing Escape is not dropped at the top of the document.
-  useEffect(() => {
-    if (wasCalendarOpen.current && !isCalendarOpen) {
-      toggleButtonRef.current?.focus();
-    }
-    wasCalendarOpen.current = isCalendarOpen;
-  }, [isCalendarOpen]);
 
   // Functional updates: computing from the currentDate captured at render meant
   // presses landing faster than React re-rendered all stepped from the same day,
@@ -96,22 +86,6 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendar
       timeZone
     });
   };
-
-  // Close calendar on Outside Click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (calendarModalRef.current && !calendarModalRef.current.contains(e.target)) {
-        // Only close if the click was not on the toggle button itself
-        if (toggleButtonRef.current?.contains(e.target)) return;
-        setIsCalendarOpen(false);
-      }
-    };
-
-    if (isCalendarOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isCalendarOpen, setIsCalendarOpen]);
 
   useEffect(() => {
     if (!isCalendarOpen || !pendingFocus.current) return;
@@ -240,12 +214,17 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendar
       {/* Where: the place the view is for, opening the location picker */}
       {children}
 
-      {/* ═══ CUSTOM CELESTIAL DARK CALENDAR ═══ */}
-      {isCalendarOpen && (
-        <div
-          ref={calendarModalRef}
-          className="calendar-panel"
-        >
+      {/* The calendar: hangs centred under the date and grows out of it, or rises
+          as a sheet on a phone (Overlay). Esc, a press outside and choosing a day
+          close it, and focus goes back to the date. */}
+      <Overlay
+        open={isCalendarOpen}
+        onClose={() => setIsCalendarOpen(false)}
+        anchorRef={toggleButtonRef}
+        label="Calendar"
+        className="calendar-panel"
+      >
+        <div className="calendar">
           {/* React hoists this into <head> once, however often the calendar opens */}
           <style href="luna-calendar-picker-scrollbar" precedence="default">{PICKER_SCROLLBAR_CSS}</style>
 
@@ -412,7 +391,7 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendar
             </div>
           )}
         </div>
-      )}
+      </Overlay>
 
       {/* The instrument bar: five controls in one hairline capsule. The buttons
           touch, so their targets never overlap, and every glyph sits one button's

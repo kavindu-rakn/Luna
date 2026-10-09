@@ -73,8 +73,8 @@ const Keys = ({ modifier, keys }) => (
 );
 
 // The keyboard shortcuts, in the app's modal dialog
-const ShortcutsDialog = ({ isOpen, onClose }) => (
-  <ModalDialog isOpen={isOpen} onClose={onClose} title="Keyboard shortcuts" titleId="shortcuts-title">
+const ShortcutsDialog = ({ isOpen, onClose, returnFocusRef }) => (
+  <ModalDialog isOpen={isOpen} onClose={onClose} title="Keyboard shortcuts" titleId="shortcuts-title" returnFocusRef={returnFocusRef}>
     {GROUPS.map((group) => (
       <div key={group.title} className="shortcuts-group">
         <h3 className="utility-label">{group.title}</h3>

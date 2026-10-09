@@ -15,9 +15,10 @@ const describe = (date, timeZone) => {
 
 // Sounds that follow what the view does rather than which control did it: the
 // date (day ticks, phase chimes, leaving and returning to now), Deep Dive opening
-// and closing, and the smaller panels coming and going. Whatever moved the date,
-// a button, a key or the timeline, it sounds the same.
-export const useSoundCues = ({ date, isLive, timeZone, drawerOpen, panelsOpen }) => {
+// and closing, and the smaller panels coming and going: a glass tap and a felt
+// press, or on a phone, where they are sheets, Deep Dive's sheet sounds. Whatever
+// moved the date, a button, a key or the timeline, it sounds the same.
+export const useSoundCues = ({ date, isLive, timeZone, drawerOpen, panelsOpen, panelsAreSheets = false }) => {
   const last = useRef(null);
 
   useEffect(() => {
@@ -31,7 +32,9 @@ export const useSoundCues = ({ date, isLive, timeZone, drawerOpen, panelsOpen })
 
     if (previous.drawerOpen !== drawerOpen) cue(drawerOpen ? 'sheet-open' : 'sheet-close');
     panelsOpen.forEach((open, i) => {
-      if (open !== previous.panelsOpen[i]) cue(open ? 'glass' : 'felt');
+      if (open === previous.panelsOpen[i]) return;
+      if (panelsAreSheets) cue(open ? 'sheet-open' : 'sheet-close');
+      else cue(open ? 'glass' : 'felt');
     });
 
     if (previous.isLive !== isLive) cue(isLive ? 'live-on' : 'live-off');

@@ -139,8 +139,8 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | E6 | Value changes | **Instant while scrubbing, soft crossfade when settled** (rec) | |
 | E7 | Altitude chart | **Centrepiece of Tonight** (rec) | Full width, horizon, twilight bands, rise/set on the curve, draggable "now" marker. |
 | E8 | Orbit diagram | **Crisp 2D SVG** (rec) | Retires the 512 KB Earth texture and the second WebGL context. |
-| E9 | Dialogs and popovers | **Anchored: each grows from its control; sheets on phones** (rec) | Fixes the popover-under-sheet bug by design. |
-| E10 | Behind dialogs | **Dim only** (rec) | No backdrop blur. |
+| E9 | Dialogs and popovers | **Anchored: each grows from its control; sheets on phones** (rec) | Fixes the popover-under-sheet bug by design. Built in 3c: one `Overlay` component; phones (under 640 px wide) get sheets that drag down to close like Deep Dive's (owner's choice in chat, 9 Oct 2026). |
+| E10 | Behind dialogs | **Dim only** (rec) | No backdrop blur. In 3c the dialogs and every phone sheet dim; the popovers on wide screens don't. |
 
 ### F. The Moon
 
@@ -193,7 +193,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | J2 | Where the 3D runs | **Plain three.js, in a worker where supported** | **Settled in chat.** The questionnaire said (a), React Three Fiber on the main thread, with the owner rejecting a worker-only renderer because it would cut users. The final choice drops React Three Fiber and drei; one scene module runs in an OffscreenCanvas worker where the browser supports WebGL there and on the main thread everywhere else, so every visitor still sees the 3D Moon. Lighthouse runs in Chrome, so it measures the worker path. |
 | J3 | Static shell | **Prerender header, date, phase name and 2D Moon** (rec) | |
 | J4 | Hosting | **Vercel** | **Settled in chat.** Questionnaire said Cloudflare Pages. See "Hosting" below. |
-| J5 | Animation stack | **Keep GSAP** | Load it after first paint. Its Flip plugin also gives anchored popovers on iOS 15, which lacks View Transitions. |
+| J5 | Animation stack | **CSS; GSAP removed** | **Changed in chat (9 Oct 2026):** GSAP was to be kept and its Flip plugin used for the anchored popovers. Nothing used it after 3b, and the popovers grow out of their controls with a CSS transform whose origin is the control, which needs no library, reverses from wherever it is and works on iOS 15.4. |
 | J6 | Browser floor | **Full experience back to iOS 15** | **Settled in chat:** iOS 15.4 or later (every iOS 15 device can update to 15.8; `:has()` and `dvh` need 15.4). |
 | J7 | Who builds | **Claude builds, in phased PRs** | |
 
@@ -246,9 +246,9 @@ when the page opens.
 | F7 "stays where left" and H6 drag-to-rotate vs F4/F5 true orientation and libration | The drag is an offset on top of the true orientation; double-click/tap resets. |
 | D2 wordmark-only header vs a location that changes every number | Location as a caption under the date; the phase name opens Deep Dive. |
 | I1 cinematic intro vs LCP and Speed Index | The intro reveals the real page; the phase name is painted in the first frame. |
-| J6 iOS 15 vs View Transitions, OffscreenCanvas WebGL and the Popover API | GSAP Flip for anchored motion; main-thread renderer fallback; no reliance on the Popover API. |
+| J6 iOS 15 vs View Transitions, OffscreenCanvas WebGL and the Popover API | CSS transforms for anchored motion (J5 as changed); main-thread renderer fallback; no reliance on the Popover API: overlays are `<dialog>`s, which iOS 15.4 has. |
 | J2 main-thread 3D vs a mobile 100 | Worker where supported, main thread elsewhere. |
-| J5 keep GSAP vs first-load bytes | GSAP loads after first paint. |
+| J5 keep GSAP vs first-load bytes | Settled by removing GSAP (J5 as changed in chat). |
 | G1 real sky vs the Moon's true size | The Moon is drawn far larger than its 0.5° against a wide sky field, like a composite photograph. The sky is oriented to the observer's horizon and centred on the Moon's position. |
 | A2 open to features vs finishing the redesign | New features (meteor showers, reward for staying) come after the redesign, as their own phase. |
 | F5 real libration vs a flat Moon photographed with none | The 3D Moon's first frame takes the photograph's pose, at the true tilt and lighting; once the page has faded it in, it nods into the libration of the moment over 1.6 s. Under reduced motion it starts at its true libration. |
@@ -278,8 +278,8 @@ when the page opens.
 | 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive | Done: PR #61 merged 8 Oct 2026 |
 | 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Done: PR #63 merged 8 Oct 2026 (with the settings fix, #62) |
 | 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | Done: PR #64 merged 9 Oct 2026 |
-| 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | In review |
-| 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Not started |
+| 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | Done: PR #67 merged 9 Oct 2026 |
+| 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | In review |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
@@ -526,3 +526,32 @@ when the page opens.
     the app uses it now, though the package stays for 3c to decide.
   - The day's sky (`src/utils/skyDay.js`) depends only on the day and the place, so dragging
     the time doesn't recompute it, and it loads with Deep Dive rather than with the page.
+- 3c, one overlay system (E9, E10; J5 as changed in chat on 9 Oct 2026). The calendar, the
+  location picker, the menu, the keyboard shortcuts and privacy are all one `Overlay`
+  (`src/components/overlay/`): a `<dialog>` on `<body>`, so it always opens above Deep Dive
+  and the timeline, which removes the old workaround of raising the header while a popover
+  was open.
+  - Wide screens: the calendar, the location picker and the menu hang from the control that
+    opened them (`src/utils/anchor.js`: centred under it, or right edges aligned for the
+    menu; kept on screen; rising until they fit on short screens) and grow out of it: the
+    panel's transform origin is the control's centre, and it scales from 0.94 and fades in
+    over 200 ms, back the same way on close, reversing from wherever it is. Nothing behind
+    them dims, and the page stays usable around them. They follow their control while the
+    stage narrows for Deep Dive. The shortcuts and privacy dialogs sit in the middle over a
+    page dimmed with `--scrim`, no blur.
+  - Phones (under 640 px wide): every overlay is a sheet from the bottom over the dimmed page,
+    in the top layer, with the rest of the page inert. A grip at its top drags it, with Deep
+    Dive's own drag code, and a tap on the grip closes it; a pull down from its contents
+    closes it when they're scrolled to the top; so does a tap on the dimmed page. The
+    calendar, the menu and the shortcuts fit their contents; the location picker and privacy
+    reach to just under the top of the screen, so the search field stays above the keyboard.
+    They sound like Deep Dive's sheet rather than the glass tap and felt press.
+  - Esc and a press outside close the top overlay only (`overlayStack.js`): privacy opened
+    from the location picker closes back to the picker, then the picker to the page; with
+    Deep Dive open, Esc closes the calendar first and Deep Dive after. Focus goes back to
+    whatever opened each one, or to the menu button when that was a menu item. A dialog's
+    title and close button stay above its scrolling text, and focus meets the close button
+    first.
+  - GSAP is uninstalled (J5 as changed). The shortcuts and privacy dialogs load with Deep
+    Dive's panels once the page has settled, rather than with the page: the entry is 83.7 KB,
+    2.6 KB less than before, with the overlay system in it.

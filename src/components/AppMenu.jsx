@@ -1,11 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import Icon from './icons/Icon';
 import DisplayPreferences from './DisplayPreferences';
+import Overlay from './overlay/Overlay';
 
 // The one menu (decision D2): everything the header used to hold, plus the small
 // settings E4 asked for. A disclosure rather than an ARIA menu: it holds actions,
 // a switch and two radio groups, which plain buttons and fieldsets already make
-// keyboard- and screen-reader-friendly. About joins it in Phase 5.
+// keyboard- and screen-reader-friendly. It hangs from its button, right edges
+// aligned, or rises as a sheet on a phone (Overlay). About joins it in Phase 5.
 const AppMenu = ({
   isOpen,
   setIsOpen,
@@ -17,34 +19,15 @@ const AppMenu = ({
   onShortcuts,
   onPrivacy,
   preferences,
-  setPreference
+  setPreference,
+  // The menu button, which App also hands focus back to when a dialog opened from
+  // the menu closes
+  triggerRef
 }) => {
-  const triggerRef = useRef(null);
-  const panelRef = useRef(null);
-  const wasOpen = useRef(false);
-
-  // Focus the first item on open; on close, hand focus back to the button if it
-  // was inside the menu (an action that opens something else keeps its own focus)
+  // Focus the first item on open
   useEffect(() => {
-    if (isOpen) {
-      panelRef.current?.querySelector('button')?.focus();
-    } else if (wasOpen.current) {
-      const active = document.activeElement;
-      if (!active || active === document.body || panelRef.current?.contains(active)) triggerRef.current?.focus();
-    }
-    wasOpen.current = isOpen;
+    if (isOpen) document.getElementById('app-menu-panel')?.querySelector('button')?.focus();
   }, [isOpen]);
-
-  // Close on a press anywhere else
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const onPointerDown = (event) => {
-      if (panelRef.current?.contains(event.target) || triggerRef.current?.contains(event.target)) return;
-      setIsOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [isOpen, setIsOpen]);
 
   // An action closes the menu, then does its thing: still inside the press, so the
   // share sheet and the motion permission can ask for it
@@ -68,8 +51,15 @@ const AppMenu = ({
         <Icon name={isOpen ? 'close' : 'menu'} />
       </button>
 
-      {isOpen && (
-        <div id="app-menu-panel" ref={panelRef} className="menu-panel" role="group" aria-label="Menu">
+      <Overlay
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        anchorRef={triggerRef}
+        align="end"
+        label="Menu"
+        className="menu-panel"
+      >
+        <div id="app-menu-panel">
           <ul className="menu-list">
             <li>
               <button type="button" className="menu-item" onClick={act(onDeepDive)} aria-keyshortcuts="D" data-sound="glass">
@@ -129,7 +119,7 @@ const AppMenu = ({
             <DisplayPreferences preferences={preferences} setPreference={setPreference} />
           </div>
         </div>
-      )}
+      </Overlay>
     </div>
   );
 };

@@ -21,7 +21,7 @@ const Section = ({ title, children }) => (
  * What Luna sends, what it keeps, and a way to forget it. Every statement here
  * describes what the code does; change one and the other has to change with it.
  */
-const PrivacyDialog = ({ isOpen, onClose }) => {
+const PrivacyDialog = ({ isOpen, onClose, returnFocusRef }) => {
   const [confirming, setConfirming] = useState(false);
   const forgetButtonRef = useRef(null);
 
@@ -44,7 +44,15 @@ const PrivacyDialog = ({ isOpen, onClose }) => {
   };
 
   return (
-    <ModalDialog isOpen={isOpen} onClose={handleClose} title="Privacy" titleId="privacy-title" className="privacy-dialog">
+    <ModalDialog
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Privacy"
+      titleId="privacy-title"
+      className="privacy-dialog"
+      sheet="tall"
+      returnFocusRef={returnFocusRef}
+    >
       <p className="privacy-lead">
         No accounts, no cookies, no analytics and no ads. Every calculation runs on your device.
       </p>

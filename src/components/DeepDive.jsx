@@ -1,5 +1,6 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import Icon from './icons/Icon';
+import { useMedia } from '../hooks/useMedia';
 
 // Deep Dive's frame (decisions E1, E2; the master prompt 6.5). On a wide screen it
 // is a panel on the right, and the stage re-centres in the space beside it
@@ -15,20 +16,6 @@ import Icon from './icons/Icon';
 // D open it too.
 
 const WIDE = '(min-width: 960px)';
-
-const matches = (query) => typeof window !== 'undefined' && Boolean(window.matchMedia?.(query).matches);
-
-const useMedia = (query) => {
-  const [match, setMatch] = useState(() => matches(query));
-  useEffect(() => {
-    const list = window.matchMedia?.(query);
-    if (!list) return undefined;
-    const update = () => setMatch(list.matches);
-    list.addEventListener('change', update);
-    return () => list.removeEventListener('change', update);
-  }, [query]);
-  return match;
-};
 
 const DeepDive = ({ isOpen, setIsOpen, settled, panelRef, headingRef, children }) => {
   const wide = useMedia(WIDE);

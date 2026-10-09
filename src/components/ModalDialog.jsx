@@ -1,58 +1,35 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import Icon from './icons/Icon';
+import Overlay from './overlay/Overlay';
 
 /**
- * A native modal <dialog> with a title and a close button. showModal() traps focus,
- * makes the page behind inert, closes on Esc and hands focus back to wherever it was.
- * Every way of closing it, Esc, the button or a click outside, ends in onClose.
+ * A modal overlay with a title and a close button (keyboard shortcuts, privacy): a
+ * centred dialog over a dimmed page on wide screens, a sheet on phones. It shuts off
+ * the page behind; Esc, the button, the dimmed page or, on a phone, a swipe down
+ * close it, and focus goes back to what opened it.
  */
-const ModalDialog = ({ isOpen, onClose, title, titleId, className = '', children }) => {
-  const dialogRef = useRef(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (isOpen && !dialog.open) dialog.showModal();
-    if (!isOpen && dialog.open) dialog.close();
-  }, [isOpen]);
-
-  // closedby="any" closes the dialog on a click outside it. Safari does not support
-  // that yet; there, a click whose target is the dialog element itself but which
-  // lands outside its box can only have been on the backdrop.
-  const handleClick = (e) => {
-    const dialog = dialogRef.current;
-    if (!dialog || e.target !== dialog || 'closedBy' in HTMLDialogElement.prototype) return;
-    const box = dialog.getBoundingClientRect();
-    const inside = box.top <= e.clientY && e.clientY <= box.bottom && box.left <= e.clientX && e.clientX <= box.right;
-    if (!inside) dialog.close();
-  };
-
-  return (
-    <dialog
-      ref={dialogRef}
-      className={`modal-dialog ${className}`.trim()}
-      closedby="any"
-      aria-labelledby={titleId}
-      onClose={onClose}
-      onClick={handleClick}
-    >
+const ModalDialog = ({ isOpen, onClose, title, titleId, className = '', sheet = 'fit', returnFocusRef, children }) => (
+  <Overlay
+    open={isOpen}
+    onClose={onClose}
+    modal
+    sheet={sheet}
+    labelledBy={titleId}
+    returnFocusRef={returnFocusRef}
+    className={`modal-dialog ${className}`.trim()}
+    // The title and close button stay in view while a long dialog scrolls, and the
+    // close button is the first thing focus meets
+    header={(
       <div className="modal-header">
         <h2 id={titleId}>{title}</h2>
-        {/* A plain button rather than <form method="dialog">: the page's CSP sets
-            form-action 'none', and a dialog close is no place to test how each
-            browser reads that */}
-        <button
-          type="button"
-          className="glass-button icon-button"
-          onClick={() => dialogRef.current?.close()}
-          aria-label="Close"
-        >
+        <button type="button" className="glass-button icon-button" onClick={onClose} aria-label="Close">
           <Icon name="close" />
         </button>
       </div>
-      {children}
-    </dialog>
-  );
-};
+    )}
+  >
+    {children}
+  </Overlay>
+);
 
 export default ModalDialog;
