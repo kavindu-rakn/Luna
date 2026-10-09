@@ -193,7 +193,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | J2 | Where the 3D runs | **Plain three.js, in a worker where supported** | **Settled in chat.** The questionnaire said (a), React Three Fiber on the main thread, with the owner rejecting a worker-only renderer because it would cut users. The final choice drops React Three Fiber and drei; one scene module runs in an OffscreenCanvas worker where the browser supports WebGL there and on the main thread everywhere else, so every visitor still sees the 3D Moon. Lighthouse runs in Chrome, so it measures the worker path. |
 | J3 | Static shell | **Prerender header, date, phase name and 2D Moon** (rec) | |
 | J4 | Hosting | **Vercel** | **Settled in chat.** Questionnaire said Cloudflare Pages. See "Hosting" below. |
-| J5 | Animation stack | **CSS; GSAP removed** | **Changed in chat (9 Oct 2026):** GSAP was to be kept and its Flip plugin used for the anchored popovers. Nothing used it after 3b, and the popovers grow out of their controls with a CSS transform whose origin is the control, which needs no library, reverses from wherever it is and works on iOS 15.4. |
+| J5 | Animation stack | **The Web Animations API; GSAP removed** | **Changed in chat (9 Oct 2026):** GSAP was to be kept and its Flip plugin used for the anchored popovers. Nothing used it after 3b. The overlays are moved with the browser's own Web Animations API: explicit keyframes from wherever the panel is, started the moment they're asked for, interruptible, on the compositor, and in iOS 15.4. No library to load. |
 | J6 | Browser floor | **Full experience back to iOS 15** | **Settled in chat:** iOS 15.4 or later (every iOS 15 device can update to 15.8; `:has()` and `dvh` need 15.4). |
 | J7 | Who builds | **Claude builds, in phased PRs** | |
 
@@ -535,10 +535,10 @@ when the page opens.
     opened them (`src/utils/anchor.js`: centred under it, or right edges aligned for the
     menu; kept on screen; rising until they fit on short screens) and grow out of it: the
     panel's transform origin is the control's centre, and it scales from 0.94 and fades in
-    over 200 ms, back the same way on close, reversing from wherever it is. Nothing behind
-    them dims, and the page stays usable around them. They follow their control while the
-    stage narrows for Deep Dive. The shortcuts and privacy dialogs sit in the middle over a
-    page dimmed with `--scrim`, no blur.
+    over 200 ms, and shrinks back in 140 ms on close. Nothing behind them dims, and the page
+    stays usable around them. They follow their control while the stage narrows for Deep
+    Dive. The shortcuts and privacy dialogs sit in the middle over a page dimmed with
+    `--scrim`, no blur.
   - Phones (under 640 px wide): every overlay is a sheet from the bottom over the dimmed page,
     in the top layer, with the rest of the page inert. A grip at its top drags it, with Deep
     Dive's own drag code, and a tap on the grip closes it; a pull down from its contents
@@ -552,6 +552,23 @@ when the page opens.
     whatever opened each one, or to the menu button when that was a menu item. A dialog's
     title and close button stay above its scrolling text, and focus meets the close button
     first.
+  - Motion (J5 as changed): the panels and the dimming are moved with the Web Animations
+    API, from wherever they are, arriving with `--ease-out` and leaving faster, accelerating
+    away (sheets 380 ms in, 240 ms out). The first build used CSS transitions keyed off a
+    class, and the owner's iPhone recording (9 Oct 2026) showed what that cost: the sheet
+    opened sliding at the top of the screen for a quarter second, then jumped into place;
+    the dimming never faded, it snapped; and the location sheet put focus in its search
+    field while still below the screen, so iOS raised the keyboard and scrolled the whole
+    page after it. Now the sheets, the popovers and the dimming are fixed to the screen
+    rather than sized from the dialog around them (iOS sized that dialog wrongly at
+    first); every move starts from explicit keyframes; on a phone the search field waits
+    for a tap; and the calendar keeps its phase list while it leaves, rather than
+    shrinking on the way out. A finger on a sheet stops its move where it is, and letting
+    go moves it on from there (sheetDrag.js's onBegin and onSettle).
+  - Opening an overlay no longer re-renders the whole app: the calendar, the location
+    picker and the menu keep their own open state, and every overlay plays its own sounds.
+    In headless Chrome the menu sheet now reaches the screen 37 ms after the tap, where it
+    took 101 ms behind an 82 ms long task (development build).
   - GSAP is uninstalled (J5 as changed). The shortcuts and privacy dialogs load with Deep
-    Dive's panels once the page has settled, rather than with the page: the entry is 83.7 KB,
-    2.6 KB less than before, with the overlay system in it.
+    Dive's panels once the page has settled, rather than with the page: the entry is 84.2 KB,
+    2.1 KB less than before, with the overlay system in it.

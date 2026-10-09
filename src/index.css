@@ -2312,13 +2312,18 @@ h1, h2, h3, h4 {
    control that opened them and grow out of it (their origin is set to that control)
    with nothing behind them dimmed, and the two dialogs sit in the middle over a
    dimmed page. On phones every one rises from the bottom as a sheet over a dimmed
-   page, and drags down to close like Deep Dive's. */
+   page, and drags down to close like Deep Dive's. These are the resting, open
+   styles: Overlay.jsx moves the panel and the dimming in and out with the Web
+   Animations API. The dimming, the sheets and the popovers are fixed to the screen
+   itself, never sized from the dialog around them: iOS Safari sized that dialog
+   wrongly for its first quarter second, and a sheet measured from it opened at the
+   top of the screen. */
 .overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
-  width: 100%;
-  height: 100%;
+  width: auto;
+  height: auto;
   max-width: none;
   max-height: none;
   margin: 0;
@@ -2350,19 +2355,13 @@ h1, h2, h3, h4 {
 
 /* Dim only, no blur (decision E10) */
 .overlay-scrim {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: var(--scrim);
-  opacity: 0;
-  transition: opacity var(--dur-3) var(--ease-out);
-}
-
-.overlay:has(.overlay-panel.is-open) .overlay-scrim {
-  opacity: 1;
 }
 
 .overlay-panel {
-  position: absolute;
+  position: fixed;
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - 24px);
@@ -2371,21 +2370,6 @@ h1, h2, h3, h4 {
   background: var(--panel);
   box-shadow: var(--shadow-overlay);
   pointer-events: auto;
-  opacity: 0;
-  transform: scale(0.94);
-  transition:
-    opacity var(--dur-2) var(--ease-out),
-    transform var(--dur-2) var(--ease-out);
-}
-
-.overlay-panel.is-open {
-  opacity: 1;
-  transform: none;
-}
-
-/* Leaving: nothing in it can be pressed on the way out */
-.overlay-panel:not(.is-open) {
-  pointer-events: none;
 }
 
 .overlay-body {
@@ -2431,18 +2415,6 @@ h1, h2, h3, h4 {
   border-width: 1px 0 0;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: 0 -18px 50px rgba(0, 0, 0, 0.5);
-  opacity: 1;
-  transform: translate3d(0, 100%, 0);
-  transition: transform 0.38s var(--ease-out);
-}
-
-.overlay.is-sheet .overlay-panel.is-open {
-  transform: none;
-}
-
-/* Following a finger */
-.overlay.is-sheet .overlay-panel.is-dragging {
-  transition: none;
 }
 
 /* Tall: to just under the top of the screen, like Deep Dive */

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Icon from './icons/Icon';
 import Overlay from './overlay/Overlay';
+import { useMedia, PHONE_OVERLAYS } from '../hooks/useMedia';
 import {
   searchPlaces,
   resolveTimeZone,
@@ -15,7 +16,10 @@ import {
 const DEBOUNCE_MS = 600;
 const MIN_QUERY = 3;
 
-const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivacy }) => {
+const LocationPicker = ({ location, setLocation, onShowPrivacy }) => {
+  // Its own, so opening the picker re-renders the picker rather than the app
+  const [isOpen, setIsOpen] = useState(false);
+  const phone = useMedia(PHONE_OVERLAYS);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [status, setStatus] = useState('idle'); // idle | searching | error | empty
@@ -28,10 +32,13 @@ const LocationPicker = ({ location, setLocation, isOpen, setIsOpen, onShowPrivac
 
   const close = useCallback(() => setIsOpen(false), [setIsOpen]);
 
-  // Focus the field on open. Closing hands focus back to the caption (Overlay).
+  // Focus the field on open, on wide screens. On a phone that would raise the
+  // keyboard while the sheet is still rising, and iOS scrolled the whole page to
+  // chase the field; there the field waits for a tap. Closing hands focus back to
+  // the caption (Overlay).
   useEffect(() => {
-    if (isOpen) inputRef.current?.focus();
-  }, [isOpen]);
+    if (isOpen && !phone) inputRef.current?.focus({ preventScroll: true });
+  }, [isOpen, phone]);
 
   // Debounced search, with the in-flight request cancelled when the query moves on
   useEffect(() => {

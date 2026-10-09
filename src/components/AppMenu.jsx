@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Icon from './icons/Icon';
 import DisplayPreferences from './DisplayPreferences';
 import Overlay from './overlay/Overlay';
@@ -9,8 +9,6 @@ import Overlay from './overlay/Overlay';
 // keyboard- and screen-reader-friendly. It hangs from its button, right edges
 // aligned, or rises as a sheet on a phone (Overlay). About joins it in Phase 5.
 const AppMenu = ({
-  isOpen,
-  setIsOpen,
   onDeepDive,
   onShare,
   sound,
@@ -24,9 +22,12 @@ const AppMenu = ({
   // the menu closes
   triggerRef
 }) => {
+  // Its own, so opening the menu re-renders the menu rather than the app
+  const [isOpen, setIsOpen] = useState(false);
+
   // Focus the first item on open
   useEffect(() => {
-    if (isOpen) document.getElementById('app-menu-panel')?.querySelector('button')?.focus();
+    if (isOpen) document.getElementById('app-menu-panel')?.querySelector('button')?.focus({ preventScroll: true });
   }, [isOpen]);
 
   // An action closes the menu, then does its thing: still inside the press, so the

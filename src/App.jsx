@@ -61,7 +61,6 @@ import BrandMark from './components/BrandMark';
 import { useShare } from './hooks/useShare';
 import UpdatePrompt from './components/UpdatePrompt';
 import { usePreferences } from './hooks/usePreferences';
-import { useMedia, PHONE_OVERLAYS } from './hooks/useMedia';
 import { closeTopOverlay, isModalOpen } from './components/overlay/overlayStack';
 import { getLunarDetails, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
@@ -96,18 +95,13 @@ function App({ prerender = false }) {
     return loadStoredLocation() || DEFAULT_LOCATION;
   });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const closeShortcuts = useCallback(() => setIsShortcutsOpen(false), []);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const showPrivacy = useCallback(() => setIsPrivacyOpen(true), []);
   const closePrivacy = useCallback(() => setIsPrivacyOpen(false), []);
   // The menu button: focus comes back to it when a dialog opened from the menu closes
   const menuTriggerRef = useRef(null);
-  // On phones the overlays are sheets, and sound like Deep Dive's
-  const overlaySheets = useMedia(PHONE_OVERLAYS);
 
   // The sky's canvas sits behind the whole interface; the scene draws into it
   const [skyHost, setSkyHost] = useState(null);
@@ -191,9 +185,7 @@ function App({ prerender = false }) {
     date: currentDate,
     isLive,
     timeZone: location.timeZone,
-    drawerOpen: isDrawerOpen,
-    panelsOpen: [isMenuOpen, isCalendarOpen, isLocationOpen, isShortcutsOpen, isPrivacyOpen],
-    panelsAreSheets: overlaySheets
+    drawerOpen: isDrawerOpen
   });
 
   // The constellation behind the Moon, so the label can say what the sky shows.
@@ -469,16 +461,12 @@ function App({ prerender = false }) {
               setCurrentDate={selectDate}
               onToday={goLive}
               isLive={isLive}
-              isCalendarOpen={isCalendarOpen}
-              setIsCalendarOpen={setIsCalendarOpen}
               timeZone={location.timeZone}
               clock={clock}
             >
               <LocationPicker
                 location={location}
                 setLocation={chooseLocation}
-                isOpen={isLocationOpen}
-                setIsOpen={setIsLocationOpen}
                 onShowPrivacy={showPrivacy}
               />
             </DateControls>
@@ -486,8 +474,6 @@ function App({ prerender = false }) {
 
           <div className="app-header-actions">
             <AppMenu
-              isOpen={isMenuOpen}
-              setIsOpen={setIsMenuOpen}
               onDeepDive={() => setIsDrawerOpen(true)}
               onShare={share}
               sound={sound}

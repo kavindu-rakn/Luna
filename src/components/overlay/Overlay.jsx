@@ -2,11 +2,31 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useMedia, PHONE_OVERLAYS } from '../../hooks/useMedia';
 import { placeBelow } from '../../utils/anchor';
+import { cue } from '../../audio/sound';
 import { pushOverlay } from './overlayStack';
 
-// How long a close may take before the overlay is put away regardless. Its own
-// transition normally says it has finished well before this.
+// How it moves. Arriving decelerates into place (--ease-out); leaving accelerates
+// away, quicker, so nothing lingers once it has been dismissed.
+const ARRIVE = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const LEAVE = 'cubic-bezier(0.4, 0, 1, 1)';
+const MOTION = {
+  sheet: { open: 380, close: 240 },
+  popover: { open: 200, close: 140 },
+  modal: { open: 200, close: 140 }
+};
+const SCRIM = { open: 320, close: 220 };
+
+// The panel at rest, open, and put away: a sheet below the screen; a popover or a
+// dialog shrunk a little into its control (or its centre) and faded out
+const SHOWN = { transform: 'translate3d(0, 0, 0) scale(1)', opacity: 1 };
+const hidden = (mode) => (mode === 'sheet'
+  ? { transform: 'translate3d(0, 100%, 0) scale(1)', opacity: 1 }
+  : { transform: 'translate3d(0, 0, 0) scale(0.94)', opacity: 0 });
+
+// How long a close may take before the overlay is put away regardless
 const CLOSE_FALLBACK_MS = 600;
+
+const reducedMotion = () => Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
 // One overlay system for the calendar, the location picker, the menu, the keyboard
 // shortcuts and privacy (decisions E9, E10; the master prompt 6.7). Each is a
@@ -19,6 +39,12 @@ const CLOSE_FALLBACK_MS = 600;
 //   drags down to close like Deep Dive's sheet (src/utils/sheetDrag.js). A tall
 //   sheet reaches to just under the top of the screen, so a search field at its top
 //   stays above the keyboard.
+//
+// The panels and the dimming are moved with the Web Animations API: each move starts
+// the moment it is asked for, from exactly where the panel is (halfway through the
+// opposite move, or where a finger let go), so nothing depends on when the browser
+// notices a class change. Sheets and popovers are fixed to the screen, not to the
+// dialog around them.
 //
 // Modal ones are in the top layer and shut off the page behind. Esc and a press
 // outside close the top overlay only (overlayStack.js), and focus goes back to
@@ -49,14 +75,18 @@ const Overlay = ({
 
   const dialogRef = useRef(null);
   const panelRef = useRef(null);
+  const scrimRef = useRef(null);
   const bodyRef = useRef(null);
   const openerRef = useRef(null);
   const dragRef = useRef(null);
+  // The moves under way: { panel, scrim } Animations
+  const moving = useRef({ panel: null, scrim: null });
 
   const latest = useRef(null);
   useLayoutEffect(() => {
     latest.current = {
       isOpen: open,
+      mode,
       onClose,
       // For the sheet's drag, which settles it open or closed
       setIsOpen: (next) => {
@@ -65,8 +95,45 @@ const Overlay = ({
     };
   });
 
-  // Hang it from its control, kept on screen. Reads the panel's size, so it also
-  // settles the closed state's styles before the opening transition starts.
+  // Move the panel, and the dimming behind it, to shown or put away. From where it
+  // is now unless told to start from put away. Resolves when it has arrived.
+  const moveRef = useRef(null);
+  useLayoutEffect(() => {
+    moveRef.current = (showing, { fromHidden = false } = {}) => {
+      const panel = panelRef.current;
+      const scrim = scrimRef.current;
+      if (!panel?.animate) return Promise.resolve();
+      const m = latest.current.mode;
+      const quick = reducedMotion();
+      const duration = quick ? 1 : MOTION[m][showing ? 'open' : 'close'];
+      const easing = showing ? ARRIVE : LEAVE;
+      const now = getComputedStyle(panel);
+      const from = fromHidden
+        ? hidden(m)
+        : { transform: now.transform === 'none' ? SHOWN.transform : now.transform, opacity: Number(now.opacity) };
+      const scrimFrom = scrim ? (fromHidden ? 0 : Number(getComputedStyle(scrim).opacity)) : 0;
+      moving.current.panel?.cancel();
+      moving.current.scrim?.cancel();
+      // The finger's inline transform gives way to the move, which starts from it
+      panel.style.transform = '';
+      const panelMove = panel.animate([from, showing ? SHOWN : hidden(m)], { duration, easing, fill: 'both' });
+      const scrimMove = scrim?.animate(
+        [{ opacity: scrimFrom }, { opacity: showing ? 1 : 0 }],
+        { duration: quick ? 1 : SCRIM[showing ? 'open' : 'close'], easing: showing ? ARRIVE : 'linear', fill: 'both' }
+      ) ?? null;
+      moving.current = { panel: panelMove, scrim: scrimMove };
+      return panelMove.finished.then(() => {
+        // Arrived and open: back to its resting styles, so a finger can take it
+        if (showing && moving.current.panel === panelMove) {
+          panelMove.cancel();
+          scrimMove?.cancel();
+          moving.current = { panel: null, scrim: null };
+        }
+      });
+    };
+  });
+
+  // Hang it from its control, kept on screen
   const place = () => {
     const panel = panelRef.current;
     if (!panel) return;
@@ -75,7 +142,6 @@ const Overlay = ({
       panel.style.left = '';
       panel.style.top = '';
       panel.style.transformOrigin = '';
-      void panel.offsetWidth;
       return;
     }
     const spot = placeBelow({
@@ -108,7 +174,7 @@ const Overlay = ({
     }
   }, [mounted, mode]);
 
-  // Open: from wherever it is, even halfway out
+  // Open: from put away, or from wherever it was on its way out
   useLayoutEffect(() => {
     const panel = panelRef.current;
     if (!open || !mounted || !panel) return;
@@ -116,7 +182,8 @@ const Overlay = ({
     if (active && active !== document.body && !panel.contains(active)) openerRef.current = active;
     placeRef.current();
     panel.inert = false;
-    panel.classList.add('is-open');
+    const returning = Boolean(moving.current.panel);
+    moveRef.current(true, { fromHidden: !returning }).catch(() => {});
   }, [open, mounted, mode]);
 
   // Close: back the way it came, then off the page. Focus goes home first if it
@@ -134,7 +201,6 @@ const Overlay = ({
     if (panel) {
       if (inside && shownAs.current === false) focusHome();
       panel.inert = true;
-      panel.classList.remove('is-open');
     }
     let done = false;
     const finish = () => {
@@ -145,18 +211,27 @@ const Overlay = ({
       const now = document.activeElement;
       if (inside && (!now || now === document.body || now === lost)) focusHome();
       openerRef.current = null;
+      moving.current = { panel: null, scrim: null };
       setMounted(false);
     };
-    const onEnd = (event) => {
-      if (event.target === panel) finish();
-    };
-    panel?.addEventListener('transitionend', onEnd);
+    moveRef.current(false).then(finish).catch(() => {});
     const timer = setTimeout(finish, CLOSE_FALLBACK_MS);
     return () => {
-      panel?.removeEventListener('transitionend', onEnd);
+      // Opened again on the way out: the open turns it round from where it is
+      done = true;
       clearTimeout(timer);
     };
   }, [open, mounted, anchorRef, returnFocusRef]);
+
+  // Heard as well as seen: a glass tap and a felt press, or on a phone, where they
+  // are sheets, Deep Dive's sheet sounds (cue is silent while Sound is off)
+  const heard = useRef(open);
+  useEffect(() => {
+    if (heard.current === open) return;
+    heard.current = open;
+    if (mode === 'sheet') cue(open ? 'sheet-open' : 'sheet-close');
+    else cue(open ? 'glass' : 'felt');
+  }, [open, mode]);
 
   // On the stack while open: Esc and a press outside close the top one
   useEffect(() => {
@@ -177,22 +252,22 @@ const Overlay = ({
     window.addEventListener('resize', update);
     const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
     if (panelRef.current) observer?.observe(panelRef.current);
-    let moving = 0;
+    let transitions = 0;
     let frame = 0;
     const follow = () => {
       update();
-      frame = moving > 0 ? requestAnimationFrame(follow) : 0;
+      frame = transitions > 0 ? requestAnimationFrame(follow) : 0;
     };
     const around = (event) => event.target instanceof Element && event.target.contains(anchorRef?.current);
     const onRun = (event) => {
       if (!around(event)) return;
-      moving += 1;
+      transitions += 1;
       if (!frame) frame = requestAnimationFrame(follow);
     };
     const onEnd = (event) => {
       if (!around(event)) return;
-      moving = Math.max(0, moving - 1);
-      if (moving === 0) update();
+      transitions = Math.max(0, transitions - 1);
+      if (transitions === 0) update();
     };
     document.addEventListener('transitionrun', onRun, true);
     document.addEventListener('transitionend', onEnd, true);
@@ -207,14 +282,27 @@ const Overlay = ({
     };
   }, [mounted, mode, anchorRef]);
 
-  // A sheet drags down to close, with Deep Dive's own drag
+  // A sheet drags down to close, with Deep Dive's own drag. A finger stops the
+  // sheet's move where it is; let go, it moves on from there: back up if it stays
+  // open, and down with the close if not.
   useEffect(() => {
     if (!mounted || mode !== 'sheet') return undefined;
     let cancelled = false;
     let unfollow = null;
     import('../../utils/sheetDrag').then(({ createSheetDrag, followContents }) => {
       if (cancelled) return;
-      dragRef.current = createSheetDrag({ latest, panelRef });
+      dragRef.current = createSheetDrag({
+        latest,
+        panelRef,
+        onBegin: () => {
+          moving.current.panel?.cancel();
+          moving.current.scrim?.cancel();
+          moving.current = { panel: null, scrim: null };
+        },
+        onSettle: (stays) => {
+          if (stays) moveRef.current(true).catch(() => {});
+        }
+      });
       unfollow = followContents(bodyRef.current, dragRef.current);
     }).catch(() => {
       // Without it, the grip, the dimmed page and Esc still close it
@@ -261,7 +349,7 @@ const Overlay = ({
       }}
     >
       {mode !== 'popover' && (
-        <div className="overlay-scrim" aria-hidden="true" onClick={() => latest.current.onClose()} />
+        <div ref={scrimRef} className="overlay-scrim" aria-hidden="true" onClick={() => latest.current.onClose()} />
       )}
       <div ref={panelRef} className={`overlay-panel${className ? ` ${className}` : ''}`}>
         {mode === 'sheet' && (

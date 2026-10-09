@@ -42,7 +42,9 @@ const LAST_YEAR = 2100;
 // The date block (decisions D4, D5): the date, which opens the calendar; the place
 // as a quiet caption beneath it (children: the location picker); and the five
 // controls as one hairline instrument bar, ⊙ lit in the "now" colour while live.
-const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendarOpen, setIsCalendarOpen, timeZone, clock, children }) => {
+const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, timeZone, clock, children }) => {
+  // Its own, so opening the calendar re-renders the date block rather than the app
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   // The month on show, as { year, month }
   const [view, setView] = useState(() => getZonedDay(currentDate, timeZone));
   const toggleButtonRef = useRef(null);
@@ -90,16 +92,20 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, isCalendar
   useEffect(() => {
     if (!isCalendarOpen || !pendingFocus.current) return;
     pendingFocus.current = false;
-    dayRefs.current[focusedDay]?.focus();
+    dayRefs.current[focusedDay]?.focus({ preventScroll: true });
   }, [isCalendarOpen, focusedDay, view]);
 
   // Monthly Calendar Math
   const { year, month } = view;
 
-  // The Moon for every day of the month on show, worked out only while it is open
+  // The Moon for every day of the month on show, worked out once the calendar has
+  // been opened, and kept while it closes, so it doesn't lose its phases and shrink
+  // on its way out
+  const [calendarUsed, setCalendarUsed] = useState(false);
+  if (isCalendarOpen && !calendarUsed) setCalendarUsed(true);
   const monthPhases = useMemo(
-    () => (isCalendarOpen ? getMonthPhases(year, month, timeZone) : null),
-    [isCalendarOpen, year, month, timeZone]
+    () => (calendarUsed ? getMonthPhases(year, month, timeZone) : null),
+    [calendarUsed, year, month, timeZone]
   );
 
   const yearOptions = useMemo(() => {

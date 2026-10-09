@@ -11,7 +11,12 @@ const RUBBER = 0.3;
 // Begin, move and end a drag of the sheet: up from the grabber above the timeline,
 // or down from the sheet's own top or its contents. What it needs to know at the
 // moment comes through `latest`: { isOpen, setIsOpen }.
-export const createSheetDrag = ({ latest, panelRef }) => {
+//
+// Deep Dive's sheet slides open or closed by its CSS class. A sheet that animates
+// itself (the overlays, src/components/overlay/Overlay.jsx) passes onBegin, to stop
+// its own animation where it is as a finger takes it, and onSettle(open), to move
+// it on from where the finger let go; its inline transform is left for it to read.
+export const createSheetDrag = ({ latest, panelRef, onBegin, onSettle }) => {
   let gesture = null;
   const drag = {
     draggedAt: -Infinity,
@@ -23,6 +28,7 @@ export const createSheetDrag = ({ latest, panelRef }) => {
       const height = sheet.offsetHeight;
       // From wherever it is, even mid-slide
       const offset = Math.min(height, Math.max(0, new DOMMatrixReadOnly(getComputedStyle(sheet).transform).m42));
+      onBegin?.();
       sheet.classList.add('is-dragging');
       sheet.style.transform = `translate3d(0, ${offset}px, 0)`;
       gesture = { y0: y, offset0: offset, offset, height, moved: false, samples: [{ y, t }] };
@@ -53,11 +59,15 @@ export const createSheetDrag = ({ latest, panelRef }) => {
         const speed = last.t > first.t ? (last.y - first.y) / (last.t - first.t) : 0;
         open = settlesOpen(g.offset, speed, g.height);
       }
-      // Hand the sheet back to its class, open or closed, and it slides there from
-      // where the finger left it
-      sheet.classList.toggle('is-open', open);
       sheet.classList.remove('is-dragging');
-      sheet.style.transform = '';
+      if (onSettle) {
+        onSettle(open);
+      } else {
+        // Hand the sheet back to its class, open or closed, and it slides there from
+        // where the finger left it
+        sheet.classList.toggle('is-open', open);
+        sheet.style.transform = '';
+      }
       if (open !== latest.current.isOpen) latest.current.setIsOpen(open);
       return g.moved;
     }

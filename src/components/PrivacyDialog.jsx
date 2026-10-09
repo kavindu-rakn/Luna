@@ -25,11 +25,13 @@ const PrivacyDialog = ({ isOpen, onClose, returnFocusRef }) => {
   const [confirming, setConfirming] = useState(false);
   const forgetButtonRef = useRef(null);
 
-  // However the dialog closes, it opens next time without a half-made decision
-  const handleClose = () => {
-    setConfirming(false);
-    onClose();
-  };
+  // However the dialog closed, it opens without a half-made decision. Reset as it
+  // opens rather than as it closes, so nothing changes while it is leaving.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    if (isOpen) setConfirming(false);
+  }
 
   const forget = () => {
     forgetStoredData();
@@ -46,7 +48,7 @@ const PrivacyDialog = ({ isOpen, onClose, returnFocusRef }) => {
   return (
     <ModalDialog
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={onClose}
       title="Privacy"
       titleId="privacy-title"
       className="privacy-dialog"
