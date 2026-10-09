@@ -484,22 +484,33 @@ when the page opens.
   The stage doesn't re-frame on phones; the Moon keeps its size, less the grabber's 16 px
   where the height is tight.
 - 3a made `--panel` opaque: at 98% the header's date ghosted through the full-height sheet.
-- 3b, the chapters (E3, E5-E7), divided by hairlines rather than boxed, each under a small
-  sentence-case label:
-  - Tonight: a line saying where the Moon is at the time being looked at ("It's 6:04 am. The
-    Moon is 2° above the horizon, in the east."; the chapter is named for the date once the
+- 3b, the chapters (E3, E5-E7), as quiet cards. The first build divided them by hairlines,
+  with label-left, value-right rows; on the owner's phones and desktop (9 Oct 2026) it read
+  as cluttered and hard to focus next to the old cards, so 3b went back to the old panels'
+  anatomy: a faint card per group, a small label, then values with their labels above them
+  on the same two columns, and hairlines only inside a card. Five cards: Tonight; the Moon's
+  phase with its figures; distance; zodiac and next phase; the Orbit.
+  - Tonight: where the Moon is at the time being looked at, in two lines that never wrap
+    ("6:04 am" / "The Moon is 2° up in the east"; the card is named for the date once the
     view leaves now), then the chart: the place's day from local midnight to midnight, the
-    Sun's day and civil, nautical and astronomical twilight as bands, the horizon, the Moon's
-    altitude (bright above, dotted below), rise and set marked on it, and a marker in `--now`.
-    Dragging across the chart, or the arrow keys on it (a slider: 15 minutes, an hour with
-    Shift or Page keys, Home and End), moves the time of day; a drag up or down still scrolls
-    the phone sheet. Rows beneath: moonrise and moonset with the compass direction in words,
-    the highest point timed exactly (not at a sample), sunrise and sunset.
-  - The Moon: the phase name with "Exact", illumination and age as the serif figures, then
-    distance on a perigee-apogee hairline, the zodiac (tropical, with the sidereal sign
-    beneath) and the next exact phase with its countdown.
-  - The Orbit: the diagram labelled plainly (Earth, Moon, Sunlight) and the one number only it
-    shows: the Moon's elongation, east or west of the Sun.
+    Sun's day fading through twilight into night (one gradient, a stop in the middle of each
+    twilight), the horizon, the Moon's altitude (bright above, dotted below), rise and set
+    marked on it, its highest point written at the top of the arc, and the Moon at the time
+    being looked at as a moonlit dot. The first build's marker was in `--now` amber with a
+    glow, which read as the Sun. Dragging across the chart, or the arrow keys on it (a
+    slider: 15 minutes, an hour with Shift or Page keys, Home and End), moves the time of
+    day; a drag up or down still scrolls the phone sheet, and dragging never selects the
+    chart's labels. Beneath: moonrise and moonset with the compass direction in words,
+    sunrise and sunset.
+  - The Moon: the phase name with "Exact", illumination and age as the serif figures (E5);
+    distance on the old perigee-apogee gauge; the zodiac (tropical, with the sidereal sign
+    beneath) beside the next exact phase and its countdown.
+  - The Orbit: the diagram in its own dark frame, sunlight glowing in from the right, and the
+    one number only it shows: the Moon's elongation, east or west of the Sun.
+  - Nothing changes height while the date or the time moves, so the sheet never jumps: the
+    readout doesn't wrap, a rise that doesn't happen keeps the line its direction would take,
+    "Exact" is no taller than the label beside it, and the zodiac card stacks its two values
+    where two columns would be too narrow for "Sagittarius 29.9° sidereal".
   - Each number once: the orbit's old readout (phase, illumination, distance) and the stat
     icons are gone. Values change at once while the date moves; a change that comes on its
     own fades in over 240 ms (E6). The count-up tweens went, and GSAP with them: nothing in

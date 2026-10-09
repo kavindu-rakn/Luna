@@ -78,10 +78,10 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 <td width="50%" valign="top">
 
 ### Deep Dive, in Three Chapters
-* **Tonight:** The Moon's altitude through the place's day on one chart, with the Sun's day and civil, nautical and astronomical twilight behind it and the moonrise and moonset marked on the curve. Drag the amber marker, or use the arrow keys on it, to move through the day. Below it: moonrise and moonset with the way to look, the highest point timed to the minute, sunrise and sunset.
+* **Tonight:** The Moon's altitude through the place's day on one chart, with the Sun's day fading through civil, nautical and astronomical twilight behind it, moonrise and moonset marked on the curve and its highest point timed to the minute. Drag across the chart, or use the arrow keys on it, to move through the day. Below it: moonrise and moonset with the way to look, sunrise and sunset.
 * **The Moon:** How much is lit and how old the Moon is, in the serif, then its distance from a 60-term Meeus series on a perigee-to-apogee scale, its zodiac sign and the countdown to the next exact phase.
 * **The Orbit:** A crisp SVG diagram from above Earth's north pole, placing the Moon at its elongation, and how far east or west of the Sun that puts it.
-* **Each Number Once:** Values change at once while you scrub and fade in softly after a single step.
+* **Each Number Once:** In quiet cards, each label above its value. Values change at once while you scrub and fade in softly after a single step.
 
 </td>
 <td width="50%" valign="top">

@@ -18,16 +18,27 @@ const HORIZON = yOf(0);
 const STEP = 15;
 const BIG_STEP = 60;
 
-const altitudeWords = (altitude) => {
+// Where the Moon is, in one short line that never wraps, so dragging through the
+// day never changes its height
+const whereWords = (altitude, direction) => {
   const degrees = Math.round(Math.abs(altitude));
-  return altitude >= 0 ? `${degrees}° above the horizon` : `${degrees}° below the horizon`;
+  if (degrees === 0) return 'The Moon is on the horizon';
+  return altitude > 0 ? `The Moon is ${degrees}° up in the ${direction}` : `The Moon is ${degrees}° below the horizon`;
 };
 
-// Tonight (decisions E3, E7): the Moon's day at this place, as a chart and a few
-// plain rows. Behind the Moon's altitude, the Sun's day and twilights; on it, where
-// the Moon rises and sets; and a marker in the "now" amber that is the time being
-// looked at. Dragging the marker, or the arrow keys on it, moves the time of day
-// and everything else follows.
+// How light the sky is, from night to day. Twilight fades from one to the next,
+// so it is drawn as a gradient with a stop in the middle of each twilight.
+const SKY_LIGHT = { night: 0, astronomical: 0.03, nautical: 0.06, civil: 0.1, day: 0.14 };
+const skyStops = (bands) => bands.flatMap((b) => (b.kind === 'day' || b.kind === 'night'
+  ? [{ offset: b.from, opacity: SKY_LIGHT[b.kind] }, { offset: b.to, opacity: SKY_LIGHT[b.kind] }]
+  : [{ offset: (b.from + b.to) / 2, opacity: SKY_LIGHT[b.kind] }]));
+
+// Tonight (decisions E3, E7): the Moon's day at this place. First where it is at
+// the time being looked at, then the chart, then when it rises and sets. Behind the
+// Moon's altitude, the Sun's day fading through twilight; on it, where the Moon
+// rises and sets and how high it gets; and the Moon itself, at the time being
+// looked at. Dragging across the chart, or the arrow keys on it, moves the time of
+// day and everything else follows.
 const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectTime }) => {
   const { lat, lon, timeZone, name: placeName } = location;
   const dayStartMs = getStartOfDayInZone(currentDate, timeZone);
@@ -42,7 +53,7 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
   const direction = compassWord(parseFloat(lunarDetails.azimuth));
   const time = formatTimeString(currentDate, timeZone, clock);
   const minutes = Math.round((fraction * length) / 60000);
-  const where = altitude >= 0 ? `${altitudeWords(altitude)}, in the ${direction}` : altitudeWords(altitude);
+  const where = whereWords(altitude, direction);
 
   const title = isLive
     ? 'Tonight'
@@ -85,17 +96,25 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
   };
 
   const sunWhenNone = sky.bands.length === 1
-    ? (sky.bands[0].kind === 'day' ? 'Stays up all day' : 'Stays down all day')
+    ? (sky.bands[0].kind === 'day' ? 'Up all day' : 'Down all day')
     : 'None today';
 
-  return (
-    <section className="dd-chapter" aria-labelledby="dd-tonight-heading">
-      <h3 id="dd-tonight-heading" className="dd-chapter-title">{title}</h3>
+  // How high the Moon gets, written on the chart at the top of its arc: above it,
+  // or just under it when the arc nearly reaches the top
+  const peak = sky.peak.altitude >= 0 ? {
+    x: sky.peak.fraction * WIDTH,
+    y: yOf(sky.peak.altitude) >= TOP + 18 ? yOf(sky.peak.altitude) - 8 : yOf(sky.peak.altitude) + 16,
+    anchor: sky.peak.fraction < 0.14 ? 'start' : sky.peak.fraction > 0.86 ? 'end' : 'middle',
+    text: `${Math.round(sky.peak.altitude)}° at ${sky.peak.time}`
+  } : null;
 
-      <p className="dd-now-line">
-        {isLive
-          ? <>It&rsquo;s <span className="dd-now-time">{time}</span>. The Moon is {where}.</>
-          : <>At <span className="dd-now-time">{time}</span> the Moon is {where}.</>}
+  return (
+    <section className="dd-card" aria-labelledby="dd-tonight-heading">
+      <h3 id="dd-tonight-heading" className="dd-card-title">{title}</h3>
+
+      <p className="dd-readout">
+        <span className="dd-readout-time">{time}</span>
+        <span className="dd-readout-where">{where}</span>
       </p>
 
       <div
@@ -107,7 +126,7 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
         aria-valuemin={0}
         aria-valuemax={Math.round(length / 60000) - 1}
         aria-valuenow={minutes}
-        aria-valuetext={`${time}, the Moon ${where}`}
+        aria-valuetext={`${time}. ${where}.`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
@@ -122,37 +141,35 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
             <clipPath id="dd-below">
               <rect x="0" y={HORIZON} width={WIDTH} height={HEIGHT - HORIZON} />
             </clipPath>
+            <linearGradient id="dd-sky-light">
+              {skyStops(sky.bands).map((s, i) => (
+                <stop key={i} offset={s.offset} className="dd-sky-stop" stopOpacity={s.opacity} />
+              ))}
+            </linearGradient>
           </defs>
 
-          {/* The Sun's day and twilights, lightest by day */}
-          {sky.bands.filter((b) => b.kind !== 'night').map((b) => (
-            <rect
-              key={`${b.kind}-${b.from}`}
-              className={`dd-band is-${b.kind}`}
-              x={b.from * WIDTH}
-              y={TOP}
-              width={Math.max(0, (b.to - b.from) * WIDTH)}
-              height={BOTTOM - TOP}
-            />
-          ))}
+          {/* The Sun's day, fading through twilight into night */}
+          <rect x="0" y={TOP} width={WIDTH} height={BOTTOM - TOP} fill="url(#dd-sky-light)" />
 
           <line className="dd-horizon" x1="0" y1={HORIZON} x2={WIDTH} y2={HORIZON} />
-          <text className="dd-chart-label" x="4" y={HORIZON - 5}>Horizon</text>
+          <text className="dd-chart-label" x="0" y={HORIZON - 5}>Horizon</text>
 
           {/* The Moon's altitude: bright above the horizon, faint below */}
           <path className="dd-curve-fill" d={above} clipPath="url(#dd-above)" />
           <polyline className="dd-curve is-up" points={line} clipPath="url(#dd-above)" />
           <polyline className="dd-curve is-down" points={line} clipPath="url(#dd-below)" />
 
-          {/* Where it rises and sets */}
+          {/* Where it rises and sets, and how high it gets */}
           {[sky.rise, sky.set].filter(Boolean).map((e) => (
             <circle key={e.fraction} className="dd-crossing" cx={e.fraction * WIDTH} cy={HORIZON} r="3" />
           ))}
+          {peak && (
+            <text className="dd-chart-label is-peak" x={peak.x} y={peak.y} textAnchor={peak.anchor}>{peak.text}</text>
+          )}
 
-          {/* The time being looked at */}
+          {/* The Moon, at the time being looked at */}
           <line className="dd-marker-line" x1={fraction * WIDTH} y1={TOP} x2={fraction * WIDTH} y2={BOTTOM} />
-          <circle className="dd-marker-glow" cx={fraction * WIDTH} cy={yOf(altitude)} r="9" />
-          <circle className="dd-marker" cx={fraction * WIDTH} cy={yOf(altitude)} r="4.5" />
+          <circle className="dd-marker" cx={fraction * WIDTH} cy={yOf(altitude)} r="5" />
 
           {sky.ticks.map((t) => (
             <text
@@ -168,45 +185,32 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
         </svg>
       </div>
 
-      <dl className="dd-rows">
-        <div className="dd-row">
+      {/* A rise or set that doesn't happen keeps its line for the direction, so
+          stepping through the days never changes the card's height */}
+      <dl className="dd-grid">
+        <div className="dd-tile">
           <dt>Moonrise</dt>
-          <dd>
-            {sky.rise
-              ? <><Fresh value={sky.rise.time} /> <span className="dd-note">{sky.rise.direction}</span></>
-              : <span className="dd-note">None today</span>}
-          </dd>
+          {sky.rise
+            ? <><dd className="dd-value"><Fresh value={sky.rise.time} /></dd><dd className="dd-sub">{sky.rise.direction}</dd></>
+            : <><dd className="dd-value is-none">None today</dd><dd className="dd-sub" aria-hidden="true">&nbsp;</dd></>}
         </div>
-        <div className="dd-row">
+        <div className="dd-tile">
           <dt>Moonset</dt>
-          <dd>
-            {sky.set
-              ? <><Fresh value={sky.set.time} /> <span className="dd-note">{sky.set.direction}</span></>
-              : <span className="dd-note">None today</span>}
-          </dd>
+          {sky.set
+            ? <><dd className="dd-value"><Fresh value={sky.set.time} /></dd><dd className="dd-sub">{sky.set.direction}</dd></>
+            : <><dd className="dd-value is-none">None today</dd><dd className="dd-sub" aria-hidden="true">&nbsp;</dd></>}
         </div>
-        <div className="dd-row">
-          <dt>Highest</dt>
-          <dd>
-            {sky.peak.altitude >= 0 ? (
-              <>
-                <Fresh value={`${Math.round(sky.peak.altitude)}° ${sky.peak.time}`}>
-                  {Math.round(sky.peak.altitude)}° <span className="dd-note">at</span> {sky.peak.time}
-                </Fresh>
-                {' '}<span className="dd-note">{sky.peak.direction}</span>
-              </>
-            ) : (
-              <span className="dd-note">Below the horizon all day</span>
-            )}
-          </dd>
-        </div>
-        <div className="dd-row">
+        <div className="dd-tile">
           <dt>Sunrise</dt>
-          <dd>{sky.sunrise ? <Fresh value={sky.sunrise} /> : <span className="dd-note">{sunWhenNone}</span>}</dd>
+          {sky.sunrise
+            ? <dd className="dd-value"><Fresh value={sky.sunrise} /></dd>
+            : <dd className="dd-value is-none">{sunWhenNone}</dd>}
         </div>
-        <div className="dd-row">
+        <div className="dd-tile">
           <dt>Sunset</dt>
-          <dd>{sky.sunset ? <Fresh value={sky.sunset} /> : <span className="dd-note">{sunWhenNone}</span>}</dd>
+          {sky.sunset
+            ? <dd className="dd-value"><Fresh value={sky.sunset} /></dd>
+            : <dd className="dd-value is-none">{sunWhenNone}</dd>}
         </div>
       </dl>
 
