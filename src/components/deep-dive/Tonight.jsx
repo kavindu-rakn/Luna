@@ -18,6 +18,9 @@ const HORIZON = yOf(0);
 const STEP = 15;
 const BIG_STEP = 60;
 
+// How far a finger moves, in pixels, before it counts as a drag rather than a tap
+const TOUCH_SLOP = 6;
+
 // Where the Moon is, in one short line that never wraps, so dragging through the
 // day never changes its height
 const whereWords = (altitude, direction) => {
@@ -63,9 +66,11 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
   const line = sky.curve.map((p) => `${(p.fraction * WIDTH).toFixed(1)},${yOf(p.altitude).toFixed(1)}`).join(' ');
   const above = `M 0,${HORIZON} L ${line.replaceAll(' ', ' L ')} L ${WIDTH},${HORIZON} Z`;
 
-  // Dragging the marker
+  // Dragging across the chart. A mouse or pen moves the time from the press; a
+  // finger only once it moves sideways, so a swipe up or down that starts on the
+  // chart scrolls the sheet and leaves the time alone. A tap sets the time too.
   const chartRef = useRef(null);
-  const dragging = useRef(false);
+  const press = useRef(null);
   // A time in the day, to the minute, stopping a minute short of the next midnight
   const timeAt = (f) => new Date(Math.round((sky.dayStartMs + Math.min(length - 60000, Math.max(0, f * length))) / 60000) * 60000);
   const fromPointer = (event) => {
@@ -74,15 +79,32 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
   };
   const onPointerDown = (event) => {
     if (event.button > 0) return;
-    dragging.current = true;
+    const finger = event.pointerType === 'touch';
+    press.current = { x: event.clientX, y: event.clientY, dragging: !finger };
+    if (finger) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
     fromPointer(event);
   };
   const onPointerMove = (event) => {
-    if (dragging.current) fromPointer(event);
+    const p = press.current;
+    if (!p) return;
+    if (!p.dragging) {
+      const dx = Math.abs(event.clientX - p.x);
+      const dy = Math.abs(event.clientY - p.y);
+      // Up or down first: a scroll, which the sheet takes
+      if (dy >= TOUCH_SLOP && dy > dx) press.current = null;
+      if (dx < TOUCH_SLOP || dx <= dy) return;
+      p.dragging = true;
+    }
+    fromPointer(event);
   };
-  const onPointerEnd = () => {
-    dragging.current = false;
+  const onPointerUp = (event) => {
+    const p = press.current;
+    press.current = null;
+    if (p && !p.dragging) fromPointer(event);
+  };
+  const onPointerCancel = () => {
+    press.current = null;
   };
   const onKeyDown = (event) => {
     const step = { ArrowLeft: -STEP, ArrowDown: -STEP, ArrowRight: STEP, ArrowUp: STEP, PageDown: -BIG_STEP, PageUp: BIG_STEP }[event.key];
@@ -129,8 +151,8 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
         aria-valuetext={`${time}. ${where}.`}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={onPointerEnd}
-        onPointerCancel={onPointerEnd}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
         onKeyDown={onKeyDown}
       >
         <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} aria-hidden="true" focusable="false">
