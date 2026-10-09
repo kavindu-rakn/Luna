@@ -3,7 +3,7 @@ import {
   getStartOfDayInZone,
   getTimeZoneLabel,
   formatTimeString,
-  getSkyData,
+
   getSunEclipticLongitude,
   getMoonEclipticLongitude,
   getMoonElongation,
@@ -28,6 +28,7 @@ import {
   MIN_MOON_DISTANCE,
   MAX_MOON_DISTANCE
 } from '../src/utils/lunarCalc.js';
+import { compassWord, getSkyDay } from '../src/utils/skyDay.js';
 
 // Greenwich Observatory, the app's fallback location
 const GREENWICH = { lat: 51.4769, lon: -0.0005, tz: 'Europe/London' };
@@ -41,22 +42,44 @@ describe('the machine timezone must not leak into results', () => {
   });
 
   it('renders Greenwich sunrise and sunset on the location clock, not the viewer clock', () => {
-    const sky = getSkyData(new Date('2026-09-19T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
+    const sky = getSkyDay(new Date('2026-09-19T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
     // Before the fix these read 11:12 AM and 11:38 PM on an Asia/Colombo machine
     expect(sky.sunrise).toBe('6:41 am');
     expect(sky.sunset).toBe('7:05 pm');
   });
 
   it('anchors the charted day to local midnight at the location', () => {
-    const sky = getSkyData(new Date('2026-09-19T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
+    const sky = getSkyDay(new Date('2026-09-19T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
     // 19 Sep 2026 00:00 BST is 18 Sep 23:00 UTC
     expect(new Date(sky.dayStartMs).toISOString()).toBe('2026-09-18T23:00:00.000Z');
-    expect(sky.altitudePoints).toHaveLength(48);
-    expect(sky.altitudePoints[0].label).toBe('12 am');
+    expect(new Date(sky.dayEndMs).toISOString()).toBe('2026-09-19T23:00:00.000Z');
+    expect(sky.curve).toHaveLength(97);
+    expect(sky.ticks[0].label).toBe('12 am');
+  });
+
+  it('fills a 25-hour day, with its ticks at the real hours', () => {
+    // The clocks go back on 25 Oct 2026 in London
+    const sky = getSkyDay(new Date('2026-10-25T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
+    expect((sky.dayEndMs - sky.dayStartMs) / 3600000).toBe(25);
+    expect(sky.ticks.map((t) => t.label)).toEqual(['12 am', '6 am', '12 pm', '6 pm']);
+    expect(sky.ticks[1].fraction).toBeCloseTo(7 / 25, 6);
+  });
+
+  it("lays the Sun's day and twilights end to end, in order", () => {
+    const { bands } = getSkyDay(new Date('2026-09-19T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
+    expect(bands.map((b) => b.kind)).toEqual([
+      'night', 'astronomical', 'nautical', 'civil', 'day', 'civil', 'nautical', 'astronomical', 'night'
+    ]);
+    expect(bands[0].from).toBe(0);
+    expect(bands.at(-1).to).toBe(1);
+    for (let i = 1; i < bands.length; i++) expect(bands[i].from).toBe(bands[i - 1].to);
+    // Day starts within a few minutes of the sunrise SunCalc gives (6:41 am)
+    const dayStart = bands.find((b) => b.kind === 'day').from * 24;
+    expect(Math.abs(dayStart - (6 + 41 / 60))).toBeLessThan(5 / 60);
   });
 
   it('names the timezone it used', () => {
-    const sky = getSkyData(new Date('2026-09-19T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
+    const sky = getSkyDay(new Date('2026-09-19T12:00:00Z'), GREENWICH.lat, GREENWICH.lon, GREENWICH.tz);
     expect(sky.timeZone).toBe('Europe/London');
     expect(sky.timeZoneLabel).toBe('GMT+1');
     expect(getTimeZoneLabel(new Date('2026-01-15T12:00:00Z'), 'Europe/London')).toBe('GMT');
@@ -96,18 +119,18 @@ describe('the machine timezone must not leak into results', () => {
 
 describe('the viewer chooses the clock', () => {
   const WHEN = new Date('2026-09-19T12:00:00Z');
-  const sky = (clock) => getSkyData(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz, clock);
-  const ticks = (data) => data.altitudePoints.filter((_, i) => i % 8 === 0).map((p) => p.label);
+  const sky = (clock) => getSkyDay(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz, clock);
+  const ticks = (data) => data.ticks.map((t) => t.label);
 
   it('shows ephemeris times on a 24-hour clock when asked', () => {
     expect(sky('24h').sunrise).toBe('06:41');
     expect(sky('24h').sunset).toBe('19:05');
-    expect(sky('24h').moonrise).toBe('16:13');
+    expect(sky('24h').rise.time).toBe('16:13');
   });
 
   it('labels the chart axis to match', () => {
-    expect(ticks(sky('12h'))).toEqual(['12 am', '4 am', '8 am', '12 pm', '4 pm', '8 pm']);
-    expect(ticks(sky('24h'))).toEqual(['00:00', '04:00', '08:00', '12:00', '16:00', '20:00']);
+    expect(ticks(sky('12h'))).toEqual(['12 am', '6 am', '12 pm', '6 pm']);
+    expect(ticks(sky('24h'))).toEqual(['00:00', '06:00', '12:00', '18:00']);
   });
 
   it('reads midnight as 00:00, never 24:00', () => {
@@ -123,14 +146,24 @@ describe('the viewer chooses the clock', () => {
     expect(details.nextPhases.nextFullMoon.formatted).toBe('Sep 26, 17:50');
   });
 
-  it('gives the peak its half hour instead of rounding it to the hour', () => {
-    // The Moon culminates between samples at 19:30; this used to read "7 PM"
-    expect(sky('12h').peakTime).toBe('7:30 pm');
-    expect(sky('24h').peakTime).toBe('19:30');
+  it('times the highest point exactly, not at the nearest sample', () => {
+    // The Moon culminates at 19:37, between the 15-minute samples
+    expect(sky('12h').peak.time).toBe('7:37 pm');
+    expect(sky('24h').peak.time).toBe('19:37');
+    expect(sky('12h').peak.direction).toBe('south');
+  });
+
+  it('says where the Moon rises and sets', () => {
+    expect(sky('12h').rise).toMatchObject({ time: '4:13 pm', direction: 'southeast' });
+    expect(sky('12h').set).toMatchObject({ time: '11:00 pm', direction: 'southwest' });
+    expect(compassWord(0)).toBe('north');
+    expect(compassWord(350)).toBe('north');
+    expect(compassWord(-90)).toBe('west');
+    expect(compassWord(112)).toBe('east');
   });
 
   it('stays on 12-hour when no clock is given', () => {
-    expect(getSkyData(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz).sunrise).toBe('6:41 am');
+    expect(getSkyDay(WHEN, GREENWICH.lat, GREENWICH.lon, GREENWICH.tz).sunrise).toBe('6:41 am');
     expect(getNextMajorPhases(WHEN, 'Europe/London').nextFullMoon.formatted).toBe('Sep 26, 5:50 pm');
   });
 });
@@ -464,13 +497,15 @@ describe('robustness', () => {
     }
   });
 
-  it('reports dashes where the Moon neither rises nor sets', () => {
-    // Svalbard in midsummer: the Moon can stay below the horizon all day
-    const polar = getSkyData(new Date('2026-06-21T12:00:00Z'), 78.22, 15.65, 'Arctic/Longyearbyen');
-    for (const value of [polar.moonrise, polar.moonset]) {
-      expect(typeof value).toBe('string');
-      expect(value).toMatch(/^(--:--|\d{1,2}:\d{2} [ap]m)$/);
+  it('reports no rise, set, sunrise or sunset where there is none', () => {
+    // Svalbard in midsummer: the Sun never sets, and the Moon may not cross the horizon
+    const polar = getSkyDay(new Date('2026-06-21T12:00:00Z'), 78.22, 15.65, 'Arctic/Longyearbyen');
+    for (const event of [polar.rise, polar.set]) {
+      if (event !== null) expect(event.time).toMatch(/^\d{1,2}:\d{2} [ap]m$/);
     }
+    expect(polar.sunrise).toBeNull();
+    expect(polar.sunset).toBeNull();
+    expect(polar.bands.map((b) => b.kind)).toEqual(['day']);
   });
 
   it('converts SunCalc azimuth to a compass bearing', () => {

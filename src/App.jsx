@@ -24,7 +24,7 @@ const SkyFallback = lazy(() => import('./components/SkyFallback'));
 // settled
 const SkyPointer = lazy(() => import('./components/SkyPointer'));
 
-// Deep Dive's panels, and GSAP with them, are only needed once the drawer opens.
+// Deep Dive's chapters are only needed once it opens.
 // They load after first paint and are mounted, hidden, once the page is idle, so
 // the drawer still opens instantly.
 const loadDeepDive = () => import('./components/DeepDiveContent');
@@ -546,6 +546,8 @@ function App({ prerender = false }) {
                   location={location}
                   lunarDetails={lunarDetails}
                   preferences={preferences}
+                  isLive={isLive}
+                  onSelectTime={selectDate}
                   onShowPrivacy={showPrivacy}
                 />
               </Suspense>

@@ -277,8 +277,8 @@ when the page opens.
 | 2a | The instrument: tokens, hairline controls with the light bloom, the custom icon set, copy | Done: PR #60 merged 7 Oct 2026 |
 | 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive | Done: PR #61 merged 8 Oct 2026 |
 | 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Done: PR #63 merged 8 Oct 2026 (with the settings fix, #62) |
-| 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | In review |
-| 3b | Deep Dive's three chapters: Tonight, The Moon, The Orbit; each number once; settled cross-fades | Not started |
+| 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | Done: PR #64 merged 9 Oct 2026 |
+| 3b | Deep Dive's three chapters: Tonight, The Moon, The Orbit; each number once; settled cross-fades | In review |
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
@@ -484,3 +484,25 @@ when the page opens.
   The stage doesn't re-frame on phones; the Moon keeps its size, less the grabber's 16 px
   where the height is tight.
 - 3a made `--panel` opaque: at 98% the header's date ghosted through the full-height sheet.
+- 3b, the chapters (E3, E5-E7), divided by hairlines rather than boxed, each under a small
+  sentence-case label:
+  - Tonight: a line saying where the Moon is at the time being looked at ("It's 6:04 am. The
+    Moon is 2° above the horizon, in the east."; the chapter is named for the date once the
+    view leaves now), then the chart: the place's day from local midnight to midnight, the
+    Sun's day and civil, nautical and astronomical twilight as bands, the horizon, the Moon's
+    altitude (bright above, dotted below), rise and set marked on it, and a marker in `--now`.
+    Dragging across the chart, or the arrow keys on it (a slider: 15 minutes, an hour with
+    Shift or Page keys, Home and End), moves the time of day; a drag up or down still scrolls
+    the phone sheet. Rows beneath: moonrise and moonset with the compass direction in words,
+    the highest point timed exactly (not at a sample), sunrise and sunset.
+  - The Moon: the phase name with "Exact", illumination and age as the serif figures, then
+    distance on a perigee-apogee hairline, the zodiac (tropical, with the sidereal sign
+    beneath) and the next exact phase with its countdown.
+  - The Orbit: the diagram labelled plainly (Earth, Moon, Sunlight) and the one number only it
+    shows: the Moon's elongation, east or west of the Sun.
+  - Each number once: the orbit's old readout (phase, illumination, distance) and the stat
+    icons are gone. Values change at once while the date moves; a change that comes on its
+    own fades in over 240 ms (E6). The count-up tweens went, and GSAP with them: nothing in
+    the app uses it now, though the package stays for 3c to decide.
+  - The day's sky (`src/utils/skyDay.js`) depends only on the day and the place, so dragging
+    the time doesn't recompute it, and it loads with Deep Dive rather than with the page.
