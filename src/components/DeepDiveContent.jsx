@@ -4,8 +4,9 @@ import TheMoon from './deep-dive/TheMoon';
 import TheOrbit from './deep-dive/TheOrbit';
 
 // Everything inside Deep Dive below its header (decision E3): three chapters,
-// Tonight, The Moon and The Orbit, each number shown once. It is its own chunk,
-// so none of it weighs on the first paint.
+// The Moon, Tonight and The Orbit, each number shown once. The Moon comes first,
+// the quickest to read; Tonight's chart after it. It is its own chunk, so none of
+// it weighs on the first paint.
 const DeepDiveContent = ({
   currentDate,
   location,
@@ -19,6 +20,8 @@ const DeepDiveContent = ({
 
   return (
     <div className="dd">
+      <TheMoon lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
+
       {location && (
         <Tonight
           currentDate={currentDate}
@@ -29,8 +32,6 @@ const DeepDiveContent = ({
           onSelectTime={onSelectTime}
         />
       )}
-
-      <TheMoon lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
 
       <TheOrbit lunarDetails={lunarDetails} />
 

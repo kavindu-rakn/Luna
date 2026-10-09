@@ -133,7 +133,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 |---|---|---|---|
 | E1 | Deep Dive on desktop | **Panel over the stage, stage re-frames** (rec) | Owner: "The timeline cut-off should also be fixed." The whole stage re-centres in the space left of the panel. |
 | E2 | Deep Dive on phones | **One sheet, from a grabber above the timeline** | **Settled in chat (8 Oct 2026), after testing on the owner's phones:** the peek and the half height are gone. The peek's numbers repeated Deep Dive and cluttered the stage, nothing said it could be lifted, it covered the timeline's tags and sat on the timeline like a block; half height showed little. Now a slim grabber in the timeline's own colour is the way up, and the sheet rises to just under the top of the screen, stopping at the timeline so it can still be scrubbed. The grabber and the sheet's top drag it; swipe or flick down, ✕ and Esc close it. Deep Dive stays in the menu everywhere. |
-| E3 | Content | **Three chapters: Tonight, The Moon, The Orbit** (rec) | Each number once. |
+| E3 | Content | **Three chapters: The Moon, Tonight, The Orbit** (rec) | Each number once. **Order changed in chat (9 Oct 2026):** Tonight came first at first; the owner preferred to open on the Moon, the quickest to read, rather than on Tonight's chart. |
 | E4 | 12h/24h and km/mi | **Default from locale, override in a small settings menu** (rec) | |
 | E5 | Numbers | **Serif figures for hero numbers, tabular sans in tables** (rec) | |
 | E6 | Value changes | **Instant while scrubbing, soft crossfade when settled** (rec) | |
@@ -278,7 +278,7 @@ when the page opens.
 | 2b | Header and date: wordmark and menu, the date block with the live ⊙, the phase name opening Deep Dive | Done: PR #61 merged 8 Oct 2026 |
 | 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Done: PR #63 merged 8 Oct 2026 (with the settings fix, #62) |
 | 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | Done: PR #64 merged 9 Oct 2026 |
-| 3b | Deep Dive's three chapters: Tonight, The Moon, The Orbit; each number once; settled cross-fades | In review |
+| 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | In review |
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Not started |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
@@ -488,8 +488,13 @@ when the page opens.
   with label-left, value-right rows; on the owner's phones and desktop (9 Oct 2026) it read
   as cluttered and hard to focus next to the old cards, so 3b went back to the old panels'
   anatomy: a faint card per group, a small label, then values with their labels above them
-  on the same two columns, and hairlines only inside a card. Five cards: Tonight; the Moon's
-  phase with its figures; distance; zodiac and next phase; the Orbit.
+  on the same two columns, and hairlines only inside a card. Five cards: the Moon's phase with
+  its figures; distance; zodiac and next phase; Tonight; the Orbit. The Moon comes first (E3,
+  as changed in chat): Tonight's chart is the hardest card to read, so it no longer opens
+  Deep Dive.
+  - The Moon: the phase name with "Exact", illumination and age as the serif figures (E5);
+    distance on the old perigee-apogee gauge; the zodiac (tropical, with the sidereal sign
+    beneath) beside the next exact phase and its countdown.
   - Tonight: where the Moon is at the time being looked at, in two lines that never wrap
     ("6:04 am" / "The Moon is 2° up in the east"; the card is named for the date once the
     view leaves now), then the chart: the place's day from local midnight to midnight, the
@@ -500,12 +505,9 @@ when the page opens.
     glow, which read as the Sun. Dragging across the chart, or the arrow keys on it (a
     slider: 15 minutes, an hour with Shift or Page keys, Home and End), moves the time of
     day. A finger moves it only once it goes sideways, so a swipe up or down that starts on
-    the chart scrolls the phone sheet and leaves the time alone; a tap sets the time. Dragging
-    never selects the chart's labels. Beneath: moonrise and moonset with the compass direction in words,
-    sunrise and sunset.
-  - The Moon: the phase name with "Exact", illumination and age as the serif figures (E5);
-    distance on the old perigee-apogee gauge; the zodiac (tropical, with the sidereal sign
-    beneath) beside the next exact phase and its countdown.
+    the chart scrolls the phone sheet and leaves the time alone; a tap sets the time.
+    Dragging never selects the chart's labels. Beneath: moonrise and moonset with the
+    compass direction in words, sunrise and sunset.
   - The Orbit: the diagram in its own dark frame, sunlight glowing in from the right, and the
     one number only it shows: the Moon's elongation, east or west of the Sun.
   - Nothing changes height while the date or the time moves, so the sheet never jumps: the

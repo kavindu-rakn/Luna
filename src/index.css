@@ -639,8 +639,8 @@ h1, h2, h3, h4 {
   display: none;
 }
 
-/* Deep Dive's chapters (decisions E3, E5; src/components/deep-dive/): Tonight,
-   The Moon and The Orbit, as quiet cards, so the eye can settle on one group at a
+/* Deep Dive's chapters (decisions E3, E5; src/components/deep-dive/): The Moon,
+   Tonight and The Orbit, as quiet cards, so the eye can settle on one group at a
    time. Every card has the same anatomy: a small label, then values with their
    labels above them, all on the same two columns. Hairlines divide a card inside,
    never one card from the next. */
