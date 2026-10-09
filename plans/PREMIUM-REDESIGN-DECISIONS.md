@@ -499,8 +499,9 @@ when the page opens.
     being looked at as a moonlit dot. The first build's marker was in `--now` amber with a
     glow, which read as the Sun. Dragging across the chart, or the arrow keys on it (a
     slider: 15 minutes, an hour with Shift or Page keys, Home and End), moves the time of
-    day; a drag up or down still scrolls the phone sheet, and dragging never selects the
-    chart's labels. Beneath: moonrise and moonset with the compass direction in words,
+    day. A finger moves it only once it goes sideways, so a swipe up or down that starts on
+    the chart scrolls the phone sheet and leaves the time alone; a tap sets the time. Dragging
+    never selects the chart's labels. Beneath: moonrise and moonset with the compass direction in words,
     sunrise and sunset.
   - The Moon: the phase name with "Exact", illumination and age as the serif figures (E5);
     distance on the old perigee-apogee gauge; the zodiac (tropical, with the sidereal sign
