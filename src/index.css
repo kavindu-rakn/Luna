@@ -130,6 +130,18 @@ body {
   -webkit-touch-callout: none;
 }
 
+/* Double-tap never zooms the page; pinch-zoom still does (WCAG 1.4.4). On iPhones a
+   quick second tap, stopping a scroll in Deep Dive or landing behind its close button
+   as the sheet slides away, can zoom the page a little, just enough to fit a card,
+   and the whole interface then pans about until a reload. With no specificity, so
+   anything that sets its own touch-action (the chart, the grabber, the timeline, the
+   Moon) keeps it. */
+html,
+body,
+:where(body *) {
+  touch-action: manipulation;
+}
+
 /* Text fields too: iOS Safari won't take typing into a field whose ancestor
    forbids selection */
 .deep-dive,
