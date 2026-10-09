@@ -15,7 +15,6 @@
 ![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge)
 ![Vite](https://img.shields.io/badge/Vite-000000?style=for-the-badge)
 ![SunCalc](https://img.shields.io/badge/SunCalc-000000?style=for-the-badge)
-![GSAP](https://img.shields.io/badge/GSAP-000000?style=for-the-badge)
 ![WebGL](https://img.shields.io/badge/WebGL-000000?style=for-the-badge)
 
 <p align="center">
@@ -78,15 +77,17 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 <tr>
 <td width="50%" valign="top">
 
-### Earth-Moon Orbital Geometry
-* **Dynamic Sun-Earth-Moon Alignment:** A crisp SVG diagram, seen from above Earth's north pole, placing the Moon at the selected date's elongation around Earth, with sunlight arriving from a constant direction.
-* **Orbital Telemetry:** Phase name, illuminated percentage, and Earth-Moon distance from a 60-term Meeus series, tracked against the perigee/apogee extremes.
+### Deep Dive, in Three Chapters
+* **The Moon:** How much is lit and how old the Moon is, in the serif, then its distance from a 60-term Meeus series on a perigee-to-apogee scale, its zodiac sign and the countdown to the next exact phase.
+* **Tonight:** The Moon's altitude through the place's day on one chart, with the Sun's day fading through civil, nautical and astronomical twilight behind it, moonrise and moonset marked on the curve and its highest point timed to the minute. Drag across the chart, or use the arrow keys on it, to move through the day. Below it: moonrise and moonset with the way to look, sunrise and sunset.
+* **The Orbit:** A crisp SVG diagram from above Earth's north pole, placing the Moon at its elongation, and how far east or west of the Sun that puts it.
+* **Each Number Once:** In quiet cards, each label above its value. Values change at once while you scrub and fade in softly after a single step.
 
 </td>
 <td width="50%" valign="top">
 
-### 24-Hour Continuous Sky Ephemeris
-* **Altitude Transit Curve:** 48-point sampling of the Moon's altitude across the selected date, anchored to local midnight at the observing location and labelled in that location's timezone.
+### Your Place, Your Clock
+* **A Day That Belongs to the Place:** The chart runs from local midnight to local midnight at the observing location, in its own time zone, a 23- or 25-hour day included.
 * **Location Picker:** Search any place on Earth, star the ones you return to, and have its IANA timezone resolved offline from the coordinates.
 * **Your Clock, Your Units:** Times on a 12- or 24-hour clock and distances in kilometres or miles, starting from whatever your device uses and remembered on it.
 * **Tropical & Sidereal Zodiac:** Both readings derived from the Moon's apparent ecliptic longitude, with the Lahiri ayanamsa applied for the sidereal sign.
@@ -255,7 +256,7 @@ graph TD
 
 * **Frontend:** React 19, Vite
 * **3D Graphics:** Three.js, in a Web Worker with an OffscreenCanvas where supported
-* **Motion & Physics:** GSAP (`@gsap/react`), custom spring momentum decay
+* **Motion & Physics:** CSS transitions and the Web Animations API, springs for the sky's depth layers and the moonlight halo, momentum for the Moon's spin
 * **Ephemeris Calculations:** Meeus periodic-term series (lunar longitude & distance, solar longitude), SunCalc (topocentric altitude/azimuth), golden-section and bisection root finding, JPL's Keplerian elements for the planets
 * **Typography:** *Cormorant Garamond* (phase names, dates, wordmark), *Inter* (everything else, with tabular figures)
 * **Icons:** Luna's own set, drawn for it on a 24 px grid with 1.25 px strokes (`src/components/icons/`)
@@ -343,7 +344,7 @@ npm run build && npm run check:bundle
 
 The page paints before any JavaScript arrives. The build renders the app's first frame to HTML with the stylesheet inlined, and a 2 KB inline script brings its date, phase and flat Moon up to today before the first paint. The live app then replaces it, and the 3D Moon fades in over the flat one once its texture is drawn. There is no loading screen.
 
-Three.js is most of Luna's JavaScript, but only the 3D Moon needs it. It loads after the first paint inside the scene's worker, where it parses, compiles and draws without touching the main thread; browsers whose workers can't draw WebGL load it on the main thread instead. Deep Dive's panels and GSAP also load after first paint. The entry chunk is **87 KB gzipped**, down from 354 KB.
+Three.js is most of Luna's JavaScript, but only the 3D Moon needs it. It loads after the first paint inside the scene's worker, where it parses, compiles and draws without touching the main thread; browsers whose workers can't draw WebGL load it on the main thread instead. Deep Dive's chapters also load after first paint. The entry chunk is **86 KB gzipped**, down from 354 KB.
 
 CI fails the build if that chunk crosses 90 KB, if the prerendered first frame is missing, if the content security policy doesn't allow the inline script by its hash, if the 3D engine is preloaded by the document, or if the entry imports it statically. That last case is not hypothetical: a chunking change once pulled React into the 3D chunk, which made the entry look *smaller* while forcing all of Three.js back onto the critical path.
 

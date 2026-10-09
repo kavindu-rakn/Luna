@@ -130,6 +130,18 @@ body {
   -webkit-touch-callout: none;
 }
 
+/* Double-tap never zooms the page; pinch-zoom still does (WCAG 1.4.4). On iPhones a
+   quick second tap, stopping a scroll in Deep Dive or landing behind its close button
+   as the sheet slides away, can zoom the page a little, just enough to fit a card,
+   and the whole interface then pans about until a reload. With no specificity, so
+   anything that sets its own touch-action (the chart, the grabber, the timeline, the
+   Moon) keeps it. */
+html,
+body,
+:where(body *) {
+  touch-action: manipulation;
+}
+
 /* Text fields too: iOS Safari won't take typing into a field whose ancestor
    forbids selection */
 .deep-dive,
@@ -313,7 +325,7 @@ h1, h2, h3, h4 {
 
 /* Zodiac glyphs must render as monochrome symbol text. Without the variation
    selector and this font stack the OS resolves them through the colour emoji
-   font, which drops a saturated cartoon tile into the telemetry panel. */
+   font, which drops a saturated cartoon tile into Deep Dive. */
 .zodiac-glyph {
   font-family: 'Segoe UI Symbol', 'Apple Symbols', 'Noto Sans Symbols 2', 'DejaVu Sans', serif;
   font-variant-emoji: text;
@@ -639,475 +651,344 @@ h1, h2, h3, h4 {
   display: none;
 }
 
-/* Deep Dive: each topic is its own quiet panel, a faint tint with no border, glow
-   or blur, so the eye can settle on one group at a time. Hairlines are kept for
-   divisions inside a panel, never between them. */
-.telemetry-stack,
-.telemetry-content {
+/* Deep Dive's chapters (decisions E3, E5; src/components/deep-dive/): The Moon,
+   Tonight and The Orbit, as quiet cards, so the eye can settle on one group at a
+   time. Every card has the same anatomy: a small label, then values with their
+   labels above them, all on the same two columns. Hairlines divide a card inside,
+   never one card from the next. */
+.dd,
+.dd-group {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--s3);
 }
 
-.telemetry-section {
-  padding: 1.25rem;
+.dd-card {
+  margin: 0;
+  padding: 20px;
   border-radius: var(--radius-lg);
   background: rgba(226, 232, 240, 0.035);
   box-shadow: inset 0 1px 0 rgba(226, 232, 240, 0.04);
 }
 
-.telemetry-section-header {
+.dd-card-head {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: var(--s4);
+  margin-bottom: var(--s3);
 }
 
-.telemetry-section-label {
+.dd-card-title {
+  margin: 0 0 var(--s3);
+  color: var(--ink-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-13);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.dd-card-head .dd-card-title {
   margin: 0;
 }
 
-.telemetry-phase-name {
-  margin-top: 0.35rem;
-  color: var(--text-primary);
-  font-size: 2.15rem;
-  line-height: 1.05;
-  /* No letter-spacing, which would drop the Q-u ligature (see .hero-phase-name) */
-}
-
-.telemetry-exact-badge {
-  flex: 0 0 auto;
-  margin-top: 0.15rem;
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--hairline-active);
-  border-radius: var(--radius-pill);
-  color: var(--ink-1);
-  font-size: var(--text-12);
-  font-weight: 500;
-}
-
-.telemetry-measurements {
+/* Values: a label, the value, and a note or two beneath */
+.dd-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  padding-top: 0.95rem;
-  border-top: 1px solid var(--border-subtle);
+  gap: var(--s4) var(--s3);
 }
 
-.telemetry-measurements > div {
+/* The zodiac's notes are the longest ("Sagittarius 29.9° sidereal"): where two
+   columns would be too narrow for them, its two values stack, so a note never
+   wraps and changes the card's height mid-drag */
+.dd-grid.is-roomy {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.dd-split {
+  margin: var(--s4) 0 0;
+  padding-top: var(--s4);
+  border-top: 1px solid var(--hairline);
+}
+
+.dd-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
-.telemetry-distance-header {
-  align-items: center;
-  margin-bottom: 0.7rem;
+.dd-tile dt {
+  color: var(--ink-3);
+  font-size: var(--text-13);
+  line-height: 1.35;
 }
 
-.telemetry-distance-value {
-  font-size: 1.12rem;
-  font-weight: 650;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
-.distance-gauge-wrap {
-  margin-top: 0.75rem;
-}
-
-.distance-gauge-track {
-  position: relative;
-  width: 100%;
-  height: 5px;
-  overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: rgba(226, 232, 240, 0.11);
-}
-
-.distance-gauge-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--ink-3), var(--ink-1));
-  transition: width 0.6s ease;
-}
-
-.distance-gauge-labels {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.4rem;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-}
-
-.telemetry-context-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.telemetry-measurement-heading,
-.telemetry-context-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.35rem;
-  color: var(--accent-light);
-}
-
-.telemetry-measurement-heading .utility-label,
-.telemetry-context-heading .utility-label {
+.dd-tile dd {
   margin: 0;
 }
 
-.telemetry-measurement-value {
-  color: var(--text-primary);
-  font-size: 1.65rem;
+.dd-value {
+  color: var(--ink-1);
+  font-size: var(--text-17);
   font-weight: 600;
-  line-height: 1.1;
+  /* In pixels, so "None today" in the smaller size takes the same height */
+  line-height: 22px;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.telemetry-unit {
-  color: var(--text-muted);
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
+.dd-value.is-none {
+  color: var(--ink-3);
+  font-size: var(--text-15);
   font-weight: 400;
 }
 
-.telemetry-context-block {
-  min-width: 0;
+.dd-unit {
+  margin-left: 0.25em;
+  color: var(--ink-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-13);
+  font-weight: 400;
 }
 
-.telemetry-context-heading svg {
-  flex: 0 0 auto;
-}
-
-.telemetry-context-title {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: var(--text-primary);
-  font-size: 1.15rem;
-  font-weight: 600;
-}
-
-.telemetry-context-title.is-accent {
-  color: var(--text-accent);
-  font-variant-numeric: tabular-nums;
-}
-
-.telemetry-context-note {
-  margin-top: 0.2rem;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
-.telemetry-context-note.is-sidereal {
-  margin-top: 0.1rem;
-  font-size: 0.72rem;
-  opacity: 0.8;
-}
-
-/* The place and timezone sit on their own line under the heading, so neither the
-   two-line heading nor the place name has to wrap around the other */
-.sky-position-header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.3rem;
-  margin-bottom: 1rem;
-}
-
-.sky-position-heading {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.sky-position-heading svg {
-  flex: 0 0 auto;
-  color: var(--accent-light);
-}
-
-.sky-position-heading .utility-label {
-  margin: 0;
+.dd-sub {
+  color: var(--ink-3);
+  font-size: var(--text-12);
   line-height: 1.4;
 }
 
-.sky-position-context {
+.dd-caption {
+  margin: var(--s4) 0 0;
+  color: var(--ink-3);
+  font-size: var(--text-12);
+  line-height: 1.5;
+}
+
+/* Values that change on their own fade in; a scrub changes them at once (E6) */
+.dd-fresh.is-fresh {
+  animation: dd-fresh 240ms var(--ease-out);
+}
+
+@keyframes dd-fresh {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
+
+/* Tonight: where the Moon is at the time being looked at, in two lines that never
+   wrap, so dragging through the day never moves what is below */
+.dd-readout {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  /* Lines up with the heading text, past the 16px Moon icon and its gap */
-  padding-left: calc(16px + 0.5rem);
-  color: var(--text-accent);
-  font-size: 0.75rem;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 var(--s3);
 }
 
-.sky-position-location {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+.dd-readout-time {
+  color: var(--ink-1);
+  font-size: var(--text-20);
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+
+.dd-readout-where {
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: var(--text-13);
+  line-height: 1.4;
   white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.sky-position-location svg {
-  flex: 0 0 auto;
+.dd-chart {
+  position: relative;
+  margin-bottom: var(--s4);
+  border-radius: var(--radius-sm);
+  /* A drag across the chart moves the time; a drag up or down still scrolls.
+     Dragging never selects the labels. */
+  touch-action: pan-y;
+  cursor: ew-resize;
+  outline: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.sky-position-timezone,
-.sky-position-timezone-note {
-  color: var(--text-muted);
+.dd-chart:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
 }
 
-.sky-position-timezone {
-  white-space: nowrap;
-}
-
-.sky-position-chart-wrap {
-  margin-bottom: 1.1rem;
-}
-
-.sky-altitude-chart {
+.dd-chart svg {
   display: block;
   width: 100%;
   height: auto;
   overflow: visible;
 }
 
-.sky-ephemeris-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 1rem 0.5rem;
-  padding-top: 0.8rem;
-  border-top: 1px solid var(--border-subtle);
+/* The Sun's day, fading through twilight into night */
+.dd-sky-stop {
+  stop-color: rgb(150, 170, 220);
 }
 
-.sky-stat {
-  grid-column: span 2;
-  display: grid;
-  justify-items: center;
-  gap: 0.2rem;
-  min-width: 0;
-  text-align: center;
+.dd-horizon {
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
 }
 
-/* Rise, set and peak on the first row; sunrise and sunset centred beneath. The
-   placement assumes SkyPosition always renders exactly these five stats. */
-.sky-stat:nth-last-child(2) {
-  grid-column: 2 / span 2;
+.dd-chart-label,
+.dd-tick {
+  fill: var(--ink-3);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
-.sky-stat:last-child {
-  grid-column: 4 / span 2;
+.dd-chart-label.is-peak {
+  fill: var(--ink-2);
 }
 
-.sky-stat-icon {
-  margin-bottom: 0.05rem;
-  color: var(--text-muted);
+.dd-curve {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
-.sky-stat.is-highlighted .sky-stat-icon {
-  color: var(--text-accent);
+.dd-curve.is-up {
+  stroke: var(--ink-2);
+  stroke-width: 1.5;
 }
 
-.sky-stat-label {
-  margin: 0;
-  line-height: 1.35;
+.dd-curve.is-down {
+  stroke: var(--ink-4);
+  stroke-width: 1.25;
+  stroke-dasharray: 2 4;
 }
 
-.sky-stat-value {
-  color: var(--text-primary);
-  font-size: 1.15rem;
-  font-weight: 600;
+.dd-curve-fill {
+  fill: rgba(226, 232, 240, 0.05);
+}
+
+.dd-crossing {
+  fill: var(--panel);
+  stroke: var(--ink-3);
+  stroke-width: 1.25;
+}
+
+/* The Moon at the time being looked at: a moonlit dot, nothing like the Sun */
+.dd-marker-line {
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+}
+
+.dd-marker {
+  fill: #e6e9f2;
+  stroke: var(--panel);
+  stroke-width: 2;
+}
+
+/* The Moon: its phase, then its two figures in the serif */
+.dd-exact {
+  padding: 0 var(--s2);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-pill);
+  color: var(--ink-2);
+  font-size: var(--text-12);
+  /* No taller than the label beside it, so the card keeps its height */
+  line-height: 15px;
+}
+
+.dd-phase-name {
+  display: block;
+  color: var(--ink-1);
+  font-size: var(--text-32);
   line-height: 1.1;
+  /* No letter-spacing, which would drop the Q-u ligature (see .hero-phase-name) */
+}
+
+.dd-figure {
+  color: var(--ink-1);
+  font-size: var(--text-32);
+  line-height: 1.1;
+  font-variant-numeric: lining-nums tabular-nums;
   white-space: nowrap;
 }
 
-.sky-stat-note,
-.sky-position-timezone-note {
-  color: var(--text-muted);
-  font-size: 0.72rem;
+/* A percent sign sits against its figure */
+.dd-unit.is-attached {
+  margin-left: 0.05em;
 }
 
-.sky-stat-note {
-  margin-top: 0.05rem;
+/* Distance between perigee and apogee */
+.dd-gauge {
+  position: relative;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: rgba(226, 232, 240, 0.11);
 }
 
-.sky-position-timezone-note {
-  margin-top: 0.85rem;
-  text-align: center;
+.dd-gauge-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--ink-3), var(--ink-1));
 }
 
-.orbital-header {
+.dd-gauge-ends {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: var(--s4);
+  margin-top: var(--s2);
+  color: var(--ink-3);
+  font-size: var(--text-12);
+  font-variant-numeric: tabular-nums;
 }
 
-.orbital-title {
-  margin: 0;
-  font-size: 0.78rem;
-}
-
-.orbital-explain {
-  flex: 0 0 var(--control);
-  width: var(--control);
-}
-
-.orbital-explanation {
-  margin-bottom: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--bg-surface-2);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  line-height: 1.5;
-}
-
-.orbital-explanation strong {
-  color: var(--text-primary);
-}
-
-.orbital-canvas-wrap {
-  position: relative;
-  width: 100%;
-  height: 240px;
+/* The Orbit: the diagram in its own dark frame, sunlight glowing in from the right */
+.dd-orbit-frame {
   overflow: hidden;
   border-radius: 12px;
-  background: radial-gradient(circle at center, rgba(28, 37, 54, 0.6) 0%, rgba(5, 8, 14, 0.92) 100%);
+  background:
+    linear-gradient(270deg, rgba(255, 236, 196, 0.07), rgba(255, 236, 196, 0) 28%),
+    radial-gradient(circle at center, rgba(28, 37, 54, 0.6) 0%, rgba(5, 8, 14, 0.92) 100%);
 }
 
-/* The diagram scales into the whole box, centred, at any width */
-.orbital-diagram {
-  position: absolute;
-  inset: 0;
+.dd-orbit {
+  display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 15rem;
 }
 
-/* Bottom corner: the Moon's orbit passes under the top one */
-.orbital-sunlight {
-  position: absolute;
-  bottom: 0.5rem;
-  right: 0.5rem;
-  padding: 0.3rem 0.55rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  background: var(--panel);
-  color: var(--text-accent);
-  font-size: 0.72rem;
-  pointer-events: none;
-  white-space: nowrap;
+.dd-orbit-path {
+  fill: none;
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
 }
 
-.orbital-readout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(5.25rem, 0.8fr) minmax(0, 0.85fr);
-  align-items: center;
-  gap: 0.45rem;
-  min-height: 56px;
-  margin-top: 1rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--border-subtle);
+.dd-orbit-reach {
+  stroke: var(--hairline-strong);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
 }
 
-.orbital-reading {
-  min-width: 0;
-}
-
-.orbital-reading-illumination {
-  text-align: center;
-}
-
-.orbital-reading-distance {
-  text-align: right;
-}
-
-.orbital-reading-label {
-  margin: 0;
-  white-space: nowrap;
-}
-
-.orbital-phase-value {
-  overflow: hidden;
+.dd-orbit-label {
+  fill: var(--ink-3);
   font-family: var(--font-sans);
-  margin-top: 0.2rem;
-  color: var(--text-primary);
-  font-size: 0.98rem;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 11px;
 }
 
-.orbital-illumination-value {
-  margin-top: 0.2rem;
-  color: var(--accent-light);
-  font-family: var(--font-mono);
-  font-size: 1.02rem;
-  font-weight: 600;
-  white-space: nowrap;
+.dd-orbit-label.is-sun {
+  fill: rgba(255, 236, 196, 0.6);
 }
 
-.orbital-distance-value {
-  margin-top: 0.2rem;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 0.88rem;
-  white-space: nowrap;
-}
-
-.orbital-distance-value span {
-  color: var(--text-muted);
-  font-size: 0.72rem;
-}
-
-@media (max-width: 520px) {
-  .telemetry-section {
-    padding: 1rem;
-  }
-
-  .telemetry-phase-name {
-    font-size: 1.85rem;
-  }
-
-  .telemetry-measurement-value {
-    font-size: 1.5rem;
-  }
-
-
-  .sky-ephemeris-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem 0.6rem;
-  }
-
-  .sky-stat,
-  .sky-stat:nth-last-child(2),
-  .sky-stat:last-child {
-    grid-column: auto;
-  }
-
-  .sky-stat:last-child {
-    grid-column: 1 / -1;
-  }
-
-  .orbital-readout {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.65rem 0.5rem;
-  }
-
-  .orbital-reading-phase {
-    grid-column: 1 / -1;
-  }
-
-  .orbital-reading-illumination {
-    text-align: left;
+@media (max-width: 959px) {
+  .dd-card {
+    padding: var(--s4);
   }
 }
 
@@ -3011,12 +2892,6 @@ h1, h2, h3, h4 {
     min-height: 44px;
   }
 
-  .orbital-explain {
-    flex-basis: 44px;
-    width: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
 }
 
 @media (max-width: 480px) {
@@ -3164,12 +3039,6 @@ h1, h2, h3, h4 {
     min-height: 44px;
   }
 
-  .orbital-explain {
-    flex-basis: 44px;
-    width: 44px;
-    min-width: 44px;
-    min-height: 44px;
-  }
 
   .calendar-month-navigation .ghost-control-btn,
   .calendar-close {
@@ -3208,9 +3077,9 @@ h1, h2, h3, h4 {
 }
 
 /* ═══ REDUCED MOTION ═══
-   Luna runs a few indefinite animations: the timeline thumb's pulse while live,
-   an SVG aura on the transit chart, a drifting orbital camera and a spinning
-   Earth. Anyone who has asked their OS for less motion gets none of it.
+   Luna runs few animations: the timeline thumb's pulse while live, and the soft
+   fades and slides of its panels. Anyone who has asked their OS for less motion
+   gets none of them.
    JavaScript-driven motion is handled separately by usePrefersReducedMotion. */
 @media (prefers-reduced-motion: reduce) {
   *,

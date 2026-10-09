@@ -1,51 +1,52 @@
-import React, { useMemo } from 'react';
-import LunarData from './LunarData';
-import SkyPosition from './SkyPosition';
-import OrbitalView from './OrbitalView';
-import { getSkyData } from '../utils/lunarCalc';
+import React from 'react';
+import Tonight from './deep-dive/Tonight';
+import TheMoon from './deep-dive/TheMoon';
+import TheOrbit from './deep-dive/TheOrbit';
 
-// Everything inside the Deep Dive drawer below its header. It is its own chunk, so
-// neither these panels nor GSAP, which only they use, weigh on the first paint.
+// Everything inside Deep Dive below its header (decision E3): three chapters,
+// The Moon, Tonight and The Orbit, each number shown once. The Moon comes first,
+// the quickest to read; Tonight's chart after it. It is its own chunk, so none of
+// it weighs on the first paint.
 const DeepDiveContent = ({
   currentDate,
   location,
   lunarDetails,
   preferences,
+  isLive,
+  onSelectTime,
   onShowPrivacy
 }) => {
   const { clock, distanceUnit } = preferences;
 
-  // The 24-hour transit is only shown here, so it is only worked out here
-  const skyData = useMemo(
-    () => (location ? getSkyData(currentDate, location.lat, location.lon, location.timeZone, clock) : null),
-    [currentDate, location, clock]
-  );
-
   return (
-    <>
-      {/* Telemetry Cards Stack */}
-      <div className="telemetry-content">
-        <LunarData lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
+    <div className="dd">
+      <TheMoon lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
 
-        {skyData && (
-          <SkyPosition skyData={skyData} locationName={location?.name} />
-        )}
+      {location && (
+        <Tonight
+          currentDate={currentDate}
+          location={location}
+          lunarDetails={lunarDetails}
+          clock={clock}
+          isLive={isLive}
+          onSelectTime={onSelectTime}
+        />
+      )}
 
-        <OrbitalView lunarDetails={lunarDetails} distanceUnit={distanceUnit} />
+      <TheOrbit lunarDetails={lunarDetails} />
 
-        <footer className="deep-dive-footer">
-          Moon and Sun positions from Meeus&rsquo; <em>Astronomical Algorithms</em> and SunCalc.
-          <br />
-          Moon imagery: NASA&rsquo;s Scientific Visualization Studio.
-          <br />
-          Stars: the Bright Star Catalogue (Hoffleit &amp; Warren), via CDS Strasbourg. Planets: JPL.
-          <br />
-          <button type="button" className="text-link" onClick={onShowPrivacy}>
-            Privacy
-          </button>
-        </footer>
-      </div>
-    </>
+      <footer className="deep-dive-footer">
+        Moon and Sun positions from Meeus&rsquo; <em>Astronomical Algorithms</em> and SunCalc.
+        <br />
+        Moon imagery: NASA&rsquo;s Scientific Visualization Studio.
+        <br />
+        Stars: the Bright Star Catalogue (Hoffleit &amp; Warren), via CDS Strasbourg. Planets: JPL.
+        <br />
+        <button type="button" className="text-link" onClick={onShowPrivacy}>
+          Privacy
+        </button>
+      </footer>
+    </div>
   );
 };
 
