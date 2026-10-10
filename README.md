@@ -99,7 +99,8 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 
 ### A Quiet Stage
 * **Nothing but the Moon:** The header holds the wordmark, the date block and one menu. The date opens the calendar, the place beneath it opens the location picker, and five controls step by phase and by day, with ⊙ lit in amber while the view follows the clock. The phase name opens Deep Dive.
-* **Deep Dive Beside the Moon:** On a wide screen Deep Dive is a panel on the right, and the whole stage re-centres beside it, so the Moon and the timeline are never cut off. On a phone a slim grabber sits above the timeline: lift it, or tap the phase name, and Deep Dive rises as a sheet that stops at the timeline, so you can still scrub through the month and watch every number change. Swipe it down to put it away.
+* **A Dock for the Thumb:** On a phone held upright only the wordmark and the menu stay at the top. The date, the place and the five controls sit at the foot of the screen with the timeline, within reach of a thumb.
+* **Deep Dive Beside the Moon:** On a wide screen Deep Dive is a panel on the right, and the whole stage re-centres beside it, so the Moon and the timeline are never cut off. On a phone a slim grabber sits above the dock: lift it, or tap the phase name, and Deep Dive rises as a sheet that stops above the dock, so you can still step through the days or scrub through the month and watch every number change. Swipe it down to put it away.
 * **One Menu:** Deep Dive, sharing, Sound, *Tilt to look around* on phones, keyboard shortcuts where there is a keyboard, privacy, and the 12/24-hour and km/mile settings.
 * **Calendar:** A monthly calendar for instant date jumping. On a wide screen it grows out of the date and hangs beneath it; on a phone it rises from the bottom, within reach of a thumb.
 * **Month & Year Pickers:** Go straight to any month from 1900 to 2100, or type a year to jump to it.

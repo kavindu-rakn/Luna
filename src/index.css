@@ -578,15 +578,16 @@ h1, h2, h3, h4 {
 }
 
 /* Deep Dive (E1, E2; DeepDive.jsx): a panel beside the stage on wide screens, a
-   sheet rising from a grabber above the timeline on phones. Its frame takes no
+   sheet rising from a grabber at the foot of the stage on phones. Its frame takes no
    clicks itself and clips, never scrolls, what slides out of it. Opaque, so
    nothing ghosts through. */
 :root {
   --deep-dive-width: min(31rem, 100vw);
 }
 
-/* The stage down to the timeline. On phones the sheet is laid out in it, so it
-   meets the timeline exactly, whatever the browser's toolbars are doing. */
+/* The stage, down to the timeline, or on a phone held upright down to the dock.
+   On phones the sheet is laid out in it, so it meets the timeline or the dock
+   exactly, whatever the browser's toolbars are doing. */
 .stage-region {
   position: relative;
   flex: 1;
@@ -1032,9 +1033,10 @@ h1, h2, h3, h4 {
 }
 
 /* Phones: one sheet, open or closed (E2, settled in chat on 8 Oct 2026). It stands
-   on the timeline and rises to just under the top of the screen. */
+   on the dock (on the timeline, for a phone on its side) and rises to just under
+   the top of the screen. */
 @media (max-width: 959px) {
-  /* The way up: a slim pill just above the timeline, in the timeline's own quiet
+  /* The way up: a slim pill just above the dock, in the timeline's own quiet
      colour, with no panel or edge of its own. Its reach for a thumb is wider and
      taller than the pill, and it borrows most of that from the stage above. */
   .deep-dive-grabber {
@@ -2952,9 +2954,9 @@ h1, h2, h3, h4 {
     justify-content: center;
   }
 
-  /* The phone header stacks: wordmark and menu, then the date block. Its bar ends
-     about 10.5rem below the header's top with 48px touch targets. (Phase 4 moves
-     the date block to a dock at the bottom.) */
+  /* Phones on their side: the header stacks the wordmark and menu, then the date
+     block, whose bar ends about 10.5rem below the header's top with 48px touch
+     targets. Held upright, the date block moves to the dock instead (below). */
   .main-canvas-area {
     margin-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 11.25rem);
     justify-content: space-evenly;
@@ -3172,6 +3174,121 @@ h1, h2, h3, h4 {
     width: 36px;
     min-width: 36px;
     min-height: 36px;
+  }
+}
+
+/* Phones held upright: the bottom dock (decision H5; the master prompt 6.6). The
+   wordmark and the menu stay at the top; the Moon and the phase name fill the
+   middle; the date, the place and the five buttons sit above the timeline, within
+   reach of a thumb. It is a grid, so the stage, and Deep Dive's sheet laid out in
+   it, ends where the dock begins: the sheet stops above the whole dock, and the
+   date, the buttons and the timeline stay usable while it is open (settled in
+   chat, 10 Oct 2026). The header's own box steps aside (display: contents), so the
+   date block joins the dock without moving in the page: the first frame painted
+   before any JavaScript is already laid out this way, and the tab order is
+   unchanged. Phones on their side keep the date at the top, where the height is. */
+@media (max-width: 768px) and (orientation: portrait) {
+  .main-view-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "stage"
+      "date"
+      "timeline";
+  }
+
+  .app-header {
+    display: contents;
+  }
+
+  .app-brand,
+  .app-header-actions {
+    position: absolute;
+    top: max(0.75rem, env(safe-area-inset-top, 0px));
+    z-index: 30;
+  }
+
+  .app-brand {
+    left: max(1rem, env(safe-area-inset-left, 0px));
+  }
+
+  .app-header-actions {
+    right: max(1rem, env(safe-area-inset-right, 0px));
+  }
+
+  .stage-region {
+    grid-area: stage;
+  }
+
+  /* Only the wordmark's row to clear now */
+  .main-canvas-area {
+    margin-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.25rem);
+  }
+
+  .controls-panel {
+    grid-area: date;
+    position: static;
+    padding: var(--s1) max(0.75rem, env(safe-area-inset-right, 0px)) 0 max(0.75rem, env(safe-area-inset-left, 0px));
+  }
+
+  .date-controls {
+    margin-top: 0;
+  }
+
+  .timeline-dock {
+    grid-area: timeline;
+  }
+
+  /* Toasts clear the whole dock, not just the timeline */
+  :root {
+    --toast-bottom: calc(15rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 480px) and (orientation: portrait) {
+  .app-brand {
+    left: max(0.7rem, env(safe-area-inset-left, 0px));
+  }
+
+  .app-header-actions {
+    right: max(0.7rem, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* In the dock the place has room for a full-size target: 44px, where the top of
+   the screen could only spare 36px. It overlaps the date above and the bar below
+   by a few pixels, so the three still read as one block. */
+@media (max-width: 768px) and (orientation: portrait) and (hover: none),
+       (max-width: 768px) and (orientation: portrait) and (pointer: coarse) {
+  .date-place {
+    min-height: 44px;
+    margin-block: -6px -2px;
+  }
+}
+
+/* Short and upright (an iPhone SE in Safari): the one-row date block of short
+   screens doesn't fit a phone's width, so the dock keeps it stacked, with the
+   short date and a 44px date button */
+@media (max-width: 768px) and (orientation: portrait) and (max-height: 560px) {
+  .date-controls {
+    grid-template-columns: auto;
+    grid-template-rows: none;
+  }
+
+  .date-display-btn,
+  .location-picker,
+  .date-nav {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .date-display-btn {
+    min-height: var(--header-row);
+  }
+
+  .date-nav {
+    margin-top: var(--s1);
   }
 }
 

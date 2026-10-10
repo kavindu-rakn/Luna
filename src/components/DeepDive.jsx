@@ -7,12 +7,13 @@ import { useMedia } from '../hooks/useMedia';
 // (.main-view-container.drawer-open in index.css).
 //
 // On a phone it is a sheet with one height, as settled in chat on 8 Oct 2026: a
-// slim grabber above the timeline is the way up, and the sheet rises from there to
-// just under the top of the screen, stopping at the timeline so the timeline can
-// still be scrubbed while it is open. Its top and, from the top of its contents, a
+// slim grabber above the dock is the way up, and the sheet rises from there to
+// just under the top of the screen, stopping above the dock so the date, its
+// buttons and the timeline can still be used while it is open (settled in chat,
+// 10 Oct 2026). Its top and, from the top of its contents, a
 // pull down take it back down; how fast a drag is let go decides open or closed
 // (src/utils/sheetDrag.js). The sheet is laid out with the stage, not measured, so
-// it meets the timeline the same way on every phone. The phase name, the menu and
+// it meets the dock the same way on every phone. The phase name, the menu and
 // D open it too.
 
 const WIDE = '(min-width: 960px)';
@@ -86,7 +87,7 @@ const DeepDive = ({ isOpen, setIsOpen, settled, panelRef, headingRef, children }
 
   return (
     <>
-      {/* Phones: the grabber above the timeline. For keyboards and screen readers
+      {/* Phones: the grabber above the dock. For keyboards and screen readers
           the phase name, just above it, does the same. */}
       <div
         className="deep-dive-grabber"
