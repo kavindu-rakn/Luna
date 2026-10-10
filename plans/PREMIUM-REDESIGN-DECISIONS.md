@@ -120,7 +120,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | ID | Question | Decision | Notes |
 |---|---|---|---|
 | D1 | Control language | **Hairline instrument** (rec) | No fill at rest, 1 px engraved edge; fill on hover and press. |
-| D2 | Desktop header | **Wordmark only; everything in one menu** | **Settled in chat:** the location shows as a quiet caption under the date (tap to change); tapping the phase name opens Deep Dive (also the D key and the menu); on phones a slim grabber above the timeline is the entry (changed from the sheet's peek on 8 Oct 2026, see E2). |
+| D2 | Desktop header | **Wordmark only; everything in one menu** | **Settled in chat:** the location shows as a quiet caption under the date (tap to change); tapping the phase name opens Deep Dive (also the D key and the menu); on phones a slim grabber above the dock (the timeline, before 4a) is the entry (changed from the sheet's peek on 8 Oct 2026, see E2). |
 | D3 | Idle fade | **None** | **Settled in chat (8 Oct 2026):** dropped in 2b's review. Built as a 4 s fade, it left nothing to do but look at a still Moon, like an awkward silence; Luna's motion is already enough. The controls stay. |
 | D4 | Date navigation | **Five buttons, redrawn as one bar attached to the date** | |
 | D5 | Today | **⊙ icon always visible** | Owner's note: combine the icon and the live indicator. When live, ⊙ is brighter (in the warm "now" accent); when not live, it matches the other four. Keeps the symmetry. |
@@ -132,7 +132,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | ID | Question | Decision | Notes |
 |---|---|---|---|
 | E1 | Deep Dive on desktop | **Panel over the stage, stage re-frames** (rec) | Owner: "The timeline cut-off should also be fixed." The whole stage re-centres in the space left of the panel. |
-| E2 | Deep Dive on phones | **One sheet, from a grabber above the timeline** | **Settled in chat (8 Oct 2026), after testing on the owner's phones:** the peek and the half height are gone. The peek's numbers repeated Deep Dive and cluttered the stage, nothing said it could be lifted, it covered the timeline's tags and sat on the timeline like a block; half height showed little. Now a slim grabber in the timeline's own colour is the way up, and the sheet rises to just under the top of the screen, stopping at the timeline so it can still be scrubbed. The grabber and the sheet's top drag it; swipe or flick down, ✕ and Esc close it. Deep Dive stays in the menu everywhere. |
+| E2 | Deep Dive on phones | **One sheet, from a grabber above the timeline** | **Settled in chat (8 Oct 2026), after testing on the owner's phones:** the peek and the half height are gone. The peek's numbers repeated Deep Dive and cluttered the stage, nothing said it could be lifted, it covered the timeline's tags and sat on the timeline like a block; half height showed little. Now a slim grabber in the timeline's own colour is the way up, and the sheet rises to just under the top of the screen, stopping at the timeline so it can still be scrubbed. **With the dock (10 Oct 2026):** the sheet stops above the whole dock, so the date, its five buttons and the timeline all stay usable while it is open; it gives up about 120 px of height for that. The grabber and the sheet's top drag it; swipe or flick down, ✕ and Esc close it. Deep Dive stays in the menu everywhere. |
 | E3 | Content | **Three chapters: The Moon, Tonight, The Orbit** (rec) | Each number once. **Order changed in chat (9 Oct 2026):** Tonight came first at first; the owner preferred to open on the Moon, the quickest to read, rather than on Tonight's chart. |
 | E4 | 12h/24h and km/mi | **Default from locale, override in a small settings menu** (rec) | |
 | E5 | Numbers | **Serif figures for hero numbers, tabular sans in tables** (rec) | |
@@ -174,7 +174,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | H2 | Timeline look | **Ticks, phase icons and a glowing thumb, as now** | Structure kept, restyled in the new language. |
 | H3 | Thumb pulse | **Pulse only while live** | Same warm "now" accent as the live ⊙. |
 | H4 | Scrub feel | **Soft detents at exact phases, with haptics on Android** (rec) | |
-| H5 | Phone layout | **Bottom dock** (rec) | Date, location caption, the five-button bar and the timeline within thumb reach; the top keeps the wordmark and the menu. |
+| H5 | Phone layout | **Bottom dock** (rec) | Date, location caption, the five-button bar and the timeline within thumb reach; the top keeps the wordmark and the menu. **Settled in chat (10 Oct 2026):** the dock reads date and place, then the five buttons, then the timeline at the very foot. Built in 4a. |
 | H6 | Phone gestures | **One-finger drag rotates, as now** | No swipe-to-change-day. |
 
 ### I. First impression
@@ -279,8 +279,8 @@ when the page opens.
 | 2c | Cursor and sound: halo, Moon ring and fling meteor; the sound engine wired to every control | Done: PR #63 merged 8 Oct 2026 (with the settings fix, #62) |
 | 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | Done: PR #64 merged 9 Oct 2026 |
 | 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | Done: PR #67 merged 9 Oct 2026 |
-| 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | In review |
-| 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Not started |
+| 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Done: PR #68 merged 10 Oct 2026 |
+| 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | In progress: 4a (the dock) in review |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
 
@@ -572,3 +572,28 @@ when the page opens.
   - GSAP is uninstalled (J5 as changed). The shortcuts and privacy dialogs load with Deep
     Dive's panels once the page has settled, rather than with the page: the entry is 84.2 KB,
     2.1 KB less than before, with the overlay system in it.
+
+### Phase 4 notes
+
+- Phase 4 in three parts (agreed in chat on 10 Oct 2026): 4a the phone dock, 4b the timeline
+  (restyle, no caption, first-visit nudge, detents with Android haptics, phase-icon jumps), 4c
+  the first visit (the time-zone location guess and the one-time line).
+- 4a, the dock (H5, as settled in chat). On phones held upright, up to 768 px wide, the top
+  keeps only the wordmark and the menu; the Moon and the phase name fill the middle; the date,
+  the place and the five buttons sit in the dock above the timeline.
+  - Pure CSS. The main view becomes a grid (stage, date, timeline), and the header's own box
+    steps aside (`display: contents`) so the date block joins the dock without moving in the
+    page. The prerendered first frame is laid out the same way, nothing shifts when the app
+    takes over, and the tab order is unchanged.
+  - Deep Dive's sheet is laid out in the stage, so it now stops above the whole dock, as
+    chosen in chat: the date, the buttons and the timeline all work with it open.
+  - The place gets a 44 px target in the dock (36 px at the top of the screen before). On
+    short upright screens (an iPhone SE in Safari) the date block stays stacked with the
+    short date: the one-row layout of short screens doesn't fit a phone's width.
+  - Phones on their side keep the date at the top, where the height is. Desktop is
+    unchanged: every element measures the same as on master at 1440 x 900 and 1024 x 768,
+    and so does a phone on its side at 844 x 390. A tablet held upright (768 x 1024) gets
+    the dock.
+  - A popover whose control is at the foot of the screen opens above it, growing upward
+    (`anchor.js`): the calendar from the docked date at 640 to 768 px wide, where overlays
+    are popovers rather than sheets. Toasts clear the whole dock.

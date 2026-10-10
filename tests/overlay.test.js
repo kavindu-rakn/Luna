@@ -30,12 +30,22 @@ describe('placeBelow', () => {
     expect(spot.originX).toBe(1420 - spot.left);
   });
 
-  it('rises until it fits when there is not room below', () => {
+  it('rises until it fits when there is not room below or above', () => {
     const short = { width: 1280, height: 600 };
     const spot = placeBelow({ anchor: date, width: 352, height: 560, viewport: short });
     expect(spot.top).toBe(600 - 560 - 12);
     // Taller than the screen: from the top margin
     expect(placeBelow({ anchor: date, width: 352, height: 700, viewport: short }).top).toBe(12);
+  });
+
+  it('opens above a control at the foot of the screen, growing up out of it', () => {
+    // The date in the phone dock of a 700 x 1000 window
+    const docked = { left: 208, top: 760, right: 492, bottom: 804, width: 284, height: 44 };
+    const spot = placeBelow({ anchor: docked, width: 352, height: 491, viewport: { width: 700, height: 1000 } });
+    expect(spot.top).toBe(760 - 8 - 491);
+    // The control's centre is below the popover, so it grows upward
+    expect(spot.originY).toBe(782 - spot.top);
+    expect(spot.originY).toBeGreaterThan(491);
   });
 });
 

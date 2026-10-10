@@ -488,9 +488,10 @@ function App({ prerender = false }) {
           </div>
         </header>
 
-        {/* The stage, down to the timeline: the Moon and the phase name, and on
-            phones Deep Dive's sheet, which stands on the timeline and rises over
-            the stage. Laid out with the stage, so it meets the timeline exactly. */}
+        {/* The stage, down to the timeline (on a phone held upright, down to the
+            dock: the date block and the timeline): the Moon and the phase name, and
+            on phones Deep Dive's sheet, which stands on the dock and rises over the
+            stage. Laid out with the stage, so it meets the dock exactly. */}
         <div className="stage-region">
           <div className="main-canvas-area observatory-stage">
             {/* One accessible name for whichever Moon is showing, 3D or the 2D stand-in.
@@ -540,7 +541,7 @@ function App({ prerender = false }) {
           </div>
 
           {/* Deep Dive (E1, E2): a panel beside the stage on wide screens; on phones
-              a sheet that rises from a grabber above the timeline */}
+              a sheet that rises from a grabber above the dock */}
           <DeepDive
             isOpen={isDrawerOpen}
             setIsOpen={setIsDrawerOpen}
