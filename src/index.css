@@ -2465,8 +2465,10 @@ h1, h2, h3, h4 {
   padding-top: 0;
 }
 
-/* Lunar-cycle timeline. It has no panel of its own: the rail, its marks and their
-   dates sit straight on the sky, so the Moon keeps the height a panel used to take.
+/* Lunar-cycle timeline (decisions H1 to H4; LunarTimeline.jsx). It has no panel and
+   no caption: the rail, its marks and their dates sit straight on the sky, drawn in
+   hairlines like the rest of the instrument, so the Moon keeps the height a panel
+   used to take.
    --timeline-reach is the margin either side of the drawn rail that still catches a
    drag, clamping to that end of the cycle, so a thumb never has to reach the edge
    of the screen, the bezel or a phone case to get to New Moon. */
@@ -2474,24 +2476,6 @@ h1, h2, h3, h4 {
   --timeline-reach: 0.75rem;
   position: relative;
   padding: 0.25rem max(1.5rem, env(safe-area-inset-right, 0px)) calc(0.9rem + env(safe-area-inset-bottom, 0px)) max(1.5rem, env(safe-area-inset-left, 0px));
-}
-
-/* The hint sits centred and close above the track it names, with the open sky
-   above it separating it from the Moon */
-.timeline-header {
-  display: flex;
-  justify-content: center;
-  padding-inline: var(--timeline-reach);
-  /* Close to the track, but clear of the thumb's pulsing ring when it sits at Full
-     Moon, right under the hint */
-  margin-bottom: 0;
-}
-
-.timeline-hint {
-  margin: 0;
-  font-size: var(--text-12);
-  line-height: 1;
-  white-space: nowrap;
 }
 
 .timeline-track {
@@ -2512,7 +2496,7 @@ h1, h2, h3, h4 {
 }
 
 .timeline-track:focus-visible {
-  outline: 2px solid var(--accent-light);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -2523,25 +2507,33 @@ h1, h2, h3, h4 {
   height: 100%;
 }
 
+/* The cycle as a hairline, a brighter one up to the thumb */
 .timeline-line,
 .timeline-progress {
   position: absolute;
   top: 50%;
   left: 0;
-  height: 2px;
+  height: 1px;
   transform: translateY(-50%);
   pointer-events: none;
 }
 
 .timeline-line {
   right: 0;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--hairline);
 }
 
 .timeline-progress {
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-light));
-  box-shadow: 0 0 10px var(--accent-glow);
-  transition: width 0.3s ease;
+  background: var(--hairline-active);
+  transition: width 0.3s var(--ease-out);
+}
+
+/* A day: one fine tick, the same at every size, brighter the more of the Moon was
+   lit (its opacity is set per day) */
+.timeline-tick {
+  width: 1px;
+  height: 6px;
+  background: var(--ink-1);
 }
 
 .timeline-tick,
@@ -2558,11 +2550,23 @@ h1, h2, h3, h4 {
   display: flex;
 }
 
+/* The glowing thumb (H2): the Moon as it is on the day shown, with a soft halo */
 .timeline-thumb {
   z-index: 5;
   display: flex;
-  filter: drop-shadow(0 0 10px var(--accent-light));
-  transition: left 0.3s ease;
+  filter: drop-shadow(0 0 6px rgba(241, 243, 247, 0.45));
+  transition: left 0.3s var(--ease-out);
+}
+
+/* A first visit: the thumb leans along the rail and back, once, to show it moves */
+.timeline-thumb.is-nudging {
+  animation: timeline-nudge 1.1s var(--ease-in-out) 1;
+}
+
+@keyframes timeline-nudge {
+  0%, 100% { transform: translate(-50%, -50%); }
+  35% { transform: translate(calc(-50% - 14px), -50%); }
+  65% { transform: translate(calc(-50% + 4px), -50%); }
 }
 
 /* Under the finger the thumb follows exactly, with no easing to lag behind */
@@ -2573,47 +2577,42 @@ h1, h2, h3, h4 {
 
 .timeline-thumb-ring {
   position: absolute;
-  inset: -3px;
-  border: 1.5px solid var(--now);
+  inset: -4px;
+  border: 1px solid var(--now);
   border-radius: 50%;
   opacity: 0.6;
-  animation: pulse-ring 2.4s ease-in-out infinite;
+  animation: pulse-ring 3s ease-in-out infinite;
   pointer-events: none;
 }
 
+/* With a mouse, the point under the pointer: a quiet pill above the rail */
 .timeline-tooltip {
   position: absolute;
-  top: -2.25rem;
+  top: -2.1rem;
   transform: translateX(-50%);
   z-index: 30;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid rgba(226, 232, 240, 0.3);
-  border-radius: 10px;
+  gap: var(--s2);
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
   background: var(--panel);
   box-shadow: var(--shadow-overlay);
-  color: var(--text-primary);
-  font-size: 0.8rem;
+  color: var(--ink-1);
+  font-size: var(--text-12);
+  line-height: 1.4;
   white-space: nowrap;
   pointer-events: none;
 }
 
 .timeline-tooltip-name {
-  font-family: var(--font-sans);
-  font-size: var(--text-13);
   font-weight: 600;
-  line-height: 1;
 }
 
 .timeline-tooltip-date {
-  color: var(--text-muted);
-}
-
-.timeline-tooltip-fraction {
-  color: var(--text-accent);
-  font-weight: 600;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Each principal phase's date, centred under its mark. The rail's reach margin

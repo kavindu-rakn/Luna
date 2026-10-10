@@ -170,10 +170,10 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 
 | ID | Question | Decision | Notes |
 |---|---|---|---|
-| H1 | "Drag the slider" | **Remove it; a one-time thumb nudge teaches the drag** (rec) | |
+| H1 | "Drag the slider" | **Remove it; a one-time thumb nudge teaches the drag** (rec) | Built in 4b. |
 | H2 | Timeline look | **Ticks, phase icons and a glowing thumb, as now** | Structure kept, restyled in the new language. |
-| H3 | Thumb pulse | **Pulse only while live** | Same warm "now" accent as the live ⊙. |
-| H4 | Scrub feel | **Soft detents at exact phases, with haptics on Android** (rec) | |
+| H3 | Thumb pulse | **Pulse only while live** | Same warm "now" accent as the live ⊙. Built in 4b (it already only ran while live; now a hairline ring, slower). |
+| H4 | Scrub feel | **Soft detents at exact phases, with haptics on Android** (rec) | Built in 4b. |
 | H5 | Phone layout | **Bottom dock** (rec) | Date, location caption, the five-button bar and the timeline within thumb reach; the top keeps the wordmark and the menu. **Settled in chat (10 Oct 2026):** the dock reads date and place, then the five buttons, then the timeline at the very foot. Built in 4a. |
 | H6 | Phone gestures | **One-finger drag rotates, as now** | No swipe-to-change-day. |
 
@@ -280,7 +280,7 @@ when the page opens.
 | 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | Done: PR #64 merged 9 Oct 2026 |
 | 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | Done: PR #67 merged 9 Oct 2026 |
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Done: PR #68 merged 10 Oct 2026 |
-| 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | In progress: 4a (the dock) in review |
+| 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | In progress: 4a done (PR #69 merged 10 Oct 2026); 4b (the timeline) in review |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
 
@@ -597,3 +597,23 @@ when the page opens.
   - A popover whose control is at the foot of the screen opens above it, growing upward
     (`anchor.js`): the calendar from the docked date at 640 to 768 px wide, where overlays
     are popovers rather than sheets. Toasts clear the whole dock.
+- 4b, the timeline (H1 to H4, and the master prompt 6.4).
+  - No caption: "Drag the slider" is gone. On a first visit, once the page has settled, the
+    thumb leans along the rail and back (1.1 s), once per device (`luna_timeline_hint`,
+    listed in the privacy notice); a first press or key on the timeline counts too. Not
+    under reduced motion.
+  - The hairline language: the rail and the progress up to the thumb are hairlines, with
+    no glow on the line; every day is one fine tick, the same on phones and desktops,
+    brighter the more of the Moon was lit; the thumb keeps a soft halo; the live ring is
+    a hairline in `--now`, pulsing slower (3 s).
+  - Soft detents (`src/utils/timelineDetents.js`): let go within six tenths of a day of an
+    exact phase (held between 6 and 12 px on screen) and the thumb, and the Moon with it,
+    eases into the exact moment over 260 ms. So a tap on a phase icon lands on that phase,
+    while a day either side stays easy to choose. The right-hand New Moon settles a second
+    short, as End does, so the track doesn't turn over to the next cycle.
+  - Haptics on Android (`navigator.vibrate`): 8 ms as a drag crosses an exact phase, 12 ms
+    as the thumb settles into one. iOS browsers have none.
+  - The readout over the thumb shows only for a mouse hovering the track, as a preview of
+    the point under it. During a drag, and on touch screens, it stays hidden: the date in
+    the dock and the phase name already show the same thing. It lost its monospace
+    percentage, the last use of a monospace face in the timeline.
