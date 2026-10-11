@@ -622,8 +622,9 @@ when the page opens.
     the city the zone is named after, with its country (Asia/Colombo is Colombo, Sri
     Lanka), from tzdata's zone.tab. zone.tab rather than zone1970.tab, which merges zones
     across borders: there Europe/Stockholm is Berlin's zone. Old names browsers still
-    report are linked to the current ones (Chrome and Safari say Asia/Calcutta for
-    Kolkata). Zones that name no place (UTC, Etc/GMT+5) keep Greenwich.
+    report are linked to the current ones: every browser turns a link into its zone's
+    own name, but Chrome and Safari use CLDR's, which keeps 19 old ones (Asia/Calcutta
+    for Kolkata). Zones that name no place (UTC, Etc/GMT+5) keep Greenwich.
   - It runs in the inline script, before the first paint, so the first frame already shows
     that place's name, its date (Tokyo's day turns hours before Greenwich's) and its
     Moon, turned for its sky; the app then starts from the same guess. In headless Chrome
@@ -631,8 +632,19 @@ when the page opens.
     a degree.
   - The table is packed for the page (`scripts/zones/build.mjs`, run by hand on a new
     tzdata release): zones are found by a hash of their name, since the place's name comes
-    from the zone name the browser reports. 418 zones and 71 old names in 3.7 KB gzipped.
-    The page grows by 3.7 KB gzipped, to 43.3 KB; CI holds the inline script under 7 KB.
+    from the zone name the browser reports. 418 zones and 19 old names in 3.3 KB gzipped.
+  - The page budget. The first build grew the page to 43.3 KB gzipped, and Lighthouse's
+    mobile run fell from 92 to 90: its simulated TCP slow start fetches a page in two
+    round trips only while it is under about 43.8 KB on the wire (Vercel's brotli plus
+    headers came to 45.8 KB), and the third cost about 200 ms of first paint. Three
+    savings with nothing visible brought it back to 40.9 KB: the flat Moon's photograph
+    re-encoded at WebP's most thorough setting and without its alpha channel, the disc's
+    edge now cut by a clip path (identical to the eye; under one level in 255 on
+    average); index.html's comments stripped from the build; and only the old zone
+    names browsers report. CI now holds the page under 41.4 KB gzipped and the inline
+    script under 7 KB. The rest of the margin is in the stylesheet: Deep Dive's and the
+    dialogs' rules could load with their chunks (about 1.3 KB), for Phase 5's
+    performance pass.
   - The guess is never stored: a device that changes zone gets a new one, and nothing is
     kept that the device didn't choose. It stays out of the address bar too, so a reload
     guesses again rather than taking it for a shared link's place; Share still sends it.

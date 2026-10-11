@@ -252,7 +252,23 @@ const flatDisc = (color, normals) => {
       }
     }
   }
-  return sharp(out, { raw: { width: N, height: N, channels: 4 } }).webp({ quality: 75, alphaQuality: 100 }).toBuffer();
+  // No transparency: MoonDisc clips the photograph to the disc, so the corners are
+  // never seen. They carry the limb's colour outwards rather than black, so the
+  // encoder spends nothing on a hard edge there. The photograph goes inline in the
+  // page, and the alpha channel was a tenth of it.
+  for (let py = 0; py < N; py++) {
+    for (let px = 0; px < N; px++) {
+      const o = (py * N + px) * 4;
+      if (out[o + 3] === 255) continue;
+      const dx = px + 0.5 - N / 2;
+      const dy = py + 0.5 - N / 2;
+      const scale = (N / 2 - 1.5) / Math.hypot(dx, dy);
+      if (scale >= 1) continue;
+      const i = (Math.floor(N / 2 + dy * scale) * N + Math.floor(N / 2 + dx * scale)) * 4;
+      for (let c = 0; c < 3; c++) out[o + c] = out[i + c];
+    }
+  }
+  return sharp(out, { raw: { width: N, height: N, channels: 4 } }).removeAlpha().webp({ quality: 75, effort: 6 }).toBuffer();
 };
 
 const main = async () => {

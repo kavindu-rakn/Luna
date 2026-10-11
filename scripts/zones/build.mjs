@@ -17,6 +17,8 @@
 // from Sweden would open on a German city. zone.tab keeps one entry per country.
 //
 // The table goes inline in index.html, so it is packed tight: about 3 KB gzipped.
+// Lighthouse's mobile run fetches the page in two round trips only while it stays
+// under about 43 KB, so every kilobyte here counts.
 // Zones are found by a hash of their name rather than by the name, since the page
 // already has the name: it is what the browser reports, and the place is named
 // after it (Asia/Colombo is Colombo).
@@ -106,11 +108,11 @@ const LINK = {
   'Pacific/Yap': 'Pacific/Chuuk'
 };
 
-// Old names kept: the ones browsers report (from the zone names V8 knows, the
-// same CLDR names Safari uses: Asia/Calcutta for Kolkata), and old city names. The
-// 1990s names (US/Eastern, Japan) are left out; a device set to one gets the default
-// place.
-const CONTINENT = /^(Africa|America|Antarctica|Arctic|Asia|Atlantic|Australia|Europe|Indian|Pacific)\//;
+// Old names are kept only where browsers report them. Every browser turns a link
+// into its zone's own name before a page sees it: Firefox into tzdata's (Kolkata),
+// Chrome and Safari into CLDR's, which keeps some old ones (Asia/Calcutta). Those
+// are the zone names V8 knows, read here from Node's.
+const REPORTED = new Set(Intl.supportedValuesOf('timeZone'));
 
 const fetchRelease = async () => {
   const target = path.join(SOURCE, 'tzdata-latest.tar.gz');
@@ -182,7 +184,7 @@ const run = async () => {
 
   // Every name tzdata defines, and the names the browser's own data uses, so no
   // name a device could report shares a hash with a zone in the table
-  const known = new Set(Intl.supportedValuesOf('timeZone'));
+  const known = new Set(REPORTED);
   const links = new Map();
   for (const file of DATA) {
     for (const line of files[file].split('\n')) {
@@ -194,11 +196,11 @@ const run = async () => {
       links.set(fields[2], LINK[fields[2]] || (zones.has(note) ? note : fields[1]));
     }
   }
-  const kept = [...links].filter(([name, target]) =>
-    !zones.has(name) && zones.has(target) &&
-    (CONTINENT.test(name) || Intl.supportedValuesOf('timeZone').includes(name)));
-  for (const name of Intl.supportedValuesOf('timeZone')) {
-    if (!zones.has(name) && !kept.some(([link]) => link === name)) throw new Error(`${name} has no zone`);
+  const kept = [...links].filter(([name, target]) => !zones.has(name) && zones.has(target) && REPORTED.has(name));
+  for (const name of REPORTED) {
+    if (!zones.has(name) && !kept.some(([link]) => link === name) && name.includes('/') && !name.startsWith('Etc/')) {
+      throw new Error(`${name} has no zone`);
+    }
   }
 
   // A seed for the hash that gives every known name its own value, with the gaps

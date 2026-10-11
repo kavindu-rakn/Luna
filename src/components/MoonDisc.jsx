@@ -1,8 +1,8 @@
 import React from 'react';
 import { litPath, shadePhases, earthshine, SHADE_STEPS } from '../utils/moonPath';
 
-// A photograph of the near side (public/moon-disc.webp: moon_1024.jpg projected
-// orthographically, north up, 360px WebP) with the phase cut out of it. It is the
+// A photograph of the near side (public/moon-disc.webp: the colour map projected
+// orthographically, north up, 512px WebP) with the phase cut out of it. It is the
 // Moon of the first frame, the stand-in while the 3D Moon loads, and the Moon itself
 // where WebGL is missing. Regenerate it whenever the Moon texture changes.
 //
@@ -54,13 +54,18 @@ const MoonDisc = ({ view: { litPhase, limbAngle, poleAngle } }) => (
           <feFuncB type="gamma" amplitude="0.405" exponent="2.75" offset="0.0446" />
         </feComponentTransfer>
       </filter>
+      {/* The photograph has no transparency of its own (scripts/textures/build.mjs),
+          which keeps the page lighter: the disc's edge is cut here */}
+      <clipPath id="moon-disc-edge">
+        <circle cx={SIZE / 2} cy={SIZE / 2} r={SIZE / 2} />
+      </clipPath>
     </defs>
     {/* The Moon is solid: its night side hides the stars behind it */}
     <circle cx={SIZE / 2} cy={SIZE / 2} r={SIZE / 2 - 0.5} fill="#000104" />
     {/* The one photograph, drawn twice: once more through the earthshine filter
         for the night side, then as itself through the day side's mask. <use>
         draws it again without putting the inlined image in the page twice. */}
-    <use href="#moon-disc-photo" filter="url(#moon-disc-earthshine)" opacity={earthshine(litPhase).toFixed(4)} />
+    <use href="#moon-disc-photo" filter="url(#moon-disc-earthshine)" clipPath="url(#moon-disc-edge)" opacity={earthshine(litPhase).toFixed(4)} />
     <g mask="url(#moon-disc-phase)">
       {/* Decoded with the frame that first shows it, not after: left to decode on
           its own, the first frame painted without it and the photo waited behind

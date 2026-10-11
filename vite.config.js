@@ -115,7 +115,12 @@ const lunaShell = () => {
         const fonts = Object.keys(ctx.bundle ?? {})
           .filter((file) => /cormorant-garamond-latin-(400|600)-normal-[\w-]+\.woff2$/.test(file))
           .map((file) => `<link rel="preload" as="font" type="font/woff2" href="${config.base}${file}" crossorigin>`)
-        return html.replace('</head>', `  ${fonts.join('\n    ')}\n  </head>`)
+        html = html.replace('</head>', `  ${fonts.join('\n    ')}\n  </head>`)
+
+        // index.html's comments are for whoever reads the source, not for every
+        // visitor to download (React's empty separators stay). The page has to stay
+        // under about 43 KB for Lighthouse's mobile run to fetch it in two round trips.
+        return html.replace(/<!--(?!\s*-->)[\s\S]*?-->/g, '')
       }
     }
   }
