@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import DateControls from './components/DateControls';
 import LunarTimeline from './components/LunarTimeline';
 import SceneBoundary from './components/SceneBoundary';
@@ -113,6 +113,15 @@ function App({ prerender = false }) {
   const tilt = useTilt(!prerender);
   const reducedMotion = usePrefersReducedMotion();
   const [hasMouse] = useState(() => !prerender && Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)').matches));
+
+  // The intro (I1) may still be running when the app replaces the first frame. Its
+  // elements are new, so their entrances would start again from the beginning;
+  // before they paint, this tells them how far in it already is (index.css).
+  useLayoutEffect(() => {
+    if (prerender || !document.documentElement.classList.contains('is-intro')) return;
+    const elapsed = performance.now() - window.__lunaIntro;
+    if (Number.isFinite(elapsed)) document.documentElement.style.setProperty('--intro-t', `${Math.round(elapsed)}ms`);
+  }, [prerender]);
 
   // The light bloom on every pressed control (decision D7)
   useEffect(() => (prerender ? undefined : installPressBloom()), [prerender]);

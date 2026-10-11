@@ -85,7 +85,9 @@ const PrivacyDialog = ({ isOpen, onClose, returnFocusRef }) => {
           Your chosen place, your saved places, your clock and distance settings, whether Sound and
           Tilt to look around are on, whether the hint that the Moon turns has had its one
           showing, whether the timeline has shown you it moves, and the name of the last place
-          found with Use my location. They stay in this browser and are never sent anywhere. Luna also keeps a copy of its own files so that it works offline.
+          found with Use my location; and, until you close the tab, that the intro has played.
+          They stay in this browser and are never sent anywhere. Luna also keeps a copy of its
+          own files so that it works offline.
         </p>
         <div className="privacy-actions">
           <button

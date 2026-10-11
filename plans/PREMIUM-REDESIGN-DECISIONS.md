@@ -99,7 +99,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | ID | Question | Decision | Notes |
 |---|---|---|---|
 | B1 | Crescent mark | **Redraw as inline SVG, same shape** (rec) | "I like the logo." |
-| B2 | Wordmark shimmer | **Static, with a one-time reveal on load** | |
+| B2 | Wordmark shimmer | **Static, with a one-time reveal on load** | Built in 5a, as part of the intro: once per session. |
 | B3 | Type system | **Trim to Cormorant + Inter** (rec) | Cormorant only at 24 px and up; Inter everywhere else, numbers in tabular figures. **Keep the Qu tail**: Cormorant's long-tailed Q is the `Q_u` ligature, which any non-zero `letter-spacing` switches off. |
 | B4 | Paid typeface budget | **No, free fonts only** | |
 | B5 | Uppercase micro-labels | **Sentence case, small and muted** (rec) | |
@@ -181,7 +181,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 
 | ID | Question | Decision | Notes |
 |---|---|---|---|
-| I1 | Loading screen | **A short cinematic intro** | Up to 1.2 s, once per session, skippable. It must reveal the real page rather than cover it, so the phase name is visible from the first frame (LCP and Speed Index). |
+| I1 | Loading screen | **A short cinematic intro** | Up to 1.2 s, once per session, skippable. It must reveal the real page rather than cover it, so the phase name is visible from the first frame (LCP and Speed Index). **Settled in chat (12 Oct 2026):** around the Moon only. The Moon and the phase name hold still from the first frame; the crescent, "Luna", the date and the controls come in around them. A terminator sweep across the Moon was left out: the Moon is most of the screen, so desktop Speed Index would likely have passed 1.1 s and scored 99. Built in 5a. |
 | I2 | First-visit guidance | **One line that fades after the first interaction** (rec) | **Settled in chat (11 Oct 2026):** touch screens only, and only "Drag to turn the Moon". The timeline's nudge (H1) already teaches the scrub everywhere, and with a mouse the ring over the Moon already says "Drag to rotate", so the line would only have repeated them. Built in 4c. |
 | I3 | First-visit location | **Guess from the device time zone** (rec) | No permission, no network request. **Settled in chat (11 Oct 2026):** the guess is marked by a question mark after the name ("Colombo, Sri Lanka ?"), as far from it as the pin is, in the caption's own colour (adjusted after the owner's phone test on 12 Oct 2026: at first it was faint and hugged the name). Built in 4c. |
 
@@ -280,8 +280,8 @@ when the page opens.
 | 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | Done: PR #64 merged 9 Oct 2026 |
 | 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | Done: PR #67 merged 9 Oct 2026 |
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Done: PR #68 merged 10 Oct 2026 |
-| 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | In progress: 4a done (PR #69 merged 10 Oct 2026), 4b done (PR #70 merged 11 Oct 2026); 4c (the first visit) in review |
-| 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
+| 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Done: 4a PR #69 (10 Oct 2026), 4b PR #70 (11 Oct 2026), 4c PR #71 (12 Oct 2026) |
+| 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | In progress: 5a (the intro) in review |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
 
 ### Phase 0 notes
@@ -662,3 +662,32 @@ when the page opens.
     from the phase name's button, outside the stage's flow, so the Moon doesn't move as it
     comes and goes; it is hidden on a phone on its side, where the timeline sits right
     under the name.
+
+### Phase 5 notes
+
+- Phase 5 in parts (agreed in chat on 12 Oct 2026): 5a the intro and the wordmark's reveal,
+  measured on its own as the riskiest for the scores; 5b About and the branded 404; 5c the
+  design QA sweep and the performance pass, over everything Phase 5 added; the domain once
+  `luna-kvn.xyz` is bought (not yet, 12 Oct 2026).
+- 5a, the intro (I1 and B2, as settled in chat).
+  - A few lines in the page's head (`src/shell/intro.js`), before anything paints: on the
+    first page of a session, and not under reduced motion, the document is marked
+    `is-intro`. Any press, key or wheel ends it, and so does its last animation. That it has
+    played is kept in sessionStorage for the session, listed in the privacy notice.
+  - The rest is CSS. The Moon and the phase name hold still from the first frame. Around
+    them the crescent comes up (from 0.25 s), "Luna" drifts in after it from the left (from
+    0.4 s), the date and the place rise into place (from 0.55 s), then the instrument bar,
+    the menu, the timeline and Deep Dive's grabber (from 0.7 s), all done by 1.2 s.
+  - Only opacity and transforms move, so nothing shifts and the compositor plays it while
+    the app is still starting up. A mask sweep was tried for "Luna" first: masks animate
+    on the main thread, and on a phone with its CPU slowed 4x in headless Chrome the word
+    arrived late, at once, after the controls.
+  - The app replaces the prerendered elements part way through on a phone, and new
+    elements would start their entrance again. Before they paint, the app sets
+    `--intro-t` to how far in the intro is, and their delays count from there. Filmed at 4x
+    slowdown, nothing restarts when the app takes over at 1.4 s.
+  - Stars come with the sky scene when it has drawn, as before.
+  - Room for it: Deep Dive's chapter styles now load with Deep Dive's chunk
+    (`src/components/deep-dive/deepDive.css`, 1.3 KB gzipped) rather than inline in the
+    page. Deep Dive is pixel-identical to master's on a phone and a desktop. The page is
+    40.1 KB gzipped (budget 41) with the intro's script and styles in it.

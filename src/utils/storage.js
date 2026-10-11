@@ -3,8 +3,9 @@
 // "Tilt to look around" are on, whether the hint that the Moon turns has had its one
 // showing (moonHint.js), whether the timeline's thumb has nudged (once, on a first
 // visit), and the name of the last place found with "Use my location". A place
-// guessed from the time zone is not kept. Nothing else is written, and none of it
-// leaves the device.
+// guessed from the time zone is not kept. For the session only, in sessionStorage,
+// that the intro has played (src/shell/intro.js). Nothing else is written, and none
+// of it leaves the device.
 export const STORAGE_PREFIX = 'luna_';
 
 // Keys in storage that begin with a prefix. Collected before anything is removed,
