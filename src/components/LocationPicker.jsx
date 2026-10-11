@@ -143,7 +143,7 @@ const LocationPicker = ({ location, setLocation, onShowPrivacy }) => {
         <span className="location-trigger-label">
           {location?.name || 'Set location'}
         </span>
-        {/* Seen as a faint question mark (index.css) */}
+        {/* Seen as a question mark (index.css) */}
         {location?.guess && <span className="sr-only">, guessed from your time zone</span>}
       </button>
 

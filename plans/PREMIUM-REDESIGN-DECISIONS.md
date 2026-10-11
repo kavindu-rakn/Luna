@@ -183,7 +183,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 |---|---|---|---|
 | I1 | Loading screen | **A short cinematic intro** | Up to 1.2 s, once per session, skippable. It must reveal the real page rather than cover it, so the phase name is visible from the first frame (LCP and Speed Index). |
 | I2 | First-visit guidance | **One line that fades after the first interaction** (rec) | **Settled in chat (11 Oct 2026):** touch screens only, and only "Drag to turn the Moon". The timeline's nudge (H1) already teaches the scrub everywhere, and with a mouse the ring over the Moon already says "Drag to rotate", so the line would only have repeated them. Built in 4c. |
-| I3 | First-visit location | **Guess from the device time zone** (rec) | No permission, no network request. **Settled in chat (11 Oct 2026):** the guess is marked by a faint question mark after the name ("Colombo, Sri Lanka?"). Built in 4c. |
+| I3 | First-visit location | **Guess from the device time zone** (rec) | No permission, no network request. **Settled in chat (11 Oct 2026):** the guess is marked by a question mark after the name ("Colombo, Sri Lanka ?"), as far from it as the pin is, in the caption's own colour (adjusted after the owner's phone test on 12 Oct 2026: at first it was faint and hugged the name). Built in 4c. |
 
 ### J. Performance and engineering
 
@@ -652,10 +652,10 @@ when the page opens.
     kept that the device didn't choose. It stays out of the address bar too, so a reload
     guesses again rather than taking it for a shared link's place; Share still sends it.
     Picking a place, or starring the guessed one, ends the guess.
-  - It is marked by a faint question mark after the name, outside the name so a long
-    name's ellipsis never hides it; screen readers hear ", guessed from your time zone".
-    The location picker says where it came from, and the privacy notice says it is worked
-    out on the device.
+  - It is marked by a question mark after the name, as far from it as the pin is and in
+    the caption's own colour, outside the name so a long name's ellipsis never hides it;
+    screen readers hear ", guessed from your time zone". The location picker says where
+    it came from, and the privacy notice says it is worked out on the device.
   - The first-visit line, "Drag to turn the Moon", on touch screens only: it fades in under
     the phase name once the page has settled and leaves at the first touch or key, never
     to show again (it shares `luna_moon_hint` with the ring's "Drag to rotate"). It hangs
