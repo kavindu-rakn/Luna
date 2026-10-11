@@ -636,12 +636,13 @@ when the page opens.
   - The page budget. The first build grew the page to 43.3 KB gzipped, and Lighthouse's
     mobile run fell from 92 to 90: its simulated TCP slow start fetches a page in two
     round trips only while it is under about 43.8 KB on the wire (Vercel's brotli plus
-    headers came to 45.8 KB), and the third cost about 200 ms of first paint. Three
-    savings with nothing visible brought it back to 40.9 KB: the flat Moon's photograph
+    headers came to 45.8 KB), and the third cost about 200 ms of first paint. Four
+    savings with nothing visible brought it back to 40.4 KB: the flat Moon's photograph
     re-encoded at WebP's most thorough setting and without its alpha channel, the disc's
     edge now cut by a clip path (identical to the eye; under one level in 255 on
     average); index.html's comments stripped from the build; and only the old zone
-    names browsers report. CI now holds the page under 41.4 KB gzipped and the inline
+    names browsers report; and the timeline's positions written to three decimals rather
+    than sixteen. CI now holds the page under 41 KB gzipped and the inline
     script under 7 KB. The rest of the margin is in the stylesheet: Deep Dive's and the
     dialogs' rules could load with their chunks (about 1.3 KB), for Phase 5's
     performance pass.

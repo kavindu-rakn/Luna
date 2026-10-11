@@ -29,8 +29,8 @@ const INLINE_GZIP_BUDGET_KB = 7;
 // Lighthouse's mobile run simulates TCP slow start: the page arrives in two round
 // trips only while it is under about 43.8 KB on the wire, and a third costs about
 // 150 ms of first paint, two points of score. Vercel's compressed page has measured
-// about 1.4 KB more than gzip -9 here, with its headers, so this holds a little under.
-const PAGE_GZIP_BUDGET_KB = 41.4;
+// about 1.6 KB more than gzip -9 here, with its headers, so this holds a little under.
+const PAGE_GZIP_BUDGET_KB = 41;
 const THREE_CHUNK = /three-vendor-[\w-]+\.js/;
 
 const failures = [];
