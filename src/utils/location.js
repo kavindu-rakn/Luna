@@ -155,6 +155,20 @@ const isUsableLocation = (value) =>
   Number.isFinite(value.lon) && Math.abs(value.lon) <= 180 &&
   typeof value.name === 'string' && typeof value.timeZone === 'string';
 
+// A first visit's place (decision I3): the page's inline script guessed it from the
+// device's time zone before the first paint (src/shell/guessPlace.js). It is never
+// stored, so a device that moves zone gets a new guess, and it is marked as a guess
+// until a place is picked.
+export const loadGuessedLocation = () => {
+  const guess = typeof window === 'undefined' ? null : window.__lunaGuess;
+  if (!isUsableLocation(guess)) return null;
+  const { lat, lon, name, timeZone } = guess;
+  return { lat, lon, name, timeZone, guess: true };
+};
+
+// A place as it is kept: once picked, or saved, it is no longer a guess
+export const keptPlace = ({ lat, lon, name, timeZone }) => ({ lat, lon, name, timeZone });
+
 export const loadStoredLocation = () => {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));

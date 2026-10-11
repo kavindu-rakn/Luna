@@ -1,9 +1,10 @@
 // Everything Luna keeps in this browser's storage lives under keys beginning luna_:
 // the chosen place, saved places, clock and distance settings, whether Sound and
-// "Tilt to look around" are on, whether the Moon has been turned yet (its "Drag to
-// rotate" hint shows once), whether the timeline's thumb has nudged (once, on a
-// first visit), and the name of the last place found with "Use my
-// location". Nothing else is written, and none of it leaves the device.
+// "Tilt to look around" are on, whether the hint that the Moon turns has had its one
+// showing (moonHint.js), whether the timeline's thumb has nudged (once, on a first
+// visit), and the name of the last place found with "Use my location". A place
+// guessed from the time zone is not kept. Nothing else is written, and none of it
+// leaves the device.
 export const STORAGE_PREFIX = 'luna_';
 
 // Keys in storage that begin with a prefix. Collected before anything is removed,

@@ -8,7 +8,8 @@ import {
   placeFromPosition,
   loadSavedPlaces,
   storeSavedPlaces,
-  isSamePlace
+  isSamePlace,
+  keptPlace
 } from '../utils/location';
 
 // Nominatim's usage policy caps requests at one per second and forbids bulk use,
@@ -110,11 +111,13 @@ const LocationPicker = ({ location, setLocation, onShowPrivacy }) => {
     setSavedPlaces((current) => {
       const next = current.some((place) => isSamePlace(place, location))
         ? current.filter((place) => !isSamePlace(place, location))
-        : [location, ...current];
+        : [keptPlace(location), ...current];
       storeSavedPlaces(next);
       return next;
     });
-  }, [location]);
+    // Starring the guessed place says it is right: it stops being a guess
+    if (location.guess && !isCurrentSaved) setLocation(keptPlace(location));
+  }, [location, isCurrentSaved, setLocation]);
 
   const removeSaved = useCallback((place) => {
     setSavedPlaces((current) => {
@@ -129,7 +132,7 @@ const LocationPicker = ({ location, setLocation, onShowPrivacy }) => {
       <button
         ref={triggerRef}
         type="button"
-        className={`date-place${isOpen ? ' is-open' : ''}`}
+        className={`date-place${isOpen ? ' is-open' : ''}${location?.guess ? ' is-guess' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
@@ -140,6 +143,8 @@ const LocationPicker = ({ location, setLocation, onShowPrivacy }) => {
         <span className="location-trigger-label">
           {location?.name || 'Set location'}
         </span>
+        {/* Seen as a question mark (index.css) */}
+        {location?.guess && <span className="sr-only">, guessed from your time zone</span>}
       </button>
 
       {/* Hangs centred under the caption, or a tall sheet on a phone, so the search
@@ -180,6 +185,12 @@ const LocationPicker = ({ location, setLocation, onShowPrivacy }) => {
             : <Icon name="locateMe" size={18} />}
           <span>{isLocating ? 'Finding you…' : 'Use my location'}</span>
         </button>
+
+        {location?.guess && (
+          <p className="location-note">
+            {location.name} was guessed from this device’s time zone. Pick a place to change it.
+          </p>
+        )}
 
         {/* Status */}
         {status === 'searching' && (

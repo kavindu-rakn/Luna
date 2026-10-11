@@ -58,12 +58,13 @@ import ShareToast from './components/ShareToast';
 import AppMenu from './components/AppMenu';
 import DeepDive from './components/DeepDive';
 import BrandMark from './components/BrandMark';
+import MoonLine from './components/MoonLine';
 import { useShare } from './hooks/useShare';
 import UpdatePrompt from './components/UpdatePrompt';
 import { usePreferences } from './hooks/usePreferences';
 import { closeTopOverlay, isModalOpen } from './components/overlay/overlayStack';
 import { getLunarDetails, getAdjacentQuarterPhase } from './utils/lunarCalc';
-import { DEFAULT_LOCATION, loadStoredLocation, storeLocation, resolveTimeZone, roundPlace } from './utils/location';
+import { DEFAULT_LOCATION, loadStoredLocation, loadGuessedLocation, storeLocation, resolveTimeZone, roundPlace, keptPlace } from './utils/location';
 import { readSharedState, buildSharedSearch } from './utils/shareUrl';
 
 // Keys that controls like the timeline and the calendar grid use to move around
@@ -83,16 +84,17 @@ function App({ prerender = false }) {
   // the view is pinned to that instant, and only then does the date go in the URL.
   const [isLive, setIsLive] = useState(() => !shared.date);
 
-  // A link's location wins, then whatever was chosen last, then Greenwich.
-  // Geolocation is not requested at first paint: it is asked for only when the
-  // viewer presses "Use my location" in the picker.
+  // A link's location wins, then whatever was chosen last, then a place guessed
+  // from the device's time zone (I3), then Greenwich. Geolocation is not requested
+  // at first paint: it is asked for only when the viewer presses "Use my location"
+  // in the picker.
   const [location, setLocation] = useState(() => {
     if (shared.location) {
       // Provisional zone until it is resolved from the coordinates below. Links the
       // app writes always carry a valid tz; this only covers hand-edited ones.
       return { ...shared.location, timeZone: shared.location.timeZone || 'UTC' };
     }
-    return loadStoredLocation() || DEFAULT_LOCATION;
+    return loadStoredLocation() || loadGuessedLocation() || DEFAULT_LOCATION;
   });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -232,7 +234,7 @@ function App({ prerender = false }) {
   const chooseLocation = useCallback((next) => {
     // A searched address is as personal as a located one, so it is held to the same
     // kilometre. isSamePlace allows for exactly that much, so saved places still match.
-    const place = roundPlace(next);
+    const place = roundPlace(keptPlace(next));
     setLocation(place);
     storeLocation(place);
   }, []);
@@ -266,10 +268,12 @@ function App({ prerender = false }) {
   // Keep the address bar describing the view, so copying it shares what you see.
   // replaceState rather than pushState: a drag would otherwise bury the back button
   // under hundreds of entries. Debounced, because Safari throws once a page calls
-  // it more than a hundred times in thirty seconds.
+  // it more than a hundred times in thirty seconds. A guessed place stays out of
+  // it: a reload would take it for a link's place and stop marking it as a guess.
+  // Share still sends it, as the place the sender was looking at.
   useEffect(() => {
     const timer = setTimeout(() => {
-      const search = buildSharedSearch(isLive ? null : currentDate, location);
+      const search = buildSharedSearch(isLive ? null : currentDate, location.guess ? null : location);
       const { pathname, hash } = window.location;
       const next = `${pathname}${search}${hash}`;
       if (next === `${pathname}${window.location.search}${hash}`) return;
@@ -536,6 +540,7 @@ function App({ prerender = false }) {
               <span className="font-serif">
                 {lunarDetails.name}
               </span>
+              <MoonLine enabled={!prerender && !hasMouse} settled={isSettled} />
             </button>
             <span id="phase-name-hint" className="sr-only">Opens Deep Dive</span>
           </div>

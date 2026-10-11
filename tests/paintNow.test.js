@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { paintNow } from '../src/shell/paintNow';
+import { guessPlace } from '../src/shell/guessPlace';
+import { ZONES } from '../src/shell/zones';
 import { getMoonElongation, getPhaseSummary } from '../src/utils/lunarCalc';
 
 // The shell's inline script, run without a document so it only returns what it worked out
@@ -50,6 +52,23 @@ describe('shell paintNow', () => {
     expect(run('', saved).place.name).toBe('Colombo');
     expect(run('', 'not json').place.name).toBe('Greenwich, UK');
     expect(run('').timeZone).toBe('Europe/London');
+  });
+
+  it('takes the place guessed from the time zone before Greenwich, but after a saved or shared one', () => {
+    const tokyo = guessPlace(ZONES, 'Asia/Tokyo');
+    const withGuess = (search, stored) => paintNow({
+      location: { search },
+      localStorage: { getItem: () => stored }
+    }, null, tokyo);
+    expect(withGuess('', null).place).toBe(tokyo);
+    expect(withGuess('', null).timeZone).toBe('Asia/Tokyo');
+    // The Moon is turned for Tokyo's sky, not Greenwich's
+    expect(withGuess('?d=2026-10-14T12:00:00Z', null).view).toEqual(
+      withGuess('?d=2026-10-14T12:00:00Z&at=35.7,139.7&tz=Asia%2FTokyo', null).view
+    );
+    const saved = JSON.stringify({ lat: 6.93, lon: 79.85, name: 'Colombo', timeZone: 'Asia/Colombo' });
+    expect(withGuess('', saved).place.name).toBe('Colombo');
+    expect(withGuess('?at=-33.87,151.21', null).place.name).toBe('33.87°S, 151.21°E');
   });
 
   it('survives a hand-edited link', () => {

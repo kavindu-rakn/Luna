@@ -35,6 +35,11 @@ const storeNudged = () => {
 
 const reducedMotion = () => Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 
+// A position along the rail as a CSS percentage. Three decimals are a thousandth of
+// a pixel on the widest rail; the full sixteen made the prerendered page a few
+// hundred bytes heavier, and its size is held tight (scripts/check-bundle.js).
+const percent = (position) => `${+(position * 100).toFixed(3)}%`;
+
 // A short tick on Android as the thumb crosses or settles into an exact phase
 // (decision H4). iOS browsers have no haptics; elsewhere this does nothing.
 const buzz = (ms) => {
@@ -235,7 +240,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false, 
 
           <div
             className="timeline-progress"
-            style={{ width: `${currentPosition * 100}%` }}
+            style={{ width: percent(currentPosition) }}
           />
 
           {/* Day ticks, placed by the phase each day reached, brighter the more of
@@ -244,7 +249,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false, 
             <div
               className="timeline-tick"
               key={idx}
-              style={{ left: `${tick.position * 100}%`, opacity: 0.25 + tick.illumination * 0.6 }}
+              style={{ left: percent(tick.position), opacity: +(0.25 + tick.illumination * 0.6).toFixed(2) }}
             />
           ))}
 
@@ -263,7 +268,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false, 
           {/* Selected-position thumb */}
           <div
             className={`timeline-thumb${isNudging ? ' is-nudging' : ''}`}
-            style={{ left: `${currentPosition * 100}%` }}
+            style={{ left: percent(currentPosition) }}
             onAnimationEnd={(e) => {
               if (e.target === e.currentTarget) setIsNudging(false);
             }}
