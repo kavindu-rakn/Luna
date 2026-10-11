@@ -1,0 +1,128 @@
+/* The branded 404 (NotFound.jsx), inlined into the static 404.html by the build.
+   Self-contained: the page loads nothing of the app's, so the colours are the
+   tokens' values (index.css), not the tokens. */
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: radial-gradient(ellipse at 50% 40%, #0c111d 0%, #060910 65%);
+  color: #f1f3f7;
+  font-family: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A few still stars */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.4px 1.4px at 11% 21%, rgba(241, 243, 247, 0.75), transparent),
+    radial-gradient(1px 1px at 23% 64%, rgba(241, 243, 247, 0.5), transparent),
+    radial-gradient(1.2px 1.2px at 37% 12%, rgba(241, 243, 247, 0.6), transparent),
+    radial-gradient(1px 1px at 46% 83%, rgba(241, 243, 247, 0.45), transparent),
+    radial-gradient(1.6px 1.6px at 61% 27%, rgba(255, 236, 214, 0.7), transparent),
+    radial-gradient(1px 1px at 72% 71%, rgba(241, 243, 247, 0.5), transparent),
+    radial-gradient(1.3px 1.3px at 84% 16%, rgba(214, 226, 255, 0.65), transparent),
+    radial-gradient(1px 1px at 91% 52%, rgba(241, 243, 247, 0.45), transparent),
+    radial-gradient(1.1px 1.1px at 6% 88%, rgba(241, 243, 247, 0.5), transparent),
+    radial-gradient(1px 1px at 55% 6%, rgba(241, 243, 247, 0.4), transparent),
+    radial-gradient(1.2px 1.2px at 30% 40%, rgba(241, 243, 247, 0.35), transparent),
+    radial-gradient(1px 1px at 78% 92%, rgba(241, 243, 247, 0.4), transparent);
+}
+
+.nf {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: max(1rem, env(safe-area-inset-top, 0px)) max(1.25rem, env(safe-area-inset-right, 0px)) 2rem max(1.25rem, env(safe-area-inset-left, 0px));
+}
+
+.nf-brand {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.16em;
+  min-height: 44px;
+  color: #f1f3f7;
+  font: 600 clamp(1.85rem, 3.2vw, 2.45rem) / 1 'Cormorant Garamond', Georgia, serif;
+  text-decoration: none;
+}
+
+.nf-mark {
+  width: 0.76em;
+  height: 0.76em;
+  filter: drop-shadow(0 0 0.035em rgba(232, 238, 250, 0.9)) drop-shadow(0 0 0.12em rgba(205, 216, 242, 0.45));
+}
+
+.nf-body {
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding-bottom: 6vh;
+  text-align: center;
+}
+
+/* A New Moon in earthshine (NotFound.jsx), with a breath of glow around it */
+.nf-moon {
+  display: block;
+  width: min(44vw, 11rem);
+  height: auto;
+  aspect-ratio: 1;
+  margin-bottom: 1.5rem;
+  border-radius: 50%;
+  box-shadow: 0 0 3.5rem rgba(160, 180, 220, 0.08);
+}
+
+h1 {
+  margin: 0;
+  font: 400 clamp(2.15rem, 6vw, 3.25rem) / 1.15 'Cormorant Garamond', Georgia, serif;
+}
+
+p {
+  margin: 0;
+  color: #8a93a3;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.nf-home {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 1.1rem;
+  padding: 0 1.25rem;
+  border: 1px solid rgba(226, 232, 240, 0.14);
+  border-radius: 999px;
+  color: #f1f3f7;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+@media (hover: hover) {
+  .nf-home:hover {
+    border-color: rgba(226, 232, 240, 0.28);
+    background-color: rgba(241, 243, 247, 0.04);
+  }
+}
+
+.nf-brand:focus-visible,
+.nf-home:focus-visible {
+  outline: 2px solid rgba(241, 243, 247, 0.85);
+  outline-offset: 3px;
+}

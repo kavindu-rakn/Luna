@@ -15,6 +15,7 @@ const DeepDiveContent = ({
   preferences,
   isLive,
   onSelectTime,
+  onShowAbout,
   onShowPrivacy
 }) => {
   const { clock, distanceUnit } = preferences;
@@ -36,13 +37,12 @@ const DeepDiveContent = ({
 
       <TheOrbit lunarDetails={lunarDetails} />
 
+      {/* Whose work this stands on is said once, in About */}
       <footer className="deep-dive-footer">
-        Moon and Sun positions from Meeus&rsquo; <em>Astronomical Algorithms</em> and SunCalc.
-        <br />
-        Moon imagery: NASA&rsquo;s Scientific Visualization Studio.
-        <br />
-        Stars: the Bright Star Catalogue (Hoffleit &amp; Warren), via CDS Strasbourg. Planets: JPL.
-        <br />
+        <button type="button" className="text-link" onClick={onShowAbout}>
+          About Luna
+        </button>
+        <span aria-hidden="true"> &middot; </span>
         <button type="button" className="text-link" onClick={onShowPrivacy}>
           Privacy
         </button>

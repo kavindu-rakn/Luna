@@ -7,7 +7,7 @@ import Overlay from './overlay/Overlay';
 // settings E4 asked for. A disclosure rather than an ARIA menu: it holds actions,
 // a switch and two radio groups, which plain buttons and fieldsets already make
 // keyboard- and screen-reader-friendly. It hangs from its button, right edges
-// aligned, or rises as a sheet on a phone (Overlay). About joins it in Phase 5.
+// aligned, or rises as a sheet on a phone (Overlay).
 const AppMenu = ({
   onDeepDive,
   onShare,
@@ -15,6 +15,7 @@ const AppMenu = ({
   tilt,
   showTilt,
   onShortcuts,
+  onAbout,
   onPrivacy,
   preferences,
   setPreference,
@@ -107,6 +108,12 @@ const AppMenu = ({
                 <Icon name="keyboard" />
                 <span>Keyboard shortcuts</span>
                 <kbd className="menu-key" aria-hidden="true">?</kbd>
+              </button>
+            </li>
+            <li>
+              <button type="button" className="menu-item" onClick={act(onAbout)} data-sound="glass">
+                <Icon name="about" />
+                <span>About Luna</span>
               </button>
             </li>
             <li>

@@ -127,6 +127,17 @@ if (pageKb > PAGE_GZIP_BUDGET_KB) {
   failures.push(`the page is ${pageKb.toFixed(1)} KB gzip, over the ${PAGE_GZIP_BUDGET_KB} KB budget: Lighthouse's mobile run would fetch it in three round trips`);
 }
 
+// 7. The branded 404 is there, still a page that needs no script, and leads home
+const notFoundPath = path.join(DIST, '404.html');
+if (!fs.existsSync(notFoundPath)) {
+  failures.push("no 404.html was emitted: an unknown address would get the host's plain error page");
+} else {
+  const notFound = fs.readFileSync(notFoundPath, 'utf8');
+  if (/<script/i.test(notFound)) failures.push('404.html has a script: its CSP allows none');
+  if (!/class="nf-home" href="[^"]+"/.test(notFound)) failures.push('404.html has no way back to Luna');
+  notes.push(`404.html: ${(notFound.length / 1024).toFixed(1)} KB, no script`);
+}
+
 for (const line of notes) console.log(`  ${line}`);
 if (failures.length) {
   console.error('\nFirst-paint budget failed:');

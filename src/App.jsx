@@ -29,10 +29,12 @@ const SkyPointer = lazy(() => import('./components/SkyPointer'));
 // the drawer still opens instantly.
 const loadDeepDive = () => import('./components/DeepDiveContent');
 const DeepDiveContent = lazy(loadDeepDive);
-// The keyboard shortcuts and privacy are text nobody needs until they ask for it,
-// so they arrive with Deep Dive's panels once the page has settled
+// The keyboard shortcuts, About and privacy are text nobody needs until they ask
+// for it, so they arrive with Deep Dive's panels once the page has settled
 const loadShortcuts = () => import('./components/ShortcutsDialog');
 const ShortcutsDialog = lazy(loadShortcuts);
+const loadAbout = () => import('./components/AboutDialog');
+const AboutDialog = lazy(loadAbout);
 const loadPrivacy = () => import('./components/PrivacyDialog');
 const PrivacyDialog = lazy(loadPrivacy);
 
@@ -99,6 +101,9 @@ function App({ prerender = false }) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const closeShortcuts = useCallback(() => setIsShortcutsOpen(false), []);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const showAbout = useCallback(() => setIsAboutOpen(true), []);
+  const closeAbout = useCallback(() => setIsAboutOpen(false), []);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const showPrivacy = useCallback(() => setIsPrivacyOpen(true), []);
   const closePrivacy = useCallback(() => setIsPrivacyOpen(false), []);
@@ -176,7 +181,7 @@ function App({ prerender = false }) {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 200));
     const cancel = window.cancelIdleCallback || clearTimeout;
     const handle = idle(() => {
-      Promise.all([loadDeepDive(), loadShortcuts(), loadPrivacy()]).catch(() => {});
+      Promise.all([loadDeepDive(), loadShortcuts(), loadAbout(), loadPrivacy()]).catch(() => {});
     }, { timeout: 4000 });
     return () => cancel(handle);
   }, [prerender, isSettled]);
@@ -186,6 +191,8 @@ function App({ prerender = false }) {
   // close the way they came
   const [hasOpenedShortcuts, setHasOpenedShortcuts] = useState(false);
   if (isShortcutsOpen && !hasOpenedShortcuts) setHasOpenedShortcuts(true);
+  const [hasOpenedAbout, setHasOpenedAbout] = useState(false);
+  if (isAboutOpen && !hasOpenedAbout) setHasOpenedAbout(true);
   const [hasOpenedPrivacy, setHasOpenedPrivacy] = useState(false);
   if (isPrivacyOpen && !hasOpenedPrivacy) setHasOpenedPrivacy(true);
 
@@ -432,6 +439,13 @@ function App({ prerender = false }) {
             </Suspense>
           )}
 
+          {/* What Luna is, whose work it stands on, and who made it */}
+          {hasOpenedAbout && (
+            <Suspense fallback={null}>
+              <AboutDialog isOpen={isAboutOpen} onClose={closeAbout} returnFocusRef={menuTriggerRef} />
+            </Suspense>
+          )}
+
           {/* What is sent, what stays on the device, and a way to forget it */}
           {hasOpenedPrivacy && (
             <Suspense fallback={null}>
@@ -493,6 +507,7 @@ function App({ prerender = false }) {
               tilt={tilt}
               showTilt={tilt.supported && !reducedMotion}
               onShortcuts={() => setIsShortcutsOpen(true)}
+              onAbout={showAbout}
               onPrivacy={showPrivacy}
               preferences={preferences}
               setPreference={setPreference}
@@ -572,6 +587,7 @@ function App({ prerender = false }) {
                   preferences={preferences}
                   isLive={isLive}
                   onSelectTime={selectDate}
+                  onShowAbout={showAbout}
                   onShowPrivacy={showPrivacy}
                 />
               </Suspense>

@@ -16,6 +16,11 @@ import pkg from './package.json' with { type: 'json' }
 // for SITE_URL and the hosts recognised automatically.
 const SITE_URL = resolveSiteUrl(process.env, pkg.homepage)
 
+// Luna's own address, bare or with a shared view's query string: what the service
+// worker answers with the app (navigateFallbackAllowlist below)
+const escapeRegExp = (text) => text.replace(/[.*+?^$()|[\]{}\\]/g, '\\$&')
+const APP_ADDRESS = new RegExp('^' + escapeRegExp(SITE_URL.pathname) + '(?:index\\.html)?(?:\\?.*)?$')
+
 // The policy rides in the document as a <meta> tag, so it holds on any host. It is
 // injected at build time only: in dev it would block Vite's HMR websocket and the
 // module graph it serves from source. The two inline scripts, the intro's in the
@@ -52,6 +57,22 @@ const guessScript = `window.__lunaGuess=(${guessPlace.toString()})(${JSON.string
 // The intro (decision I1) is decided in the head, before anything paints
 const introScript = `(${startIntro.toString()})(window,document)`
 
+// The build's own render of the app (src/entry-server.jsx), in Node
+const importServerEntry = async (config) => (await runnerImport(fileURLToPath(new URL('./src/entry-server.jsx', import.meta.url)), {
+  configFile: false,
+  root: config.root,
+  base: config.base,
+  mode: config.mode,
+  logLevel: 'error',
+  plugins: [react()],
+  resolve: {
+    alias: {
+      // The PWA plugin's virtual module only exists in the real build
+      'virtual:pwa-register/react': fileURLToPath(new URL('./src/shell/pwaRegisterStub.js', import.meta.url))
+    }
+  }
+})).module
+
 // Paint before JavaScript. The build renders the app's first frame to HTML (see
 // src/entry-server.jsx) and puts it in the page, with a small inline script that
 // brings the date, phase and Moon up to today before the first paint, and the
@@ -68,20 +89,7 @@ const lunaShell = () => {
     transformIndexHtml: {
       order: 'post',
       async handler(html, ctx) {
-        const { module } = await runnerImport(fileURLToPath(new URL('./src/entry-server.jsx', import.meta.url)), {
-          configFile: false,
-          root: config.root,
-          base: config.base,
-          mode: config.mode,
-          logLevel: 'error',
-          plugins: [react()],
-          resolve: {
-            alias: {
-              // The PWA plugin's virtual module only exists in the real build
-              'virtual:pwa-register/react': fileURLToPath(new URL('./src/shell/pwaRegisterStub.js', import.meta.url))
-            }
-          }
-        })
+        const module = await importServerEntry(config)
         // The flat Moon's photograph goes inline, so the first frame paints it
         // without waiting on another request. It is that frame's largest paint.
         const disc = fs.readFileSync(fileURLToPath(new URL('./public/moon-disc.webp', import.meta.url)))
@@ -131,6 +139,55 @@ const lunaShell = () => {
   }
 }
 
+// The branded 404 (Phase 5b): any address that isn't Luna gets a static page in
+// Luna's own look, with no JavaScript, rendered from src/shell/NotFound.jsx with its
+// stylesheet inlined. Vercel serves 404.html for any path it has no file for. It
+// sets its type in the faces the app uses, from the app's own font files.
+const lunaNotFound = () => {
+  let config
+  return {
+    name: 'luna-not-found',
+    apply: 'build',
+    configResolved(resolved) {
+      config = resolved
+    },
+    async generateBundle(_, bundle) {
+      const module = await importServerEntry(config)
+      const faces = [
+        ['Cormorant Garamond', '400', /cormorant-garamond-latin-400-normal-[\w-]+\.woff2$/],
+        ['Cormorant Garamond', '600', /cormorant-garamond-latin-600-normal-[\w-]+\.woff2$/],
+        ['Inter Variable', '100 900', /inter-latin-wght-normal-[\w-]+\.woff2$/]
+      ].map(([family, weight, pattern]) => {
+        const file = Object.keys(bundle).find((name) => pattern.test(name))
+        return file
+          ? `@font-face{font-family:'${family}';font-style:normal;font-weight:${weight};font-display:swap;src:url(${config.base}${file}) format('woff2')}`
+          : ''
+      }).join('')
+      const css = fs.readFileSync(fileURLToPath(new URL('./src/shell/notFound.css', import.meta.url)), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+      const policy = "default-src 'none'; style-src 'unsafe-inline'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'"
+      const source = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="${policy}" />
+<meta name="robots" content="noindex" />
+<meta name="theme-color" content="#060910" />
+<link rel="icon" type="image/png" sizes="32x32" href="${config.base}luna-favicon-32.png" />
+<title>Lost in the dark · Luna</title>
+<style>${faces}${css}</style>
+</head>
+<body>${module.renderNotFound(config.base)}</body>
+</html>
+`
+      this.emitFile({ type: 'asset', fileName: '404.html', source })
+    }
+  }
+}
+
 // The dev server serves no shell to paint, but the app still starts from the guess,
 // and the intro still plays
 const lunaGuessInDev = () => ({
@@ -153,6 +210,7 @@ export default defineConfig({
   plugins: [
     react(),
     lunaShell(),
+    lunaNotFound(),
     lunaGuessInDev(),
     injectSiteUrl(),
     VitePWA({
@@ -196,6 +254,9 @@ export default defineConfig({
         globIgnores: [
           // only social-media crawlers request the share card
           'og-card.png',
+          // the 404 is the server's answer to an address that isn't Luna; no
+          // route in the worker ever serves it
+          '404.html',
           // install icons are fetched by the OS, not the page
           'luna-icon-512.png',
           'luna-icon-maskable-512.png',
@@ -225,8 +286,11 @@ export default defineConfig({
         ],
         // Hashed filenames make old precache entries unreachable after an update
         cleanupOutdatedCaches: true,
-        // Any navigation, including shared links carrying ?d=&at=, gets the shell
-        navigateFallback: 'index.html'
+        // Any navigation to Luna, including shared links carrying ?d=&at=, gets the
+        // shell. Only to Luna's own address: any other path goes to the server,
+        // which answers with the branded 404 rather than the app at a wrong address.
+        navigateFallback: 'index.html',
+        navigateFallbackAllowlist: [APP_ADDRESS]
         // Place search is deliberately not cached: results go stale, Nominatim's
         // policy discourages it, and offline the picker already says it cannot reach
         // the search. Saved places still work, since their timezone resolves locally.
