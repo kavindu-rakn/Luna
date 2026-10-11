@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { resolveSiteUrl } from './scripts/site-url.js'
 import { paintNow } from './src/shell/paintNow.js'
 import { guessPlace } from './src/shell/guessPlace.js'
+import { startIntro } from './src/shell/intro.js'
 import { ZONES } from './src/shell/zones.js'
 import pkg from './package.json' with { type: 'json' }
 
@@ -17,9 +18,9 @@ const SITE_URL = resolveSiteUrl(process.env, pkg.homepage)
 
 // The policy rides in the document as a <meta> tag, so it holds on any host. It is
 // injected at build time only: in dev it would block Vite's HMR websocket and the
-// module graph it serves from source. The one inline script, the shell's
-// guessPlace and paintNow, is allowed by its hash, which changes whenever the
-// script does.
+// module graph it serves from source. The two inline scripts, the intro's in the
+// head and the shell's guessPlace and paintNow, are allowed by their hashes, which
+// change whenever the scripts do.
 //
 // frame-ancestors is deliberately absent: browsers ignore it when it arrives via
 // <meta>, and leaving it in only logs a console error. Clickjacking protection
@@ -47,6 +48,9 @@ const contentSecurityPolicy = (scriptHashes) => [
 // Before the first paint, a first visit's place is guessed from the device's time
 // zone (decision I3) and left for the app to start from (utils/location.js)
 const guessScript = `window.__lunaGuess=(${guessPlace.toString()})(${JSON.stringify(ZONES)})`
+
+// The intro (decision I1) is decided in the head, before anything paints
+const introScript = `(${startIntro.toString()})(window,document)`
 
 // Paint before JavaScript. The build renders the app's first frame to HTML (see
 // src/entry-server.jsx) and puts it in the page, with a small inline script that
@@ -89,12 +93,13 @@ const lunaShell = () => {
         // into the window Lighthouse counts as blocking time, and the largest paint
         // didn't move.
         const script = minifySync('paint-now.js', `${guessScript};(${paintNow.toString()})(window,document,window.__lunaGuess)`).code.trim()
-        const hash = createHash('sha256').update(script).digest('base64')
+        const intro = minifySync('intro.js', introScript).code.trim()
+        const hashes = [script, intro].map((code) => createHash('sha256').update(code).digest('base64'))
 
         html = html.replace('<div id="root"></div>', `<div id="root">${shell}</div>\n    <script>${script}</script>`)
         html = html.replace(
           '<meta charset="UTF-8" />',
-          `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${contentSecurityPolicy([hash])}" />`
+          `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${contentSecurityPolicy(hashes)}" />\n    <script>${intro}</script>`
         )
 
         // One stylesheet, inlined: a separate file would hold up the first paint
@@ -126,12 +131,14 @@ const lunaShell = () => {
   }
 }
 
-// The dev server serves no shell to paint, but the app still starts from the guess
+// The dev server serves no shell to paint, but the app still starts from the guess,
+// and the intro still plays
 const lunaGuessInDev = () => ({
   name: 'luna-guess-dev',
   apply: 'serve',
-  transformIndexHtml: (html) => html.replace('<div id="root"></div>', `<div id="root"></div>
-    <script>${guessScript}</script>`)
+  transformIndexHtml: (html) => html
+    .replace('<meta charset="UTF-8" />', `<meta charset="UTF-8" />\n    <script>${introScript}</script>`)
+    .replace('<div id="root"></div>', `<div id="root"></div>\n    <script>${guessScript}</script>`)
 })
 
 // Social cards need absolute URLs, so index.html carries __SITE_URL__ placeholders,

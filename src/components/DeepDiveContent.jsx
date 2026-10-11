@@ -2,6 +2,7 @@ import React from 'react';
 import Tonight from './deep-dive/Tonight';
 import TheMoon from './deep-dive/TheMoon';
 import TheOrbit from './deep-dive/TheOrbit';
+import './deep-dive/deepDive.css';
 
 // Everything inside Deep Dive below its header (decision E3): three chapters,
 // The Moon, Tonight and The Orbit, each number shown once. The Moon comes first,
