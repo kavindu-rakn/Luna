@@ -645,7 +645,9 @@ when the page opens.
     than sixteen. CI now holds the page under 41 KB gzipped and the inline
     script under 7 KB. The rest of the margin is in the stylesheet: Deep Dive's and the
     dialogs' rules could load with their chunks (about 1.3 KB), for Phase 5's
-    performance pass.
+    performance pass. Measured after, with both previews given the same place so they
+    draw the same Moon: mobile 92 against 4b's 92 (first paint 1.82 s against 1.80 s),
+    desktop 100 against 100 (4c scored 100 in six pairs out of six).
   - The guess is never stored: a device that changes zone gets a new one, and nothing is
     kept that the device didn't choose. It stays out of the address bar too, so a reload
     guesses again rather than taking it for a shared link's place; Share still sends it.
