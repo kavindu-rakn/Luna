@@ -66,6 +66,10 @@ const PrivacyDialog = ({ isOpen, onClose, returnFocusRef }) => {
           put in a link. To name the place, that rounded position is sent to OpenStreetMap&rsquo;s
           Nominatim service.
         </p>
+        <p>
+          Until you pick a place, Luna shows the city your device&rsquo;s time zone is named after,
+          marked with a question mark. That guess is made on this device; nothing is sent.
+        </p>
       </Section>
 
       <Section title="Place search">
@@ -79,9 +83,9 @@ const PrivacyDialog = ({ isOpen, onClose, returnFocusRef }) => {
       <Section title="Kept on this device">
         <p>
           Your chosen place, your saved places, your clock and distance settings, whether Sound and
-          Tilt to look around are on, whether you have turned the Moon yet (so its &ldquo;Drag to
-          rotate&rdquo; hint shows only once), whether the timeline has shown you it moves, and the name of the last place found with Use my
-          location. They stay in this browser and are never sent anywhere. Luna also keeps a copy of its own files so that it works offline.
+          Tilt to look around are on, whether the hint that the Moon turns has had its one
+          showing, whether the timeline has shown you it moves, and the name of the last place
+          found with Use my location. They stay in this browser and are never sent anywhere. Luna also keeps a copy of its own files so that it works offline.
         </p>
         <div className="privacy-actions">
           <button

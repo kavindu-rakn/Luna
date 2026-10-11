@@ -1969,6 +1969,19 @@ h1, h2, h3, h4 {
   white-space: nowrap;
 }
 
+/* A place guessed from the time zone (I3) ends in a faint question mark until a
+   place is picked. It follows the name, outside it, so a long name's ellipsis
+   never cuts it off; screen readers hear words instead (LocationPicker). ::after
+   is the press bloom's. */
+.date-place.is-guess::before {
+  content: "?";
+  content: "?" / "";
+  order: 1;
+  flex-shrink: 0;
+  margin-inline-start: -6px;
+  opacity: 0.6;
+}
+
 .location-search-field {
   position: relative;
   margin-bottom: var(--s2);
@@ -2894,6 +2907,49 @@ h1, h2, h3, h4 {
 
 .hero-phase-name:focus-visible span {
   text-decoration-color: var(--hairline-active);
+}
+
+/* The first-visit line on touch screens (I2, MoonLine.jsx), hung under the phase
+   name from inside its button. It takes no room, so nothing moves as it comes and
+   goes. */
+.hero-phase-name {
+  position: relative;
+}
+
+.moon-line {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--ink-3);
+  font-family: var(--font-sans);
+  font-size: var(--text-13);
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  transition: opacity var(--dur-3) var(--ease-out);
+}
+
+.moon-line.is-shown {
+  opacity: 1;
+  transition-duration: var(--dur-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moon-line,
+  .moon-line.is-shown {
+    transition-duration: var(--dur-2);
+  }
+}
+
+/* A phone on its side has no room under the name: the timeline is right there */
+@media (max-height: 560px) {
+  .moon-line {
+    display: none;
+  }
 }
 
 /* The timeline's place at the foot of the stage */

@@ -25,6 +25,7 @@ import zlib from 'zlib';
 const DIST = 'dist';
 
 const ENTRY_GZIP_BUDGET_KB = 90;
+const INLINE_GZIP_BUDGET_KB = 7;
 const THREE_CHUNK = /three-vendor-[\w-]+\.js/;
 
 const failures = [];
@@ -97,13 +98,23 @@ if (!/<div id="root"><[^>]/.test(html) || !html.includes('class="hero-phase-name
   notes.push('prerendered shell present');
 }
 
-// 6. Every inline script is allowed by its hash in the CSP
+// 6. Every inline script is allowed by its hash in the CSP, and together they stay
+//    small: they arrive with the HTML, ahead of the first paint. Most of it is the
+//    time zone table a first visit's place is guessed from (src/shell/zones.js).
 const csp = html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/)?.[1] ?? '';
+let inlineBytes = 0;
 for (const [, body] of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) {
+  inlineBytes += zlib.gzipSync(body, { level: 9 }).length;
   const hash = crypto.createHash('sha256').update(body).digest('base64');
   if (!csp.includes(`'sha256-${hash}'`)) {
     failures.push(`an inline script (sha256-${hash}) is not allowed by the CSP, so browsers will refuse to run it`);
   }
+}
+const inlineKb = inlineBytes / 1024;
+notes.push(`inline first-paint script: ${inlineKb.toFixed(1)} KB gzip (budget ${INLINE_GZIP_BUDGET_KB} KB); ` +
+  `the whole page ${(zlib.gzipSync(html, { level: 9 }).length / 1024).toFixed(1)} KB gzip`);
+if (inlineKb > INLINE_GZIP_BUDGET_KB) {
+  failures.push(`the inline first-paint script is ${inlineKb.toFixed(1)} KB gzip, over the ${INLINE_GZIP_BUDGET_KB} KB budget`);
 }
 
 for (const line of notes) console.log(`  ${line}`);

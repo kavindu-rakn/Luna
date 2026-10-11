@@ -7,12 +7,13 @@
 // The build inlines it with Function.prototype.toString, so it has to stay
 // self-contained: no imports, nothing referenced from outside its own body, and
 // syntax that Safari 15.4 parses. Called without a document it only returns what
-// it computed, which is how the tests check it against lunarCalc.
-export function paintNow(win, doc) {
+// it computed, which is how the tests check it against lunarCalc. `guess` is the
+// place guessed from the device's time zone (guessPlace.js), or null.
+export function paintNow(win, doc, guess) {
   var rad = Math.PI / 180;
   var params = new URLSearchParams(win.location.search);
 
-  // Where: a shared link's place, else the saved place, else Greenwich
+  // Where: a shared link's place, else the saved place, else the guess, else Greenwich
   var place;
   var at = params.get('at');
   var coords = at ? at.split(',').map(Number) : null;
@@ -30,7 +31,7 @@ export function paintNow(win, doc) {
       place = null;
     }
   }
-  if (!place || typeof place !== 'object') place = { name: 'Greenwich, UK', timeZone: 'Europe/London' };
+  if (!place || typeof place !== 'object') place = guess || { name: 'Greenwich, UK', timeZone: 'Europe/London' };
 
   var timeZone = place.timeZone || 'UTC';
   try {
@@ -124,6 +125,9 @@ export function paintNow(win, doc) {
   setText('.date-text-desktop', format({ weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
   setText('.date-text-mobile', format({ month: 'short', day: 'numeric', year: 'numeric' }));
   setText('.location-trigger-label', place.name);
+  // A guessed place is marked as one until a place is picked (LocationPicker)
+  var trigger = doc.querySelector('.date-place');
+  if (trigger && place.guess) trigger.classList.add('is-guess');
 
   var moon = doc.querySelector('.moon-container');
   if (moon) moon.setAttribute('aria-label', 'The Moon: ' + name + ', ' + (fraction * 100).toFixed(1) + ' percent illuminated');

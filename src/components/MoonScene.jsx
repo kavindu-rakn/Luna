@@ -5,6 +5,7 @@ import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { createTiltReader } from '../utils/tilt';
 import { isOpenSky, moonRadius } from '../utils/skyTarget';
 import { cue } from '../audio/sound';
+import { readMoonHintSeen, storeMoonHintSeen } from '../utils/moonHint';
 
 // A little beyond the limb still counts, as it always has
 const HIT_SLOP = 1.05;
@@ -17,23 +18,6 @@ const DOUBLE_TAP_PX = 30;
 // Tilt changes smaller than this aren't worth a frame
 const TILT_STEP = 0.002;
 
-// "Drag to rotate" shows beside the Moon's ring until the first turn; that it has
-// been seen stays on this device
-const HINT_KEY = 'luna_moon_hint';
-const readHintSeen = () => {
-  try {
-    return localStorage.getItem(HINT_KEY) === 'seen';
-  } catch {
-    return false;
-  }
-};
-const storeHintSeen = () => {
-  try {
-    localStorage.setItem(HINT_KEY, 'seen');
-  } catch {
-    // Storage unavailable: it shows again next visit
-  }
-};
 // The ring is for a mouse; touch screens keep their own way of turning the Moon
 const hasMouse = () => typeof window !== 'undefined'
   && Boolean(window.matchMedia?.('(hover: hover) and (pointer: fine)').matches);
@@ -88,7 +72,7 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
   // what it does: "Drag to rotate" until the first turn, then "Double-click to
   // reset" while the Moon is turned (F7)
   const [mouse] = useState(hasMouse);
-  const [hintSeen, setHintSeen] = useState(readHintSeen);
+  const [hintSeen, setHintSeen] = useState(readMoonHintSeen);
   const [rotated, setRotated] = useState(false);
   const cursorRef = useRef(null);
   const showRing = mouse && isReady;
@@ -277,7 +261,7 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
     placeRing(event, at.onMoon);
     if (drag.moved && !hintSeen) {
       setHintSeen(true);
-      storeHintSeen();
+      storeMoonHintSeen();
     }
     // A double-tap springs the Moon back. Mice have dblclick for that.
     if (event.pointerType !== 'mouse' && event.type === 'pointerup' && !drag.moved) {

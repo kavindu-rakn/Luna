@@ -182,8 +182,8 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 | ID | Question | Decision | Notes |
 |---|---|---|---|
 | I1 | Loading screen | **A short cinematic intro** | Up to 1.2 s, once per session, skippable. It must reveal the real page rather than cover it, so the phase name is visible from the first frame (LCP and Speed Index). |
-| I2 | First-visit guidance | **One line that fades after the first interaction** (rec) | |
-| I3 | First-visit location | **Guess from the device time zone** (rec) | No permission, no network request. |
+| I2 | First-visit guidance | **One line that fades after the first interaction** (rec) | **Settled in chat (11 Oct 2026):** touch screens only, and only "Drag to turn the Moon". The timeline's nudge (H1) already teaches the scrub everywhere, and with a mouse the ring over the Moon already says "Drag to rotate", so the line would only have repeated them. Built in 4c. |
+| I3 | First-visit location | **Guess from the device time zone** (rec) | No permission, no network request. **Settled in chat (11 Oct 2026):** the guess is marked by a faint question mark after the name ("Colombo, Sri Lanka?"). Built in 4c. |
 
 ### J. Performance and engineering
 
@@ -280,7 +280,7 @@ when the page opens.
 | 3a | Deep Dive's frame: the re-framing panel on wide screens, the detent sheet on phones | Done: PR #64 merged 9 Oct 2026 |
 | 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | Done: PR #67 merged 9 Oct 2026 |
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Done: PR #68 merged 10 Oct 2026 |
-| 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | In progress: 4a done (PR #69 merged 10 Oct 2026); 4b (the timeline) in review |
+| 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | In progress: 4a done (PR #69 merged 10 Oct 2026), 4b done (PR #70 merged 11 Oct 2026); 4c (the first visit) in review |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Not started |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
 
@@ -617,3 +617,33 @@ when the page opens.
     the point under it. During a drag, and on touch screens, it stays hidden: the date in
     the dock and the phase name already show the same thing. It lost its monospace
     percentage, the last use of a monospace face in the timeline.
+- 4c, the first visit (I2 and I3, as settled in chat, and the master prompt 6.8).
+  - The first place is guessed from the device's time zone (`src/shell/guessPlace.js`):
+    the city the zone is named after, with its country (Asia/Colombo is Colombo, Sri
+    Lanka), from tzdata's zone.tab. zone.tab rather than zone1970.tab, which merges zones
+    across borders: there Europe/Stockholm is Berlin's zone. Old names browsers still
+    report are linked to the current ones (Chrome and Safari say Asia/Calcutta for
+    Kolkata). Zones that name no place (UTC, Etc/GMT+5) keep Greenwich.
+  - It runs in the inline script, before the first paint, so the first frame already shows
+    that place's name, its date (Tokyo's day turns hours before Greenwich's) and its
+    Moon, turned for its sky; the app then starts from the same guess. In headless Chrome
+    the shell and the app agree on the name and the date, and on the Moon's turn to within
+    a degree.
+  - The table is packed for the page (`scripts/zones/build.mjs`, run by hand on a new
+    tzdata release): zones are found by a hash of their name, since the place's name comes
+    from the zone name the browser reports. 418 zones and 71 old names in 3.7 KB gzipped.
+    The page grows by 3.7 KB gzipped, to 43.3 KB; CI holds the inline script under 7 KB.
+  - The guess is never stored: a device that changes zone gets a new one, and nothing is
+    kept that the device didn't choose. It stays out of the address bar too, so a reload
+    guesses again rather than taking it for a shared link's place; Share still sends it.
+    Picking a place, or starring the guessed one, ends the guess.
+  - It is marked by a faint question mark after the name, outside the name so a long
+    name's ellipsis never hides it; screen readers hear ", guessed from your time zone".
+    The location picker says where it came from, and the privacy notice says it is worked
+    out on the device.
+  - The first-visit line, "Drag to turn the Moon", on touch screens only: it fades in under
+    the phase name once the page has settled and leaves at the first touch or key, never
+    to show again (it shares `luna_moon_hint` with the ring's "Drag to rotate"). It hangs
+    from the phase name's button, outside the stage's flow, so the Moon doesn't move as it
+    comes and goes; it is hidden on a phone on its side, where the timeline sits right
+    under the name.

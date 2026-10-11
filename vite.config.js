@@ -6,6 +6,8 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { resolveSiteUrl } from './scripts/site-url.js'
 import { paintNow } from './src/shell/paintNow.js'
+import { guessPlace } from './src/shell/guessPlace.js'
+import { ZONES } from './src/shell/zones.js'
 import pkg from './package.json' with { type: 'json' }
 
 // Where this build will be published, and so the path its files are served from.
@@ -16,7 +18,8 @@ const SITE_URL = resolveSiteUrl(process.env, pkg.homepage)
 // The policy rides in the document as a <meta> tag, so it holds on any host. It is
 // injected at build time only: in dev it would block Vite's HMR websocket and the
 // module graph it serves from source. The one inline script, the shell's
-// paintNow, is allowed by its hash, which changes whenever the script does.
+// guessPlace and paintNow, is allowed by its hash, which changes whenever the
+// script does.
 //
 // frame-ancestors is deliberately absent: browsers ignore it when it arrives via
 // <meta>, and leaving it in only logs a console error. Clickjacking protection
@@ -40,6 +43,10 @@ const contentSecurityPolicy = (scriptHashes) => [
   "worker-src 'self' blob:",
   "manifest-src 'self'"
 ].join('; ')
+
+// Before the first paint, a first visit's place is guessed from the device's time
+// zone (decision I3) and left for the app to start from (utils/location.js)
+const guessScript = `window.__lunaGuess=(${guessPlace.toString()})(${JSON.stringify(ZONES)})`
 
 // Paint before JavaScript. The build renders the app's first frame to HTML (see
 // src/entry-server.jsx) and puts it in the page, with a small inline script that
@@ -81,7 +88,7 @@ const lunaShell = () => {
         // after the first paint was tried: it only moved the app's start-up work
         // into the window Lighthouse counts as blocking time, and the largest paint
         // didn't move.
-        const script = minifySync('paint-now.js', `(${paintNow.toString()})(window,document)`).code.trim()
+        const script = minifySync('paint-now.js', `${guessScript};(${paintNow.toString()})(window,document,window.__lunaGuess)`).code.trim()
         const hash = createHash('sha256').update(script).digest('base64')
 
         html = html.replace('<div id="root"></div>', `<div id="root">${shell}</div>\n    <script>${script}</script>`)
@@ -114,6 +121,14 @@ const lunaShell = () => {
   }
 }
 
+// The dev server serves no shell to paint, but the app still starts from the guess
+const lunaGuessInDev = () => ({
+  name: 'luna-guess-dev',
+  apply: 'serve',
+  transformIndexHtml: (html) => html.replace('<div id="root"></div>', `<div id="root"></div>
+    <script>${guessScript}</script>`)
+})
+
 // Social cards need absolute URLs, so index.html carries __SITE_URL__ placeholders,
 // filled in here for dev and builds alike
 const injectSiteUrl = () => ({
@@ -126,6 +141,7 @@ export default defineConfig({
   plugins: [
     react(),
     lunaShell(),
+    lunaGuessInDev(),
     injectSiteUrl(),
     VitePWA({
       // A new version waits for the viewer to accept it (see UpdatePrompt). The
