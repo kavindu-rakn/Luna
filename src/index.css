@@ -2807,6 +2807,12 @@ h1, h2, h3, h4 {
     min-height: 44px;
   }
 
+  /* The month and year reach the header row's full height (their text is 26px
+     tall); they look no different */
+  .calendar-select {
+    align-self: stretch;
+  }
+
   .calendar-phase {
     padding-block: 0.45rem;
   }
