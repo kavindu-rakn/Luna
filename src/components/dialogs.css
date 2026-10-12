@@ -72,7 +72,7 @@
   border-radius: 6px;
   background: var(--bg-surface-2);
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: var(--text-12);
   color: var(--text-primary);
 }
 
