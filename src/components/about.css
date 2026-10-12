@@ -1,0 +1,34 @@
+/* About (AboutDialog.jsx), loaded with it rather than inlined in the page. It
+   shares Privacy's sections; the credits take the cards' anatomy, a small label
+   above its value. */
+.about-dialog .privacy-section p + p {
+  margin-top: 0.6rem;
+}
+
+.about-credits {
+  display: grid;
+  gap: 0.8rem;
+  margin: 0.65rem 0 0;
+}
+
+.about-credit dt {
+  margin-bottom: 0.15rem;
+  font-size: var(--text-12);
+  color: var(--ink-3);
+}
+
+.about-credit dd {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.about-maker {
+  margin: 1.4rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hairline);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}

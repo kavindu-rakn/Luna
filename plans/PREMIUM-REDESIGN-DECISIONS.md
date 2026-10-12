@@ -87,7 +87,7 @@ pole blending on the main thread (258 ms). Start-up ephemeris maths was under 10
 |---|---|---|---|
 | A1 | How far this round goes | **Full re-imagining** | Rec was the art-directed shell redesign. |
 | A2 | Presentation-only behaviour | **Open to real features** | New features include meteor-shower nights and a reward for staying (see G7). |
-| A3 | Awwwards | **Yes, submit** | Needs an about/credits page and a strong first five seconds. |
+| A3 | Awwwards | **Yes, submit** | Needs an about/credits page and a strong first five seconds. **About built in 5b** (a dialog from the menu, as chosen in chat on 12 Oct 2026). |
 | A4 | Audience | **Casual first, sky watchers on demand** (rec) | "This is also my best and most complete project in the portfolio." |
 | A5 | Leading device | **Equal priority** | Both layouts get bespoke treatment. |
 | A6 | Mood | **Quiet stage, instrument data** (rec) | Quiet minimal on the home screen, observatory instrument inside Deep Dive. |
@@ -281,7 +281,7 @@ when the page opens.
 | 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | Done: PR #67 merged 9 Oct 2026 |
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Done: PR #68 merged 10 Oct 2026 |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Done: 4a PR #69 (10 Oct 2026), 4b PR #70 (11 Oct 2026), 4c PR #71 (12 Oct 2026) |
-| 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | In progress: 5a (the intro) in review |
+| 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | In progress: 5a done (PR #72 merged 12 Oct 2026); 5b (About and the 404) in review |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
 
 ### Phase 0 notes
@@ -691,3 +691,27 @@ when the page opens.
     (`src/components/deep-dive/deepDive.css`, 1.3 KB gzipped) rather than inline in the
     page. Deep Dive is pixel-identical to master's on a phone and a desktop. The page is
     40.1 KB gzipped (budget 41) with the intro's script and styles in it.
+  - The owner's phone test (12 Oct 2026): it is over almost before it can be noticed. Kept
+    as it is rather than lengthened, which would cost Speed Index on desktop.
+- 5b, About and the branded 404 (as settled in chat on 12 Oct 2026).
+  - About is a dialog from the menu ("About Luna", above Privacy), centred on wide screens
+    and a sheet on phones, loaded with the other dialogs once the page has settled
+    (`src/components/AboutDialog.jsx`, its styles in `about.css`, loaded with it). What
+    Luna is, briefly how it works, then whose work it stands on, each credit with its label
+    above it: NASA SVS's CGI Moon Kit, Meeus and SunCalc, the Bright Star Catalogue and
+    the constellation boundaries, JPL's approximate planetary positions, OpenStreetMap
+    and Nominatim, the IANA Time Zone Database and tz-lookup, the two typefaces, React and
+    three.js. It ends "Made by kvn", with a link to the source on GitHub.
+  - Deep Dive's footer had its own credits; it now has two links, "About Luna · Privacy",
+    so the credits are said once.
+  - The 404: a static page in Luna's look with no JavaScript (`src/shell/NotFound.jsx`,
+    rendered by the build to `404.html` with its stylesheet inlined), which Vercel serves
+    for any address it has no file for. The wordmark, a New Moon in earthshine drawn with
+    the 2D Moon's own filter, "Lost in the dark", "There's nothing at this address." and
+    "Back to tonight's Moon". Its type is the app's, from the app's own font files.
+  - The service worker used to answer every navigation with the app, so a returning
+    visitor at a wrong address got Luna there instead of the 404. It now answers only
+    Luna's own address and its shared links; anything else goes to the server.
+  - The repository link: master was already protected (both CI checks required, no
+    force-pushes, no deletion), free on a public repository, and only the owner can push.
+    Others can fork it and propose changes, never change it.

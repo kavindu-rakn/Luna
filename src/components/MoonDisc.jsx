@@ -20,6 +20,20 @@ const SIZE = 200;
 // SVG turns clockwise; the angles here are anticlockwise from straight up
 const turn = (angle) => `rotate(${+angle.toFixed(2)} ${SIZE / 2} ${SIZE / 2})`;
 
+// Earthshine as the 3D Moon renders it at New Moon: dark and cool, with the maria
+// sinking towards black while the highlands still show. Fitted to the 3D Moon's
+// own lighting and tone curve, to within two levels in 255. Also the 404's New
+// Moon (src/shell/NotFound.jsx).
+export const EarthshineFilter = ({ id }) => (
+  <filter id={id} colorInterpolationFilters="sRGB">
+    <feComponentTransfer>
+      <feFuncR type="gamma" amplitude="0.255" exponent="3.05" offset="0.0145" />
+      <feFuncG type="gamma" amplitude="0.294" exponent="2.9" offset="0.0205" />
+      <feFuncB type="gamma" amplitude="0.405" exponent="2.75" offset="0.0446" />
+    </feComponentTransfer>
+  </filter>
+);
+
 // The Moon as getMoonView (src/utils/moonView.js) says it stands in the sky: the
 // photograph turned so its north pole points where the Moon's does with the
 // observer's zenith up, and the lit shape turned so the bright limb faces the Sun.
@@ -43,17 +57,8 @@ const MoonDisc = ({ view: { litPhase, limbAngle, poleAngle } }) => (
           ))}
         </g>
       </mask>
-      {/* Earthshine as the 3D Moon renders it at New Moon: dark and cool, with
-          the maria sinking towards black while the highlands still show. Fitted
-          to the 3D Moon's own lighting and tone curve, to within two levels in
-          255; the night side's opacity scales it down for other phases. */}
-      <filter id="moon-disc-earthshine" colorInterpolationFilters="sRGB">
-        <feComponentTransfer>
-          <feFuncR type="gamma" amplitude="0.255" exponent="3.05" offset="0.0145" />
-          <feFuncG type="gamma" amplitude="0.294" exponent="2.9" offset="0.0205" />
-          <feFuncB type="gamma" amplitude="0.405" exponent="2.75" offset="0.0446" />
-        </feComponentTransfer>
-      </filter>
+      {/* Earthshine; the night side's opacity scales it down for other phases */}
+      <EarthshineFilter id="moon-disc-earthshine" />
       {/* The photograph has no transparency of its own (scripts/textures/build.mjs),
           which keeps the page lighter: the disc's edge is cut here */}
       <clipPath id="moon-disc-edge">
