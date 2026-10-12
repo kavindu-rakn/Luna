@@ -176,7 +176,6 @@ textarea {
     linear-gradient(180deg, rgba(35, 51, 76, 0.16), transparent 31%),
     radial-gradient(ellipse at 50% 39%, rgba(95, 119, 177, 0.08), transparent 49%),
     linear-gradient(118deg, rgba(8, 14, 25, 0.2), transparent 50%);
-  filter: blur(28px);
   pointer-events: none;
 }
 

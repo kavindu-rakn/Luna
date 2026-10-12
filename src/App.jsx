@@ -64,6 +64,7 @@ import MoonLine from './components/MoonLine';
 import { useShare } from './hooks/useShare';
 import UpdatePrompt from './components/UpdatePrompt';
 import { usePreferences } from './hooks/usePreferences';
+import { useFirstPaint } from './hooks/useFirstPaint';
 import { closeTopOverlay, isModalOpen } from './components/overlay/overlayStack';
 import { getLunarDetails, getAdjacentQuarterPhase } from './utils/lunarCalc';
 import { DEFAULT_LOCATION, loadStoredLocation, loadGuessedLocation, storeLocation, resolveTimeZone, roundPlace, keptPlace } from './utils/location';
@@ -112,6 +113,9 @@ function App({ prerender = false }) {
 
   // The sky's canvas sits behind the whole interface; the scene draws into it
   const [skyHost, setSkyHost] = useState(null);
+  // The 3D Moon and the service worker wait until the first frame is on screen,
+  // so nothing they fetch or run competes with it (useFirstPaint)
+  const painted = useFirstPaint(!prerender);
   const moonAreaRef = useRef(null);
 
   // "Tilt to look around": the phone's motion sensor moves the sky's depth layers
@@ -430,7 +434,7 @@ function App({ prerender = false }) {
       {!prerender && (
         <>
           {/* Offline readiness and update notices from the service worker */}
-          <UpdatePrompt />
+          {painted && <UpdatePrompt />}
 
           {/* Every keyboard shortcut, on ? or the keyboard button */}
           {hasOpenedShortcuts && (
@@ -533,7 +537,7 @@ function App({ prerender = false }) {
             >
               <MoonGlow view={moonView} hidden={moonReady} />
               <MoonFallback view={moonView} hidden={moonReady} />
-              {hasWebGL && skyHost && (
+              {hasWebGL && skyHost && painted && (
                 <SceneBoundary name="Moon scene" onError={markFailed} fallback={null}>
                   <Suspense fallback={null}>
                     <MoonScene
