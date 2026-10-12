@@ -346,11 +346,6 @@ h1, h2, h3, h4 {
   font-family: var(--font-serif);
 }
 
-.font-mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
 /* Small labels: sentence case, small and muted (decision B5), never tracked
    uppercase */
 .utility-label {
@@ -461,7 +456,6 @@ h1, h2, h3, h4 {
 }
 
 /* Selected, open or on */
-.glass-button.is-active,
 .glass-button.is-open,
 .glass-button[aria-pressed="true"],
 .ghost-control-btn[aria-pressed="true"] {
@@ -1451,10 +1445,6 @@ h1, h2, h3, h4 {
 
 .share-toast .icon {
   color: var(--ink-1);
-}
-
-.share-trigger.is-failed {
-  color: var(--danger);
 }
 
 .update-prompt {

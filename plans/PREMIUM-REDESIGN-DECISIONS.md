@@ -746,6 +746,7 @@ when the page opens.
     and on short screens (documented: three 44 px buttons don't fit beside the month and
     year), the place caption's 36 px and the timeline's 40 px on a phone on its side, and
     links inside sentences (exempt).
-  - Dead CSS: every class the stylesheet styles is used by the source, apart from a few
-    built at run time (`is-${mode}`).
+  - Dead CSS: three rules styled classes nothing renders any more (`.font-mono`,
+    `.glass-button.is-active`, `.share-trigger.is-failed`) and are gone; every other class
+    the stylesheets style is in the source, or built at run time (`is-${mode}`).
 
