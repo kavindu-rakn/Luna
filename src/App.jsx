@@ -601,7 +601,7 @@ function App({ prerender = false }) {
 
         {/* Bottom Bar: Timeline */}
         <div className="timeline-dock">
-          <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} isLive={isLive} settled={isSettled} />
+          <LunarTimeline currentDate={currentDate} setCurrentDate={selectDate} timeZone={location.timeZone} isLive={isLive} settled={isSettled} prerender={prerender} />
         </div>
       </main>
 

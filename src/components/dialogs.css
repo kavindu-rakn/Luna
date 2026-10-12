@@ -1,0 +1,152 @@
+/* The modal dialogs (ModalDialog.jsx and the shortcuts, privacy and About that
+   use it), loaded with them rather than inlined in the page: Lighthouse's mobile
+   run fetches the page in two round trips only while it stays under about 43 KB
+   (scripts/check-bundle.js). Only the dialogs' own elements use these classes. */
+
+/* The app's modal dialogs (shortcuts, privacy), centred over the dimmed page
+   (Overlay) */
+.modal-dialog {
+  --overlay-pad: 1.35rem;
+  width: min(36rem, calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.1rem;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-32);
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+.shortcuts-group + .shortcuts-group {
+  margin-top: 1.2rem;
+}
+
+.shortcuts-group h3 {
+  margin: 0 0 0.55rem;
+}
+
+.shortcuts-list {
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.shortcuts-row {
+  display: grid;
+  grid-template-columns: 11.5rem 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+
+.shortcuts-row dt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.shortcuts-row dd {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.shortcuts-list kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  padding: 0 0.45rem;
+  border: 1px solid var(--border-medium);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--bg-surface-2);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-primary);
+}
+
+/* The code font has left and right arrows but not up and down, so the four came
+   out in two sizes. One system font draws them all alike. */
+.shortcuts-list kbd.is-arrow {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 0.85rem;
+}
+
+.shortcuts-sep {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.shortcuts-note {
+  margin: 1.3rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Privacy */
+.privacy-lead {
+  margin: 0 0 1.2rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.privacy-section + .privacy-section {
+  margin-top: 1.15rem;
+}
+
+.privacy-section h3 {
+  margin: 0 0 0.4rem;
+}
+
+.privacy-section p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.privacy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.privacy-confirm {
+  margin-top: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(240, 168, 160, 0.35);
+  border-radius: var(--radius-popover);
+}
+
+.privacy-confirm p {
+  color: var(--text-primary);
+}
+
+/* Forgetting can't be undone, so it alone is drawn in red */
+.privacy-actions .privacy-danger {
+  border-color: rgba(240, 168, 160, 0.55);
+  color: var(--danger);
+}
+
+/* On a narrow screen the keys sit above what they do */
+@media (max-width: 480px) {
+  .shortcuts-row {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+}
