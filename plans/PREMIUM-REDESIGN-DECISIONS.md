@@ -281,7 +281,7 @@ when the page opens.
 | 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | Done: PR #67 merged 9 Oct 2026 |
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Done: PR #68 merged 10 Oct 2026 |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Done: 4a PR #69 (10 Oct 2026), 4b PR #70 (11 Oct 2026), 4c PR #71 (12 Oct 2026) |
-| 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | In progress: 5a done (PR #72 merged 12 Oct 2026); 5b (About and the 404) in review |
+| 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | In progress: 5a done (PR #72), 5b done (PR #73), both merged 12 Oct 2026; 5c (QA and performance) in review; the domain once bought |
 | 6 | New features: meteor-shower nights, reward for staying | Not started |
 
 ### Phase 0 notes
@@ -715,3 +715,38 @@ when the page opens.
   - The repository link: master was already protected (both CI checks required, no
     force-pushes, no deletion), free on a public repository, and only the owner can push.
     Others can fork it and propose changes, never change it.
+- 5c, the design QA sweep and the performance pass.
+  - Mobile Lighthouse. Lighthouse simulates a slow phone from a fast observed load, and it
+    counts what the page fetched and ran before the first frame reached the screen. In
+    headless Chrome that frame waited about 300 ms on the GPU (the 2D Moon's SVG mask about
+    120 ms, the nebula's full-screen blur about 30, the wordmark's glow about 25: Chrome
+    compiling them for the first time, which a fresh profile does on every run), and in
+    the meantime the app had started the 3D scene and the service worker. Those now wait
+    for the first frame (`useFirstPaint`); the 2D Moon is that frame's Moon either way. The
+    nebula's blur went too: the sky differs by at most 3 levels in 255 without it. On a
+    quiet machine master scored a median 95 on mobile already (the 91 to 93 of earlier
+    phases came from a busier one); with these, runs of 95 to 97 and blocking time down
+    by a third.
+  - The first frame's timeline drew the build's cycle, on Greenwich's clock, until the app
+    took over (a day label could change; with an older build the whole cycle). It now
+    draws only the rail and the five phases on their fixed marks; the dates, the day ticks
+    and the thumb come with the app, with a short fade, and every box measures the same.
+  - The dialogs' styles load with ModalDialog's chunk, as Deep Dive's did in 5a: the page
+    is 39.3 KB gzipped, from 40.1, a little more room under the 41 KB budget.
+  - The sweep (`qa.mjs` in the session's scratchpad): ten sizes from a 320 px phone to
+    1920 px, phones on their side and tablets, every view (the main view, the menu, About,
+    privacy, the shortcuts, the calendar, the location picker, Deep Dive at its top and its
+    foot), checked for sideways scrolling, clipped text, small touch targets, overlapping
+    controls and text under 12 px, and looked at side by side. Nothing scrolled sideways,
+    clipped or overlapped. Found and fixed: reaches under 44 px on touch screens, widened
+    with nothing moving (the sheets' grip, the phase name on a phone, About and Privacy at
+    Deep Dive's foot, the calendar's month and year); and, as the owner chose, the last
+    text under 12 px raised (the calendar's phase times, the Tonight chart's labels, the
+    shortcut keys). Left as they are, by design: the calendar's smaller buttons at 320 px
+    and on short screens (documented: three 44 px buttons don't fit beside the month and
+    year), the place caption's 36 px and the timeline's 40 px on a phone on its side, and
+    links inside sentences (exempt).
+  - Dead CSS: three rules styled classes nothing renders any more (`.font-mono`,
+    `.glass-button.is-active`, `.share-trigger.is-failed`) and are gone; every other class
+    the stylesheets style is in the source, or built at run time (`is-${mode}`).
+

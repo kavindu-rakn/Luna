@@ -1,6 +1,7 @@
 import React from 'react';
 import Icon from './icons/Icon';
 import Overlay from './overlay/Overlay';
+import './dialogs.css';
 
 /**
  * A modal overlay with a title and a close button (keyboard shortcuts, privacy): a

@@ -60,7 +60,12 @@ const buzz = (ms) => {
 // nudges once on a first visit and pulses only while live, soft detents that ease
 // it into an exact phase when it is let go nearby, so a tap on a phase icon lands
 // on that phase, and on a mouse a readout of the point under the pointer.
-const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false, settled = false }) => {
+//
+// The build's prerender draws only what every cycle shares: the rail and the five
+// phases on their fixed marks. The dates, the day ticks and the thumb are the
+// cycle's own, so they wait for the app; drawn at build time they showed the
+// build's cycle, on Greenwich's clock, and changed as the app took over.
+const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false, settled = false, prerender = false }) => {
   const railRef = useRef(null);
   const [hoverPosition, setHoverPosition] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -238,14 +243,16 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false, 
         <div className="timeline-rail" ref={railRef}>
           <div className="timeline-line" />
 
-          <div
-            className="timeline-progress"
-            style={{ width: percent(currentPosition) }}
-          />
+          {!prerender && (
+            <div
+              className="timeline-progress"
+              style={{ width: percent(currentPosition) }}
+            />
+          )}
 
           {/* Day ticks, placed by the phase each day reached, brighter the more of
               the Moon was lit */}
-          {ticks.map((tick, idx) => (
+          {!prerender && ticks.map((tick, idx) => (
             <div
               className="timeline-tick"
               key={idx}
@@ -266,17 +273,19 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false, 
           ))}
 
           {/* Selected-position thumb */}
-          <div
-            className={`timeline-thumb${isNudging ? ' is-nudging' : ''}`}
-            style={{ left: percent(currentPosition) }}
-            onAnimationEnd={(e) => {
-              if (e.target === e.currentTarget) setIsNudging(false);
-            }}
-          >
-            <MoonIcon phase={currentSummary.phase} size={22} />
-            {/* The pulse means "now", so it only runs while the view follows the clock */}
-            {isLive && <div className="timeline-thumb-ring" />}
-          </div>
+          {!prerender && (
+            <div
+              className={`timeline-thumb${isNudging ? ' is-nudging' : ''}`}
+              style={{ left: percent(currentPosition) }}
+              onAnimationEnd={(e) => {
+                if (e.target === e.currentTarget) setIsNudging(false);
+              }}
+            >
+              <MoonIcon phase={currentSummary.phase} size={22} />
+              {/* The pulse means "now", so it only runs while the view follows the clock */}
+              {isLive && <div className="timeline-thumb-ring" />}
+            </div>
+          )}
 
           {/* With a mouse, the point under the pointer before it is pressed */}
           {hovered && (
@@ -297,7 +306,7 @@ const LunarTimeline = ({ currentDate, setCurrentDate, timeZone, isLive = false, 
 
       {/* The date each principal phase falls on this cycle, under its mark */}
       <div className="timeline-labels" aria-hidden="true">
-        {milestones.map((milestone, idx) => (
+        {!prerender && milestones.map((milestone, idx) => (
           <span
             key={`label-${idx}`}
             className="utility-label timeline-label"
