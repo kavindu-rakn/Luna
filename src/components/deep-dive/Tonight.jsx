@@ -2,6 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import Fresh from './Fresh';
 import { getStartOfDayInZone, formatTimeString } from '../../utils/lunarCalc';
 import { compassWord, getSkyDay } from '../../utils/skyDay';
+import { nightAround, showersOverNight } from '../../sky/showers';
 
 // The chart's own coordinates. Altitude runs from 60° below the horizon to the
 // zenith, so the horizon sits two fifths of the way up.
@@ -36,6 +37,36 @@ const skyStops = (bands) => bands.flatMap((b) => (b.kind === 'day' || b.kind ===
   ? [{ offset: b.from, opacity: SKY_LIGHT[b.kind] }, { offset: b.to, opacity: SKY_LIGHT[b.kind] }]
   : [{ offset: (b.from + b.to) / 2, opacity: SKY_LIGHT[b.kind] }]));
 
+// A shower's best hour, to the hour: "around 2 am", or "around 02:00"
+const roughHour = (date, timeZone, clock) => {
+  const hour = new Date(Math.round(date.getTime() / 3600000) * 3600000);
+  const text = formatTimeString(hour, timeZone, clock);
+  return clock === '12h' ? text.replace(':00', '') : text;
+};
+
+const dayWords = (date, timeZone) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone });
+
+// A meteor shower over the night around the time being looked at (Phase 6): the
+// most one person could see in an hour from here and when, how near its maximum
+// is, and whether the Moon hides much of it. The rates are the IMO's, for a
+// single observer under this sky (src/sky/showers.js).
+const MeteorTile = ({ entry, now, timeZone, clock }) => {
+  const { shower, rate, at, peak, peakNight, moonlight } = entry;
+  const when = rate >= 1
+    ? `Up to ${Math.round(rate)} an hour, best around ${roughHour(at, timeZone, clock)}`
+    : 'Its radiant stays below the horizon here';
+  const moon = moonlight >= 0.5 ? ' · the Moon hides most' : moonlight >= 0.2 ? ' · the Moon hides some' : '';
+  const timing = peakNight ? 'Peak night' : `${peak > now ? 'Peak' : 'Peaked'} ${dayWords(peak, timeZone)}`;
+  return (
+    <div className="dd-tile">
+      <dt>Meteor shower</dt>
+      <dd className="dd-value">{shower.name}</dd>
+      <dd className="dd-sub">{when}</dd>
+      <dd className="dd-sub">{timing}{rate >= 1 ? moon : ''}</dd>
+    </div>
+  );
+};
+
 // Tonight (decisions E3, E7): the Moon's day at this place. First where it is at
 // the time being looked at, then the chart, then when it rises and sets. Behind the
 // Moon's altitude, the Sun's day fading through twilight; on it, where the Moon
@@ -57,6 +88,19 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
   const time = formatTimeString(currentDate, timeZone, clock);
   const minutes = Math.round((fraction * length) / 60000);
   const where = whereWords(altitude, direction);
+
+  // Meteor showers over the night around the time being looked at: worked out
+  // once a night, not on every step of a drag. Those with something to see, and
+  // a strong one whose radiant never rises here, at most two.
+  const night = nightAround(currentDate, lat, lon);
+  const nightFrom = night?.from;
+  const nightTo = night?.to;
+  const meteors = useMemo(
+    () => showersOverNight(nightFrom && { from: nightFrom, to: nightTo }, lat, lon)
+      .filter((m) => m.rate >= 1 || (m.rate === 0 && m.zhr >= 5))
+      .slice(0, 2),
+    [nightFrom, nightTo, lat, lon]
+  );
 
   const title = isLive
     ? 'Tonight'
@@ -235,6 +279,14 @@ const Tonight = ({ currentDate, location, lunarDetails, clock, isLive, onSelectT
             : <dd className="dd-value is-none">{sunWhenNone}</dd>}
         </div>
       </dl>
+
+      {meteors.length > 0 && (
+        <dl className="dd-grid is-single dd-split">
+          {meteors.map((entry) => (
+            <MeteorTile key={entry.shower.id} entry={entry} now={currentDate} timeZone={timeZone} clock={clock} />
+          ))}
+        </dl>
+      )}
 
       <p className="dd-caption">Times for {placeName} · {sky.timeZoneLabel}</p>
     </section>

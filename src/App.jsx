@@ -493,6 +493,7 @@ function App({ prerender = false }) {
               onToday={goLive}
               isLive={isLive}
               timeZone={location.timeZone}
+              place={location}
               clock={clock}
             >
               <LocationPicker
