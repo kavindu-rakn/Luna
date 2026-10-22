@@ -19,25 +19,17 @@ updates:
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"
-    ignore:
-      # @react-three/fiber 9.7 peers on react ">=19 <19.3", so npm ci refuses to
-      # install React 19.3. 19.2.x patches still come through. Drop this block
-      # once a fiber release widens its peer range to cover 19.3.
-      - dependency-name: "react"
-        versions: [">=19.3.0"]
-      - dependency-name: "react-dom"
-        versions: [">=19.3.0"]
-      - dependency-name: "@types/react"
-        versions: [">=19.3.0"]
-      - dependency-name: "@types/react-dom"
-        versions: [">=19.3.0"]
+    # A dependency goes in the first group it matches, so React's comes first and
+    # takes its type packages with it
     groups:
+      # React refuses to run unless react and react-dom are the exact same
+      # version, so a bump of one alone fails the build: they move in one PR
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
       # One PR for the toolchain rather than a stream of them
       dev-dependencies:
         dependency-type: development
-      # Three.js, drei and fiber move together and break apart
-      three-stack:
-        patterns:
-          - "three"
-          - "@react-three/*"
-          - "three-stdlib"

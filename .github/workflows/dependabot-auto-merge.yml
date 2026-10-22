@@ -6,9 +6,9 @@
 # CI at all, and without "Allow auto-merge" in the repo settings the merge
 # command below fails.
 #
-# Left for a human: major bumps, and anything in the Three.js stack. Three is
-# still on 0.x, where a minor bump like 0.185 -> 0.186 can carry breaking
-# changes that only show up in the 3D scenes, which CI does not render.
+# Left for a human: major bumps, and Three.js. Three is still on 0.x, where a
+# minor bump like 0.185 -> 0.186 can carry breaking changes that only show up in
+# the 3D scene, which CI does not render.
 name: Dependabot auto-merge
 
 on:
@@ -35,7 +35,6 @@ jobs:
         if: >-
           (steps.meta.outputs.update-type == 'version-update:semver-patch' ||
            steps.meta.outputs.update-type == 'version-update:semver-minor') &&
-          steps.meta.outputs.dependency-group != 'three-stack' &&
           !contains(steps.meta.outputs.dependency-names, 'three')
         run: gh pr merge --auto --merge "$PR_URL"
         env:
