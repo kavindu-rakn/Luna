@@ -795,5 +795,13 @@ Settled in chat when Phase 6 began (22 Oct 2026):
     the maximum at the place, so the 2026 Geminids (maximum 13:46 UT on Dec 14) are Dec
     14–15 in London. Only showers that can be seen from the place on that night are
     listed; Tonight still says when one can't.
+  - The calendar still shows whole, never scrolling, now that its tallest month is six
+    weeks, five phases and two showers (December 2028). The two lists share one column, so
+    on wide but short screens both move beside the grid together (the owner's phone test
+    found them drawn over each other there). Under the grid that month needs about 830
+    px, so "wide but short" now means up to 840 px tall, not 760: laptops of 768 to 840 px
+    get the lists beside the grid too. On the smallest phones (320 by 568) the day cells
+    are 30 px and the list rows 26 px. Checked at eighteen sizes from 320 by 568 to 1920
+    by 1080: the panel fits, nothing scrolls, nothing overlaps.
   - The shower code (`src/sky/showers.js`, 2.8 KB gzipped) loads with Deep Dive's chunk,
     and for the calendar once it has been opened, so the first visit's page is unchanged.
