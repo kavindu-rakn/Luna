@@ -119,6 +119,7 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 * **A Moonlight Halo:** With a mouse, a soft light trails the pointer across the sky, brightening the stars inside it, and steps aside over controls and text. The pointer itself stays.
 * **A Ring on the Moon:** Over the Moon a hairline ring stands in for the pointer: *Drag to rotate* the first time, *Double-click to reset* once it's turned.
 * **A Meteor, Now and Then:** Fling the pointer fast across empty sky and a meteor may streak along its path. At most once every 45 seconds.
+* **Meteor Showers in the Sky:** On a shower's nights its meteors cross the 3D sky on their own, each flying away from the shower's radiant at the shower's own speed. They come as often as the place would see them at that moment, ten times faster, so a minute's watching on a peak night shows a few. None under reduced motion.
 * **Sound, Generated:** Off until you turn it on. Every sound is synthesised in the browser, with no audio files: a glass tap on presses, a tick for each day crossed pitched by how much of the Moon is lit, each exact phase's own chime, and a quiet ambient bed that brightens toward Full Moon.
 
 </td>

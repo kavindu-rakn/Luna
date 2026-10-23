@@ -282,7 +282,7 @@ when the page opens.
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Done: PR #68 merged 10 Oct 2026 |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Done: 4a PR #69 (10 Oct 2026), 4b PR #70 (11 Oct 2026), 4c PR #71 (12 Oct 2026) |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Done but the domain: 5a PR #72, 5b PR #73, 5c PR #74, all merged 12 Oct 2026; the domain once bought |
-| 6 | New features: meteor-shower nights, reward for staying | In progress: 6a (shower astronomy, Tonight and the calendar) in review; 6b meteors in the sky; 6c the three rewards as prototypes |
+| 6 | New features: meteor-shower nights, reward for staying | In progress: 6a done (PR #83, merged 23 Oct 2026); 6b (meteors in the sky) in review; 6c the three rewards as prototypes |
 
 ### Phase 0 notes
 
@@ -805,3 +805,33 @@ Settled in chat when Phase 6 began (22 Oct 2026):
     by 1080: the panel fits, nothing scrolls, nothing overlaps.
   - The shower code (`src/sky/showers.js`, 2.8 KB gzipped) loads with Deep Dive's chunk,
     and for the calendar once it has been opened, so the first visit's page is unchanged.
+
+- 6b, meteors in the sky.
+  - On a shower's nights its meteors cross the 3D sky, each flying away from the radiant
+    along the great circle through it, as real ones do. A meteor near the radiant is short,
+    seen almost end-on; one far from it is long. When the radiant is off screen they all
+    come in from its side. Each burns through 20 to 50 km of air at its shower's own speed,
+    so a Geminid (35 km/s) lasts about a second and a Leonid (71 km/s) about half that.
+  - How many: the shower's visible hourly rate at the place and moment shown (6a's model:
+    the radiant's height, twilight and the Moon), times the share of the observer's sky
+    the screen covers, times ten. The IMO counts an observer's meteors over a field of about
+    50° radius (https://www.imo.net/major/observation); the screen's 80° diagonal covers
+    about 0.42 of that on a wide screen and 0.36 on a phone. So the 2026 Perseids at their
+    best, about 93 an hour from London, bring one every 9 or 10 seconds; a weak shower one
+    every minute or two. The wait between meteors is random, as a real shower's is.
+  - Brightness follows the shower's population index: each magnitude fainter, r times as
+    many, down to the faintest the sky shows that night. Most meteors are faint, so they
+    are drawn on a gentler scale than the stars, and even the faintest reads as a streak.
+    Slow showers are a warm white, fast ones a cool white.
+  - They show wherever the sky is, live or scrubbed. The field is the sky around the Moon
+    even when the Moon is below the horizon (as the stars are), so meteors appear in it
+    at the rate the place would see overhead: otherwise the best nights, near New Moon,
+    when the Moon is down all night, would show none.
+  - Each keeps clear of the Moon (a streak across the photograph reads as a fault) and
+    stays where it is among the stars while the sky turns or slides. At most four at once.
+  - None under reduced motion, none in the background, and none with software WebGL,
+    where every frame of one would hold its thread. The showers' code loads once the 3D
+    sky is up, and not at all under reduced motion. The flat Moon's sky has none.
+  - Sound: the flung meteor's streak, quieter (about a quarter to a half as loud, by the
+    meteor's brightness), as long as the meteor burns, crossing the way it does, and with
+    the spark only for a bright one. It never sounds over a press's own sound.
