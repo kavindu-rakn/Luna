@@ -6,6 +6,8 @@ import { createTiltReader } from '../utils/tilt';
 import { isOpenSky, moonRadius } from '../utils/skyTarget';
 import { cue } from '../audio/sound';
 import { readMoonHintSeen, storeMoonHintSeen } from '../utils/moonHint';
+import { focalLength, project, skyFrame, unitVector } from '../sky/frame';
+import { namePlace } from '../sky/rewards';
 
 // A little beyond the limb still counts, as it always has
 const HIT_SLOP = 1.05;
@@ -56,7 +58,7 @@ const measure = (sky, area) => {
 // canvas, tells the scene what to show and where the Moon's area is, forwards
 // drags from a hit area over the Moon, the mouse for the depth layers and the
 // phone's tilt. It never loads three.js itself.
-const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onLost, onRotated }) => {
+const MoonScene = ({ view, reward, isReady, skyHost, tilt, onScene, onReady, onFail, onLost, onRotated }) => {
   const canvasRef = useRef(null);
   const areaRef = useRef(null);
   const sceneRef = useRef(null);
@@ -175,6 +177,82 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
   useEffect(() => {
     sceneRef.current?.send('setView', { view: sceneView(view) });
   }, [view]);
+
+  // A reward for staying (6c), after its time with the page in view: the scene
+  // draws it, and for a constellation's figure the page names it
+  const [figure, setFigure] = useState(null); // { name, lines }
+  useEffect(() => {
+    if (!reward || !isReady) return undefined;
+    let cancelled = false;
+    const start = async () => {
+      cue('reward');
+      if (reward.kind !== 'lines') {
+        sceneRef.current?.send('reward', { kind: reward.kind });
+        return;
+      }
+      const [{ LINES }, { constellationOfDate }] = await Promise.all([import('../sky/lines'), import('../sky/constellations')]);
+      const shown = latest.current.view;
+      const name = constellationOfDate(shown.ra, shown.dec, shown.time);
+      if (cancelled || !LINES[name] || !areaRef.current) return;
+      // Its neighbours too: every figure with a point on screen
+      const { width, height, moon } = measure(skyHost, areaRef.current);
+      const frame = skyFrame(shown);
+      const focal = focalLength(width, height);
+      const onScreen = (lines) => lines.some((line) => {
+        for (let i = 0; i + 1 < line.length; i += 2) {
+          const p = project(frame, focal, unitVector(line[i], line[i + 1]));
+          if (p && Math.abs(moon.x + moon.width / 2 + p[0] - width / 2) < width / 2
+            && Math.abs(moon.y + moon.height / 2 + p[1] - height / 2) < height / 2) return true;
+        }
+        return false;
+      });
+      const figures = [LINES[name], ...Object.entries(LINES).filter(([other, lines]) => other !== name && onScreen(lines)).map(([, lines]) => lines)];
+      sceneRef.current?.send('reward', { kind: 'lines', figures });
+      setFigure({ name, lines: LINES[name] });
+    };
+    let left = reward.after * 1000;
+    let last = performance.now();
+    const timer = setInterval(() => {
+      const now = performance.now();
+      if (!document.hidden) left -= now - last;
+      last = now;
+      if (left > 0) return;
+      clearInterval(timer);
+      start();
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [reward, isReady, skyHost]);
+
+  // Where the figure's name goes: the middle of its points on screen, clear of the
+  // Moon, and kept inside the screen
+  const [namedAt, setNamedAt] = useState(null);
+  useLayoutEffect(() => {
+    if (!figure || !skyHost || !areaRef.current) return;
+    const { width, height, moon } = measure(skyHost, areaRef.current);
+    const frame = skyFrame(view);
+    const focal = focalLength(width, height);
+    const cx = moon.x + moon.width / 2;
+    const cy = moon.y + moon.height / 2;
+    const points = figure.lines.flatMap((line) => {
+      const out = [];
+      for (let i = 0; i + 1 < line.length; i += 2) {
+        const p = project(frame, focal, unitVector(line[i], line[i + 1]));
+        if (p && Math.abs(cx + p[0] - width / 2) < width / 2 && Math.abs(cy + p[1] - height / 2) < height / 2) out.push(p);
+      }
+      return out;
+    });
+    // The name's size, measured in its own face (.sky-figure-name)
+    const text = document.createElement('canvas').getContext('2d');
+    text.font = `italic ${1.15 * parseFloat(getComputedStyle(document.documentElement).fontSize)}px "Cormorant Garamond", Georgia, serif`;
+    const half = [text.measureText(figure.name).width * 0.52 + 4, 13];
+    const clear = (Math.min(0.92 * moon.height, 0.83 * moon.width) / 2) * 1.08;
+    const margin = 16;
+    const place = namePlace(points, clear, half, [margin - cx, width - margin - cx, margin - cy, height - margin - cy]);
+    setNamedAt(place && [cx + place[0], cy + place[1]]);
+  }, [figure, view, skyHost]);
 
   // A meteor shower's meteors (6b). The showers' code loads once the 3D sky is up,
   // and not at all under reduced motion, which has none.
@@ -328,6 +406,16 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
           the flat Moon */}
       {createPortal(
         <canvas key={canvasKey} ref={canvasRef} className={`sky-scene${isReady ? ' is-ready' : ''}`} />,
+        skyHost
+      )}
+      {figure && namedAt && createPortal(
+        <div
+          className="sky-figure-name"
+          style={{ left: namedAt[0], top: namedAt[1] }}
+          onAnimationEnd={() => setFigure(null)}
+        >
+          {figure.name}
+        </div>,
         skyHost
       )}
     </>
