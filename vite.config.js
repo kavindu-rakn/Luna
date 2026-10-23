@@ -139,6 +139,38 @@ const lunaShell = () => {
   }
 }
 
+// The app's stylesheet is inlined into the page and dropped from the output
+// (luna-shell), but Vite still lists it among the files a lazy chunk that imports
+// from the entry loads first, and one missing file fails the whole import. On
+// Vercel that kept the meteor showers' code from ever reaching the sky (6b), and
+// the main-thread scene (Safari before 17) from loading at all. Once Vite has
+// written those lists, each import stops asking for a stylesheet the output no
+// longer has: it is on the page already. Vite's own preload filter can't do this,
+// as it only sees JavaScript.
+const lunaInlinedCss = () => ({
+  name: 'luna-inlined-css',
+  apply: 'build',
+  generateBundle: {
+    order: 'post',
+    handler(_, bundle) {
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== 'chunk') continue
+        const list = chunk.code.match(/__vite__mapDeps=\(i,m=__vite__mapDeps,d=\(m\.f\|\|\(m\.f=(\[[^\]]*\])/)?.[1]
+        if (!list) continue
+        const gone = new Set()
+        JSON.parse(list).forEach((file, i) => {
+          if (file.endsWith('.css') && !bundle[file]) gone.add(i)
+        })
+        if (!gone.size) continue
+        chunk.code = chunk.code.replace(/__vite__mapDeps\(\[([\d,]*)\]\)/g, (call, ids) => {
+          const kept = ids.split(',').filter((id) => !gone.has(Number(id)))
+          return kept.length ? `__vite__mapDeps([${kept.join(',')}])` : '[]'
+        })
+      }
+    }
+  }
+})
+
 // The branded 404 (Phase 5b): any address that isn't Luna gets a static page in
 // Luna's own look, with no JavaScript, rendered from src/shell/NotFound.jsx with its
 // stylesheet inlined. Vercel serves 404.html for any path it has no file for. It
@@ -210,6 +242,7 @@ export default defineConfig({
   plugins: [
     react(),
     lunaShell(),
+    lunaInlinedCss(),
     lunaNotFound(),
     lunaGuessInDev(),
     injectSiteUrl(),
