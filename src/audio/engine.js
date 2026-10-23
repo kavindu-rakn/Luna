@@ -116,19 +116,25 @@ export const createEngine = (ctx) => {
       tone(62, t + 0.08, 0.05, 0.05, 0.22, out);
     },
     // The lab's streak crosses from left to right. Here it crosses the way the
-    // meteor on screen does: from and to are stereo positions, -1 to 1.
-    meteor({ from = -0.85, to = 0.85 } = {}) {
+    // meteor on screen does: from and to are stereo positions, -1 to 1. A shower's
+    // meteor (skyMeteor) is the same streak, quieter, as long as it burns, and
+    // without the spark unless it's a bright one.
+    meteor({ from = -0.85, to = 0.85, level = 1, length = 1, spark = true } = {}) {
       const t = ctx.currentTime, out = bus(0.6);
+      const at = (s) => t + s * length;
       let dest = out;
       if (ctx.createStereoPanner) {
-        const pan = ctx.createStereoPanner(); pan.pan.setValueAtTime(from, t); pan.pan.linearRampToValueAtTime(to, t + 1.1);
+        const pan = ctx.createStereoPanner(); pan.pan.setValueAtTime(from, t); pan.pan.linearRampToValueAtTime(to, at(1.1));
         pan.connect(out); dest = pan;
       }
-      const f = noise(t, 0.05, 0.08, 1.05, dest, 'highpass', 7200, 0.6);
-      f.frequency.exponentialRampToValueAtTime(1600, t + 1.0);
-      const o = tone(2700, t, 0.035, 0.04, 0.95, dest);
-      o.frequency.exponentialRampToValueAtTime(900, t + 0.95);
-      [2093, 3136].forEach((fr, i) => tone(fr, t + 0.95 + i * 0.05, 0.03, 0.004, 0.5, out));
+      const f = noise(t, 0.05 * length, 0.08 * level, 1.05 * length, dest, 'highpass', 7200, 0.6);
+      f.frequency.exponentialRampToValueAtTime(1600, at(1.0));
+      const o = tone(2700, t, 0.035 * level, 0.04 * length, 0.95 * length, dest);
+      o.frequency.exponentialRampToValueAtTime(900, at(0.95));
+      if (spark) [2093, 3136].forEach((fr, i) => tone(fr, at(0.95) + i * 0.05, 0.03 * level, 0.004, 0.5, out));
+    },
+    skyMeteor({ from, to, seconds = 0.6, light = 0.5 } = {}) {
+      SOUNDS.meteor({ from, to, level: 0.25 + 0.3 * light, length: Math.min(1.2, Math.max(0.3, seconds / 0.95)), spark: light > 0.8 });
     },
     reward() {
       const t = ctx.currentTime, out = bus(0.65);

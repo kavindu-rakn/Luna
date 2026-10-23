@@ -16,6 +16,8 @@ const CUES = {
   'sheet-close': ['close', 7],
   chime: ['chime', 6],
   meteor: ['meteor', 6],
+  // A shower's meteor crossing the sky by itself: under anything a press sets off
+  'sky-meteor': ['skyMeteor', 0],
   'switch-on': ['on', 5],
   'switch-off': ['off', 5],
   glass: ['glass', 4],

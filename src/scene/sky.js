@@ -1,15 +1,19 @@
 // The sky pass: everything drawn straight onto the full-screen canvas, back to
-// front. The stars (G1), the five naked-eye planets, the glow off the Moon's lit
-// limb (F6), and the Moon itself, which the scene renders into a box of its own
-// first and this pass lays down at whole pixels (see scene.js).
+// front. The stars (G1), the five naked-eye planets, a shower's meteors (6b), the
+// glow off the Moon's lit limb (F6), and the Moon itself, which the scene renders
+// into a box of its own first and this pass lays down at whole pixels (see
+// scene.js).
 //
 // Every shader here places its geometry in device pixels from uniforms, so the
 // pass needs no camera of its own, and nothing in it is depth-tested: each layer
 // is laid over the last with premultiplied alpha, as the page composites.
 
 import {
+  BufferAttribute,
   BufferGeometry,
   Color,
+  DoubleSide,
+  DynamicDrawUsage,
   Float32BufferAttribute,
   Matrix3,
   Mesh,
@@ -118,6 +122,49 @@ void main() {
   gl_FragColor = vec4(vColor * a, a);
 }
 `;
+
+// A meteor (6b): a train that brightens towards a round head, laid along its path
+// as a quad. Corners come in device pixels; local is each corner's place along the
+// path from the tail and across it, in device pixels too.
+const meteorVertex = /* glsl */ `
+uniform vec2 viewport;
+attribute vec2 local;
+attribute vec3 shape;
+attribute vec3 tint;
+varying vec2 vLocal;
+varying vec3 vShape;
+varying vec3 vTint;
+
+void main() {
+  vLocal = local;
+  vShape = shape;
+  vTint = tint;
+  gl_Position = vec4(position.x / viewport.x * 2.0 - 1.0, 1.0 - position.y / viewport.y * 2.0, 0.0, 1.0);
+}
+`;
+
+const meteorFragment = /* glsl */ `
+// The train's length, its Gaussian width and the meteor's light
+varying vec2 vLocal;
+varying vec3 vShape;
+varying vec3 vTint;
+
+void main() {
+  float len = vShape.x;
+  float sigma = vShape.y;
+  float s = clamp(vLocal.x / max(len, 1.0), 0.0, 1.0);
+  float across = exp(-vLocal.y * vLocal.y / (2.0 * sigma * sigma));
+  float train = vLocal.x >= 0.0 && vLocal.x <= len ? 0.75 * s * s * across : 0.0;
+  vec2 h = vec2(vLocal.x - len, vLocal.y);
+  float head = exp(-dot(h, h) / (4.0 * sigma * sigma));
+  float a = vShape.z * max(train, head);
+  if (a < 0.003) discard;
+  gl_FragColor = vec4(vTint * a, a);
+}
+`;
+
+// The most meteors in flight at once
+export const MAX_METEORS = 4;
 
 // The glow: the same gradient the page draws behind the flat Moon (.moon-glow in
 // index.css, set by glowStyle in src/utils/moonPath.js), stop for stop, so the
@@ -255,6 +302,30 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
   planets.frustumCulled = false;
   scene.add(planets);
 
+  // The meteors' quads, four corners each, rewritten every frame one flies
+  const meteorGeometry = new BufferGeometry();
+  const meteorAttribute = (size) => new BufferAttribute(new Float32Array(MAX_METEORS * 4 * size), size).setUsage(DynamicDrawUsage);
+  meteorGeometry.setAttribute('position', meteorAttribute(3));
+  meteorGeometry.setAttribute('local', meteorAttribute(2));
+  meteorGeometry.setAttribute('shape', meteorAttribute(3));
+  meteorGeometry.setAttribute('tint', meteorAttribute(3));
+  const quads = [];
+  for (let i = 0; i < MAX_METEORS; i++) quads.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4 + 2, i * 4 + 1, i * 4 + 3);
+  meteorGeometry.setIndex(quads);
+  meteorGeometry.setDrawRange(0, 0);
+  const meteorMaterial = new ShaderMaterial({
+    vertexShader: meteorVertex,
+    fragmentShader: meteorFragment,
+    uniforms: { viewport: shared.viewport },
+    // A path can run any way across the screen
+    side: DoubleSide
+  });
+  const meteors = new Mesh(meteorGeometry, meteorMaterial);
+  meteors.renderOrder = layer(meteorMaterial, 1.5);
+  meteors.frustumCulled = false;
+  meteors.visible = false;
+  scene.add(meteors);
+
   const glowMaterial = new ShaderMaterial({
     vertexShader: glowVertex,
     fragmentShader: glowFragment,
@@ -321,6 +392,33 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
       shared.twinkleGain.value = gain;
       shared.twinkleTint.value.set(...tint);
     },
+    // The meteors in flight, each its tail and head in device pixels, its train's
+    // Gaussian width in device pixels, its light (0-1) and its colour
+    setMeteors(list) {
+      const position = meteorGeometry.getAttribute('position');
+      const local = meteorGeometry.getAttribute('local');
+      const shape = meteorGeometry.getAttribute('shape');
+      const tint = meteorGeometry.getAttribute('tint');
+      const count = Math.min(list.length, MAX_METEORS);
+      for (let i = 0; i < count; i++) {
+        const { tail, head, along, sigma, light, color } = list[i];
+        const length = Math.hypot(head[0] - tail[0], head[1] - tail[1]);
+        // Along the path even before the train has any length: its direction
+        const [ux, uy] = along;
+        const pad = 4 * sigma;
+        const corners = [[-pad, -pad], [-pad, pad], [length + pad, -pad], [length + pad, pad]];
+        corners.forEach(([a, c], k) => {
+          const v = i * 4 + k;
+          position.setXYZ(v, tail[0] + ux * a - uy * c, tail[1] + uy * a + ux * c, 0);
+          local.setXY(v, a, c);
+          shape.setXYZ(v, length, sigma, light);
+          tint.setXYZ(v, ...color);
+        });
+      }
+      for (const attribute of [position, local, shape, tint]) attribute.needsUpdate = true;
+      meteorGeometry.setDrawRange(0, count * 6);
+      meteors.visible = count > 0;
+    },
     setGlow(strength, leanX, leanY) {
       glowMaterial.uniforms.strength.value = strength;
       glowMaterial.uniforms.lean.value.set(leanX, leanY);
@@ -337,6 +435,8 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
       starPoints?.material.dispose();
       planetGeometry.dispose();
       planetMaterial.dispose();
+      meteorGeometry.dispose();
+      meteorMaterial.dispose();
       glow.geometry.dispose();
       glowMaterial.dispose();
       moon.geometry.dispose();

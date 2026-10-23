@@ -14,7 +14,8 @@
 // Nothing renders unless something changed: a new view, a drag and the spin that
 // follows it, a reset, the settle after the first frame, a sharper texture
 // arriving, a resize, the sky sliding with the pointer or the phone's tilt, or a
-// star twinkling (at most fifteen times a second, and only now and then). With
+// star twinkling (at most fifteen times a second, and only now and then), or a
+// meteor crossing (on a shower's nights, for the second or so each burns). With
 // software WebGL (PageSpeed, blocklisted GPUs) a frame costs tens of
 // milliseconds, so a loop running at rest would hold its thread for the life of
 // the page.
@@ -36,10 +37,21 @@ import {
   WebGLRenderTarget
 } from 'three';
 import { createLunarMaterial } from './lunarMaterial.js';
-import { chooseTier, createTextureLoader, PIXEL_RATIO_CAP } from './textures.js';
-import { createSky } from './sky.js';
+import { chooseTier, createTextureLoader, isSoftwareRendering, PIXEL_RATIO_CAP } from './textures.js';
+import { createSky, MAX_METEORS } from './sky.js';
 import { CATALOGUE_FILE, countBrighterThan, decodeStars } from '../sky/stars.js';
-import { apply, focalLength, skyFrame, zenithDirection } from '../sky/frame.js';
+import { apply, focalLength, project, skyFrame, unitVector, zenithDirection } from '../sky/frame.js';
+import {
+  directionAt,
+  meteorAt,
+  meteorLight,
+  meteorMagnitude,
+  meteorPath,
+  meteorsPerSecond,
+  meteorTint,
+  pickShower,
+  segmentDistance
+} from '../sky/meteors.js';
 import { getPlanets } from '../sky/planets.js';
 import { GLOW_LEAN, GLOW_MAX } from '../utils/moonPath.js';
 import { placeSpring, stepSpring } from '../utils/spring.js';
@@ -103,6 +115,11 @@ const TWINKLE_MAGNITUDE = 2.2;
 const TWINKLE_GAP_MS = [3500, 9000];
 const TWINKLE_LENGTH_MS = [1400, 2600];
 const TWINKLE_FRAME_MS = 1000 / 15;
+
+// Meteors (6b) start anywhere on screen but keep this far clear of the Moon's
+// outline, as a share of its radius: a streak across the photographed Moon reads
+// as a fault
+const METEOR_CLEARANCE = 1.12;
 
 // Dragging turns the Moon this far per CSS pixel, on every device
 const DRAG_RADIANS_PER_PIXEL = 0.005;
@@ -279,6 +296,15 @@ export const createScene = async (canvas, options) => {
   let twinkleTimer = null;
   let twinkleFrame = null;
 
+  // Meteors (6b): the showers in the sky at the moment shown, from the page, and
+  // the meteors in flight. None with software WebGL, where each frame of one would
+  // hold its thread.
+  const meteorsAllowed = !isSoftwareRendering(renderer);
+  const toSky = (list = []) => list.map((shower) => ({ ...shower, radiant: unitVector(shower.radiant.ra, shower.radiant.dec) }));
+  let showers = toSky(options.meteors);
+  let meteorTimer = null;
+  const flights = [];
+
   let ratioCap = PIXEL_RATIO_CAP[tier];
   // In CSS pixels: the canvas, and the Moon's area on it
   const layout = { width, height, dpr, moon: { ...area } };
@@ -451,6 +477,60 @@ export const createScene = async (canvas, options) => {
     }, between(TWINKLE_GAP_MS));
   };
 
+  // A meteor from one of the showers, starting anywhere on screen but the Moon and
+  // flying clear of it. Its path is kept among the stars, as J2000 directions, so
+  // it stays where it is in the sky while the sky turns.
+  const launchMeteor = () => {
+    if (!frame || flights.length >= MAX_METEORS) return;
+    const shower = pickShower(showers);
+    if (!shower) return;
+    const { width: w, height: h, moon: m } = layout;
+    const focal = focalLength(w, h);
+    const cx = m.x + m.width / 2;
+    const cy = m.y + m.height / 2;
+    const clear = (Math.min(OUTLINE_OF_HEIGHT * m.height, OUTLINE_OF_WIDTH * m.width) / 2) * METEOR_CLEARANCE;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const start = [Math.random() * w - cx, Math.random() * h - cy];
+      const path = meteorPath(shower, directionAt(frame, focal, ...start));
+      const end = path && project(frame, focal, path.to);
+      if (!end || segmentDistance([0, 0], start, end) < clear) continue;
+      const light = meteorLight(meteorMagnitude(shower));
+      flights.push({ ...path, ...light, color: meteorTint(shower.speed), born: performance.now() });
+      // For its sound, which crosses the way it does
+      emit('meteor', {
+        from: clampUnit(((cx + start[0]) / w) * 2 - 1),
+        to: clampUnit(((cx + end[0]) / w) * 2 - 1),
+        seconds: path.seconds,
+        light: light.peak
+      });
+      invalidate();
+      return;
+    }
+  };
+
+  // A shower's meteors come at random, so the wait for the next one is exponential.
+  // A new rate (another moment or place, a resized screen) simply draws a new wait,
+  // which a random process allows.
+  const scheduleMeteor = () => {
+    clearTimeout(meteorTimer);
+    meteorTimer = null;
+    if (!meteorsAllowed || reducedMotion || hidden || disposed || !firstFrameSent) return;
+    const perSecond = meteorsPerSecond(showers, layout.width, layout.height);
+    if (!(perSecond > 0)) return;
+    meteorTimer = setTimeout(() => {
+      meteorTimer = null;
+      launchMeteor();
+      scheduleMeteor();
+    }, (-Math.log(1 - Math.random()) / perSecond) * 1000);
+  };
+
+  const endMeteors = () => {
+    clearTimeout(meteorTimer);
+    meteorTimer = null;
+    flights.length = 0;
+    sky.setMeteors([]);
+  };
+
   const endTwinkle = () => {
     twinkle = null;
     clearTimeout(twinkleFrame);
@@ -590,6 +670,37 @@ export const createScene = async (canvas, options) => {
       }
     }
 
+    // Meteors in flight, each where its path now lies on screen
+    if (flights.length) {
+      const focal = focalLength(layout.width, layout.height);
+      const m = layout.moon;
+      const cx = (m.x + m.width / 2 + drift.x * PARALLAX_PX) * scale;
+      const cy = (m.y + m.height / 2 + drift.y * PARALLAX_PX) * scale;
+      const drawn = [];
+      for (let i = flights.length - 1; i >= 0; i--) {
+        const flight = flights[i];
+        const shown = meteorAt(flight.seconds, Math.max(0, now - flight.born) / 1000);
+        const a = shown && project(frame, focal, flight.from);
+        const b = a && project(frame, focal, flight.to);
+        if (!b) {
+          flights.splice(i, 1);
+          continue;
+        }
+        const length = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+        const at = (t) => [cx + (a[0] + (b[0] - a[0]) * t) * scale, cy + (a[1] + (b[1] - a[1]) * t) * scale];
+        drawn.push({
+          tail: at(shown.tail),
+          head: at(shown.head),
+          along: [(b[0] - a[0]) / length, (b[1] - a[1]) / length],
+          sigma: flight.sigma * scale,
+          light: flight.peak * shown.light,
+          color: flight.color
+        });
+      }
+      sky.setMeteors(drawn);
+      if (flights.length) animating = true;
+    }
+
     // The sky slides; the Moon stays where the page put it. Its box sits at whole
     // pixels, with the fraction rendered into it, so the Moon only renders again
     // when it changes, never because the stars moved.
@@ -625,6 +736,7 @@ export const createScene = async (canvas, options) => {
       nextFrame(() => emit('firstFrame'));
       sharpen();
       scheduleTwinkle();
+      scheduleMeteor();
     }
     wasAnimating = animating;
     if (animating) invalidate();
@@ -711,23 +823,38 @@ export const createScene = async (canvas, options) => {
       Object.assign(layout, { width: w, height: h, dpr: ratio });
       if (m) layout.moon = { ...m };
       setSize();
+      // The share of the sky on screen changes the meteors' rate
+      scheduleMeteor();
       invalidate();
+    },
+    // The showers in the sky at the moment and place shown (meteorsInSky in
+    // src/sky/showers.js), radiants in J2000 degrees; empty when there are none
+    setMeteors({ showers: list }) {
+      showers = toSky(list);
+      scheduleMeteor();
     },
     setReducedMotion({ reducedMotion: value }) {
       reducedMotion = Boolean(value);
-      if (reducedMotion) endTwinkle();
-      else if (firstFrameSent && !twinkleTimer) scheduleTwinkle();
+      if (reducedMotion) {
+        endTwinkle();
+        endMeteors();
+      } else if (firstFrameSent) {
+        if (!twinkleTimer) scheduleTwinkle();
+        scheduleMeteor();
+      }
       invalidate();
     },
-    // The page is in the background, or back: nothing twinkles unseen
+    // The page is in the background, or back: nothing twinkles or falls unseen
     setVisible({ visible }) {
       hidden = !visible;
       if (hidden) {
         clearTimeout(twinkleTimer);
         twinkleTimer = null;
         endTwinkle();
+        endMeteors();
       } else if (firstFrameSent) {
         scheduleTwinkle();
+        scheduleMeteor();
         invalidate();
       }
     },
@@ -810,6 +937,7 @@ export const createScene = async (canvas, options) => {
       clearTimeout(twinkleTimer);
       clearTimeout(twinkleFrame);
       clearTimeout(fitTimer);
+      clearTimeout(meteorTimer);
       moon.geometry.dispose();
       material.uniforms.map.value?.dispose();
       material.uniforms.normalMap.value?.dispose();

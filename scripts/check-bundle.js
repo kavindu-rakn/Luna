@@ -127,7 +127,25 @@ if (pageKb > PAGE_GZIP_BUDGET_KB) {
   failures.push(`the page is ${pageKb.toFixed(1)} KB gzip, over the ${PAGE_GZIP_BUDGET_KB} KB budget: Lighthouse's mobile run would fetch it in three round trips`);
 }
 
-// 7. The branded 404 is there, still a page that needs no script, and leads home
+// 7. Every file a chunk loads before a lazy import runs is in the output: one that
+// isn't fails the import outright, and a local preview can hide it by answering the
+// missing file with the page. The page's own inlined stylesheet once was one.
+const missing = new Set();
+for (const file of assets.filter((name) => name.endsWith('.js'))) {
+  const text = fs.readFileSync(path.join(DIST, 'assets', file), 'utf8');
+  const list = text.match(/__vite__mapDeps=[^[]*(\[[^\]]*\])/)?.[1];
+  if (!list) continue;
+  const files = JSON.parse(list);
+  for (const [, ids] of text.matchAll(/__vite__mapDeps\(\[([\d,]*)\]\)/g)) {
+    for (const id of ids.split(',')) {
+      const dep = files[Number(id)];
+      if (dep && !fs.existsSync(path.join(DIST, dep))) missing.add(`${dep} (in ${file})`);
+    }
+  }
+}
+if (missing.size) failures.push(`lazy imports preload files that aren't in the output, so they fail: ${[...missing].join(', ')}`);
+
+// 8. The branded 404 is there, still a page that needs no script, and leads home
 const notFoundPath = path.join(DIST, '404.html');
 if (!fs.existsSync(notFoundPath)) {
   failures.push("no 404.html was emitted: an unknown address would get the host's plain error page");

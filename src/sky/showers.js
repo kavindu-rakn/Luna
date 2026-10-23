@@ -265,6 +265,25 @@ export const visibleHourlyRate = (shower, date, lat, lon) => {
   return zhr * Math.sin(height * rad) / shower.population ** loss;
 };
 
+// The showers to draw in the sky at a moment (src/sky/meteors.js): each one's
+// visible hourly rate here, its radiant, speed and population index, and the
+// faintest meteor the sky shows. Nothing by day or while every radiant is down.
+export const meteorsInSky = (date, lat, lon) => {
+  const loss = skyLoss(date, lat, lon);
+  if (!Number.isFinite(loss)) return [];
+  return activeShowers(date)
+    .map(({ shower }) => ({ shower, rate: visibleHourlyRate(shower, date, lat, lon) }))
+    .filter(({ rate }) => rate > 0)
+    .map(({ shower, rate }) => ({
+      id: shower.id,
+      rate,
+      radiant: radiantAt(shower, date),
+      speed: shower.speed,
+      population: shower.population,
+      faintest: 6.5 - loss
+    }));
+};
+
 // How much of a shower the moonlight alone hides, 0 (none) to 1
 export const moonlightLoss = (shower, date, lat, lon) => 1 - shower.population ** -moonlightOf(date, lat, lon);
 

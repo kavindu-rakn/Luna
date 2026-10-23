@@ -268,8 +268,10 @@ export const getMoonView = (date = new Date(), lat = 0, lon = 0) => {
     altitude,
     hourAngle: norm180(hourAngle),
     siderealTime: norm360(theta),
-    // The instant and the latitude, for the sky's precession and its zenith
+    // The instant and the place, for the sky's precession, its zenith and its
+    // meteors
     time: date.getTime(),
-    latitude: phi
+    latitude: phi,
+    longitude: lon
   };
 };

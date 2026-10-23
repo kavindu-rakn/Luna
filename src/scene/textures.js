@@ -90,16 +90,23 @@ export const createTextureLoader = ({ base, renderer, ktx2: useKTX2 = true }) =>
 //           Safari can't draw WebGL in a worker
 // Every tier gets the normal map: the colour map is albedo only, so without it a
 // crescent would show no craters at all.
-export const chooseTier = ({ renderer, width, height, dpr, route }) => {
+// WebGL drawn by the CPU (PageSpeed, blocklisted GPUs), where every frame costs
+// tens of milliseconds
+export const isSoftwareRendering = (renderer) => {
   const gl = renderer.getContext();
   let gpu = '';
   try {
     const info = gl.getExtension('WEBGL_debug_renderer_info');
     gpu = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || '');
   } catch {
-    // Unknown GPU: decide on the rest
+    // Unknown GPU: taken as a real one
   }
-  const software = /swiftshader|llvmpipe|softpipe|software|basic render/i.test(gpu);
+  return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(gpu);
+};
+
+export const chooseTier = ({ renderer, width, height, dpr, route }) => {
+  const gl = renderer.getContext();
+  const software = isSoftwareRendering(renderer);
   const memory = typeof navigator !== 'undefined' ? navigator.deviceMemory : undefined;
   const lowMemory = typeof memory === 'number' && memory < 4;
   if (software || lowMemory || route === 'main') return 'low';
