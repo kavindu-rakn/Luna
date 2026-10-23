@@ -1762,11 +1762,25 @@ h1, h2, h3, h4 {
   box-shadow: 0 0 0 1.5px var(--accent-light);
 }
 
+/* The evening a meteor shower's peak night begins: a small dot in the corner
+   (::after is the press bloom's) */
+.calendar-day.has-shower::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--ink-2);
+}
+
 .calendar-day.is-selected .calendar-day-moon.has-phase {
   box-shadow: 0 0 0 1.5px #fff;
 }
 
-.calendar-events {
+.calendar-events,
+.calendar-events-group + .calendar-events-group {
   margin-top: 0.8rem;
   padding-top: 0.7rem;
   border-top: 1px solid var(--border-subtle);
@@ -1784,12 +1798,12 @@ h1, h2, h3, h4 {
 }
 
 /* The calendar always shows whole, never scrolling (only the month and year
-   lists inside it scroll). Its tallest month is six weeks and five phase events,
-   which is more than a short screen has below the date. So on short screens it
-   rises until it fits, over the header if need be (anchor.js); when there is
-   width to spare the phase list moves beside the grid instead of under it; and
-   the day cells shrink to the height left. Touch targets stay at least 32px
-   there, still clear of WCAG's 24px minimum. */
+   lists inside it scroll). Its tallest month is six weeks, five phase events and
+   two meteor showers (December 2028), which is more than a short screen has
+   below the date. So on short screens it rises until it fits, over the header if
+   need be (anchor.js); when there is width to spare the lists move beside the
+   grid instead of under it; and the day cells shrink to the height left. Touch
+   targets stay at least 26px there, still clear of WCAG's 24px minimum. */
 .calendar-panel {
   --cal-cell: 44px;
 }
@@ -1808,7 +1822,8 @@ h1, h2, h3, h4 {
     margin-bottom: 0.5rem;
   }
 
-  .calendar-events {
+  .calendar-events,
+  .calendar-events-group + .calendar-events-group {
     margin-top: 0.5rem;
     padding-top: 0.5rem;
   }
@@ -1839,8 +1854,27 @@ h1, h2, h3, h4 {
   }
 }
 
-/* Wide but short (laptop windows, phones on their side): phases beside the grid */
-@media (min-width: 540px) and (max-height: 760px) {
+/* The smallest phones (320 by 568) */
+@media (max-width: 539px) and (max-height: 600px) {
+  .calendar-panel {
+    --cal-cell: 30px;
+  }
+
+  .calendar-events,
+  .calendar-events-group + .calendar-events-group {
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+  }
+
+  .calendar-panel .calendar-phase {
+    min-height: 26px;
+    padding-block: 0;
+  }
+}
+
+/* Wide but short (laptop windows, phones on their side): the lists beside the
+   grid. Under it, the tallest month needs about 830px. */
+@media (min-width: 540px) and (max-height: 840px) {
   .calendar-panel {
     width: min(42rem, calc(100vw - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
   }

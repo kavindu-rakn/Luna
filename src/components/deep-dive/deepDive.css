@@ -59,6 +59,12 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
+/* One tile a row: a shower's name ("Southern Delta Aquariids") needs the card's
+   full width */
+.dd-grid.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .dd-split {
   margin: var(--s4) 0 0;
   padding-top: var(--s4);

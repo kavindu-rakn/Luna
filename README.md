@@ -79,7 +79,7 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 
 ### Deep Dive, in Three Chapters
 * **The Moon:** How much is lit and how old the Moon is, in the serif, then its distance from a 60-term Meeus series on a perigee-to-apogee scale, its zodiac sign and the countdown to the next exact phase.
-* **Tonight:** The Moon's altitude through the place's day on one chart, with the Sun's day fading through civil, nautical and astronomical twilight behind it, moonrise and moonset marked on the curve and its highest point timed to the minute. Drag across the chart, or use the arrow keys on it, to move through the day. Below it: moonrise and moonset with the way to look, sunrise and sunset.
+* **Tonight:** The Moon's altitude through the place's day on one chart, with the Sun's day fading through civil, nautical and astronomical twilight behind it, moonrise and moonset marked on the curve and its highest point timed to the minute. Drag across the chart, or use the arrow keys on it, to move through the day. Below it: moonrise and moonset with the way to look, sunrise and sunset, and on a meteor shower's nights how many an hour you could see from the place at best, when, and how much of it the Moon hides.
 * **The Orbit:** A crisp SVG diagram from above Earth's north pole, placing the Moon at its elongation, and how far east or west of the Sun that puts it.
 * **Each Number Once:** In quiet cards, each label above its value. Values change at once while you scrub and fade in softly after a single step.
 
@@ -109,6 +109,7 @@ Moon    Crescent   Quarter    Gibbous      Moon     Gibbous    Quarter    Cresce
 * **Calendar:** A monthly calendar for instant date jumping. On a wide screen it grows out of the date and hangs beneath it; on a phone it rises from the bottom, within reach of a thumb.
 * **Month & Year Pickers:** Go straight to any month from 1900 to 2100, or type a year to jump to it.
 * **A Moon on Every Day:** Each day shows its phase at local noon, the days of New, First Quarter, Full and Last Quarter Moons are ringed, and the month's exact phase times sit below, each one click from its precise moment.
+* **Meteor Shower Nights:** A small dot marks the evening each major shower's peak night begins, if it can be seen from your place, and the month's showers are listed under the phases, each one click from that night's best moment.
 * **One Overlay System:** The calendar, the location picker, the menu, the shortcuts and privacy open above everything, Deep Dive included. Popovers grow out of the control that opened them; on a phone each is a sheet you can swipe down. <kbd>Esc</kbd> or a tap outside closes the top one, and focus goes back where it came from.
 
 </td>
@@ -166,6 +167,23 @@ That figure is the **convergence of the search**, not the accuracy of the answer
 | Moonrise / moonset | 10-minute horizon scan, bisected to the second | Refraction-corrected altitude crossing zero | consistent with the plotted curve by construction |
 
 All times are rendered in the observing location's timezone rather than the viewer's device timezone.
+
+#### 5. Meteor Showers
+
+The nine major showers of the International Meteor Organization's working list come round when the Sun reaches the same solar longitude $\lambda_\odot$ (equinox 2000.0) each year, so each maximum is found from the Sun's position, not from a fixed date. Activity around it follows Jenniskens' (1994) profiles, scaled to the IMO's zenithal hourly rate:
+
+$$\text{ZHR}(\lambda_\odot) = \text{ZHR}_{\max} \cdot \frac{\sum_i a_i \, 10^{-B_i |\lambda_\odot - \lambda_{\max}|}}{\sum_i a_i}$$
+
+with a steeper fall than rise where Jenniskens measured one (the Geminids). What an observer can see takes the radiant's altitude $h_R$ and how much the sky is brightened, by twilight and by moonlight, as a loss of $\Delta m$ magnitudes in the faintest star visible:
+
+$$\text{HR} = \frac{\text{ZHR} \cdot \sin h_R}{r^{\Delta m}}$$
+
+where $r$ is the shower's population index. The radiant drifts each night along the IMO's published track.
+
+| Quantity | Checked against | Result |
+| :--- | :--- | :--- |
+| Shower maxima | IMO 2027 calendar, Table 5 | all nine on the listed date; the Quadrantids within **20 min** of the predicted 03:30 UT |
+| Radiant at maximum | IMO 2027 calendar, Table 5 | within **2°** |
 
 ---
 
@@ -257,6 +275,7 @@ graph TD
     D --> D2[Golden-Section Phase Solver]
     D --> D3[24h Sky Transit Sampler]
     D --> D4[Timezone-Anchored Formatting]
+    D --> D5[Meteor Shower Activity & Visibility]
 ```
 
 * **Frontend:** React 19, Vite

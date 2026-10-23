@@ -281,8 +281,8 @@ when the page opens.
 | 3b | Deep Dive's three chapters: The Moon, Tonight, The Orbit; each number once; settled cross-fades | Done: PR #67 merged 9 Oct 2026 |
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Done: PR #68 merged 10 Oct 2026 |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Done: 4a PR #69 (10 Oct 2026), 4b PR #70 (11 Oct 2026), 4c PR #71 (12 Oct 2026) |
-| 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | In progress: 5a done (PR #72), 5b done (PR #73), both merged 12 Oct 2026; 5c (QA and performance) in review; the domain once bought |
-| 6 | New features: meteor-shower nights, reward for staying | Not started |
+| 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Done but the domain: 5a PR #72, 5b PR #73, 5c PR #74, all merged 12 Oct 2026; the domain once bought |
+| 6 | New features: meteor-shower nights, reward for staying | In progress: 6a (shower astronomy, Tonight and the calendar) in review; 6b meteors in the sky; 6c the three rewards as prototypes |
 
 ### Phase 0 notes
 
@@ -750,3 +750,58 @@ when the page opens.
     `.glass-button.is-active`, `.share-trigger.is-failed`) and are gone; every other class
     the stylesheets style is in the source, or built at run time (`is-${mode}`).
 
+### Phase 6 notes
+
+Settled in chat when Phase 6 began (22 Oct 2026):
+
+- Which showers: the nine majors of the IMO's working list (Quadrantids, Lyrids, eta
+  Aquariids, Southern delta Aquariids, Perseids, Orionids, Leonids, Geminids, Ursids).
+- How many meteors: activity follows each shower's real shape, rising to its maximum and
+  falling away. In the sky (6b) they come about ten times faster than real, so a minute's
+  watching shows some; Tonight states the real hourly numbers.
+- Where they're mentioned: Deep Dive's Tonight, and the calendar's peak nights.
+- The reward for staying: all three ideas (the eyes adjusting, so fainter stars come out to
+  magnitude 6.5 and the earthshine brightens; the constellation drawing itself; a lunar
+  halo) are prototyped, and the owner chooses after seeing them.
+- Split: 6a the shower astronomy and where it's mentioned, 6b meteors drawn in the sky,
+  6c the reward prototypes.
+
+- 6a, the shower astronomy, Tonight and the calendar.
+  - Sources: the IMO's 2027 Meteor Shower Calendar (Rendtel, IMO INFO(3-26)), Table 5 for
+    each shower's activity dates, maximum (as a solar longitude), radiant, speed,
+    population index and ZHR, and Table 6 for the radiant's drift; Jenniskens (1994) for
+    the shape of each shower's activity around its maximum. Where the IMO's web page and
+    the PDF disagree (the Quadrantids' ZHR, 120 or 80; the Geminids' end, Dec 17 or 20),
+    the PDF is used throughout. Jenniskens' own maxima put several showers a night away
+    from the IMO's dates, so only his shapes are used.
+  - Each maximum is found from the Sun's apparent longitude (Meeus ch. 25), brought to
+    equinox 2000.0, so it moves through the calendar as the IMO's do. Tested against Table
+    5: all nine 2027 maxima on the listed dates, the Quadrantids within 20 minutes of the
+    predicted 03:30 UT, the radiants within 2°.
+  - What can be seen from a place: the ZHR times the sine of the radiant's altitude, less
+    what twilight (from the Sun at -18° to -6°) and moonlight (by how much of the Moon is
+    lit and how high it is) take from the faintest stars. Nothing in daylight or while the
+    radiant is down. For the 2026 Geminids from London it gives up to 85 an hour around
+    3 am; in 2027, with a full Moon on the peak night, the best is before dawn as the Moon
+    gets low, and under 40.
+  - Tonight: a "Meteor shower" card under sunrise and sunset on nights a shower is active,
+    at most two, strongest first: its name, "Up to N an hour, best around 3 am" (or that
+    its radiant stays below the horizon here, so the Ursids from Sydney say why there's
+    nothing), "Peak night" or the date of the peak, and "the Moon hides most" or "some"
+    when it does.
+  - The calendar: a small dot on the day each peak night begins, and under "Exact phases"
+    a "Meteor showers" list with the night's dates as the IMO writes them ("Dec 14–15").
+    Each lands on that night's best moment at the place. A peak night is the night nearest
+    the maximum at the place, so the 2026 Geminids (maximum 13:46 UT on Dec 14) are Dec
+    14–15 in London. Only showers that can be seen from the place on that night are
+    listed; Tonight still says when one can't.
+  - The calendar still shows whole, never scrolling, now that its tallest month is six
+    weeks, five phases and two showers (December 2028). The two lists share one column, so
+    on wide but short screens both move beside the grid together (the owner's phone test
+    found them drawn over each other there). Under the grid that month needs about 830
+    px, so "wide but short" now means up to 840 px tall, not 760: laptops of 768 to 840 px
+    get the lists beside the grid too. On the smallest phones (320 by 568) the day cells
+    are 30 px and the list rows 26 px. Checked at eighteen sizes from 320 by 568 to 1920
+    by 1080: the panel fits, nothing scrolls, nothing overlaps.
+  - The shower code (`src/sky/showers.js`, 2.8 KB gzipped) loads with Deep Dive's chunk,
+    and for the calendar once it has been opened, so the first visit's page is unchanged.

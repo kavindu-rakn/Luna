@@ -91,6 +91,12 @@ export const ICONS = {
     ['path', { d: 'M12 4.75v7M9.25 9 12 11.75 14.75 9' }]
   ],
   moon: [['path', { d: 'M15.75 4.6a7.75 7.75 0 1 0 3.65 10.6A6.25 6.25 0 0 1 15.75 4.6Z' }]],
+  // A meteor shower: a bright head and the streak it leaves (Phase 6)
+  meteor: [
+    ['circle', { cx: 17, cy: 7, r: 1.9, fill: 'currentColor', stroke: 'none' }],
+    ['path', { d: 'M15.25 8.75 5.25 18.75' }],
+    ['path', { d: 'M18.5 11 13.25 16.25M13 5.5 7.75 10.75' }]
+  ],
 
   // Feedback
   check: [['path', { d: 'm5.5 12.5 4 4 9-9' }]],

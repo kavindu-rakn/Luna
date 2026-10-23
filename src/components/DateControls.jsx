@@ -42,7 +42,7 @@ const LAST_YEAR = 2100;
 // The date block (decisions D4, D5): the date, which opens the calendar; the place
 // as a quiet caption beneath it (children: the location picker); and the five
 // controls as one hairline instrument bar, ⊙ lit in the "now" colour while live.
-const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, timeZone, clock, children }) => {
+const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, timeZone, place, clock, children }) => {
   // Its own, so opening the calendar re-renders the date block rather than the app
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   // The month on show, as { year, month }
@@ -108,6 +108,24 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, timeZone, 
     [calendarUsed, year, month, timeZone]
   );
 
+  // The month's meteor shower peaks (Phase 6): their code loads once the calendar
+  // has been opened, as Deep Dive's does
+  const [showers, setShowers] = useState(null);
+  useEffect(() => {
+    if (!calendarUsed || showers) return undefined;
+    let cancelled = false;
+    import('../sky/showers').then((module) => {
+      if (!cancelled) setShowers(module);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [calendarUsed, showers]);
+  const lat = place?.lat;
+  const lon = place?.lon;
+  const monthShowers = useMemo(
+    () => (showers && Number.isFinite(lat) ? showers.showerNightsInMonth(year, month, timeZone, lat, lon) : []),
+    [showers, year, month, timeZone, lat, lon]
+  );
+
   const yearOptions = useMemo(() => {
     const from = Math.min(FIRST_YEAR, year);
     const to = Math.max(LAST_YEAR, year);
@@ -139,6 +157,12 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, timeZone, 
   // A phase in the list lands on its exact instant, not on noon of its day
   const handleSelectEvent = (event) => {
     setCurrentDate(event.date);
+    setIsCalendarOpen(false);
+  };
+
+  // A shower lands on the best moment of its peak night here
+  const handleSelectShower = (entry) => {
+    setCurrentDate(entry.best);
     setIsCalendarOpen(false);
   };
 
@@ -184,7 +208,9 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, timeZone, 
     });
     const event = monthPhases?.days[day - 1]?.event;
     const phase = event ? `, ${event.name} at ${formatShortTime(event.date, timeZone, clock)}` : '';
-    return `${text}${phase}${isSelectedDay(day) ? ', selected' : ''}${isToday(day) ? ', today' : ''}`;
+    const shower = monthShowers.find((entry) => entry.evening === day);
+    const meteors = shower ? `, ${shower.shower.name} peak night` : '';
+    return `${text}${phase}${meteors}${isSelectedDay(day) ? ', selected' : ''}${isToday(day) ? ', today' : ''}`;
   };
 
   return (
@@ -326,7 +352,8 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, timeZone, 
                 'calendar-day',
                 selected && 'is-selected',
                 today && 'is-today',
-                info?.event && 'has-phase'
+                info?.event && 'has-phase',
+                monthShowers.some((entry) => entry.evening === day) && 'has-shower'
               ].filter(Boolean).join(' ');
 
               return (
@@ -369,31 +396,62 @@ const DateControls = ({ currentDate, setCurrentDate, onToday, isLive, timeZone, 
             ))}
           </div>
 
-          {/* The month's principal phases, each one a jump to its exact instant */}
-          {monthPhases && monthPhases.events.length > 0 && (
+          {/* Under the grid, or beside it on wide but short screens: one column */}
+          {(monthPhases?.events.length > 0 || monthShowers.length > 0) && (
             <div className="calendar-events">
-              <div id="calendar-phases-label" className="utility-label calendar-events-label">
-                Exact phases
-              </div>
-              <ul className="calendar-phases" aria-labelledby="calendar-phases-label">
-                {monthPhases.events.map((event) => {
-                  const stamp = formatPhaseStamp(event.date, timeZone, clock);
-                  return (
-                    <li key={`${event.key}-${event.day}`}>
-                      <button
-                        type="button"
-                        className="calendar-phase"
-                        onClick={() => handleSelectEvent(event)}
-                        aria-label={`${event.name}, ${stamp}`}
-                      >
-                        <MoonIcon phase={event.target} size={14} />
-                        <span>{event.name}</span>
-                        <span className="calendar-phase-time">{stamp}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+              {/* The month's principal phases, each one a jump to its exact instant */}
+              {monthPhases && monthPhases.events.length > 0 && (
+                <div className="calendar-events-group">
+                  <div id="calendar-phases-label" className="utility-label calendar-events-label">
+                    Exact phases
+                  </div>
+                  <ul className="calendar-phases" aria-labelledby="calendar-phases-label">
+                    {monthPhases.events.map((event) => {
+                      const stamp = formatPhaseStamp(event.date, timeZone, clock);
+                      return (
+                        <li key={`${event.key}-${event.day}`}>
+                          <button
+                            type="button"
+                            className="calendar-phase"
+                            onClick={() => handleSelectEvent(event)}
+                            aria-label={`${event.name}, ${stamp}`}
+                          >
+                            <MoonIcon phase={event.target} size={14} />
+                            <span>{event.name}</span>
+                            <span className="calendar-phase-time">{stamp}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {/* The month's meteor shower peaks, each by its peak night here, and each a
+                  jump to that night's best moment */}
+              {monthShowers.length > 0 && (
+                <div className="calendar-events-group">
+                  <div id="calendar-showers-label" className="utility-label calendar-events-label">
+                    Meteor showers
+                  </div>
+                  <ul className="calendar-phases" aria-labelledby="calendar-showers-label">
+                    {monthShowers.map((entry) => (
+                      <li key={entry.shower.id}>
+                        <button
+                          type="button"
+                          className="calendar-phase"
+                          onClick={() => handleSelectShower(entry)}
+                          aria-label={`${entry.shower.name}, peak night ${entry.nightWords}`}
+                        >
+                          <Icon name="meteor" size={14} />
+                          <span>{entry.shower.name}</span>
+                          <span className="calendar-phase-time">{entry.nightLabel}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
