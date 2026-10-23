@@ -1,7 +1,8 @@
 // The sky pass: everything drawn straight onto the full-screen canvas, back to
 // front. The stars (G1), the five naked-eye planets, a shower's meteors (6b), the
-// glow off the Moon's lit limb (F6), and the Moon itself, which the scene renders
-// into a box of its own first and this pass lays down at whole pixels (see
+// rewards for staying (6c: the fainter stars, a constellation's figure, a halo),
+// the glow off the Moon's lit limb (F6), and the Moon itself, which the scene
+// renders into a box of its own first and this pass lays down at whole pixels (see
 // scene.js).
 //
 // Every shader here places its geometry in device pixels from uniforms, so the
@@ -58,6 +59,8 @@ uniform float pointerRadius;
 uniform int twinkleIndex;
 uniform float twinkleGain;
 uniform vec3 twinkleTint;
+// A layer's light: 1, but for the fainter stars as the eyes adjust
+uniform float fade;
 
 // Peak brightness, Gaussian width in CSS pixels, and depth layer; then the halo's
 // strength
@@ -83,7 +86,7 @@ void main() {
   // the still Moon by each star's distance behind it
   vec2 p = center + parallax * (1.0 - look.z) + focal * vec2(v.x, -v.y) / v.z;
 
-  float peak = look.x;
+  float peak = look.x * fade;
   float near = 1.0 - smoothstep(0.0, pointerRadius, distance(p, pointer.xy));
   peak *= 1.0 + ${POINTER_GAIN.toFixed(2)} * pointer.z * near * near;
   vec3 color = tint;
@@ -165,6 +168,60 @@ void main() {
 
 // The most meteors in flight at once
 export const MAX_METEORS = 4;
+
+// A constellation's figure (6c): each line a quad like a meteor's, a soft line
+// that stops short of the stars at its ends so they show clear
+const lineFragment = /* glsl */ `
+// The segment's length, its Gaussian width and its light
+varying vec2 vLocal;
+varying vec3 vShape;
+varying vec3 vTint;
+
+void main() {
+  float len = vShape.x;
+  float sigma = vShape.y;
+  float gap = 6.0 * sigma;
+  float ends = smoothstep(0.0, sigma * 2.0, vLocal.x - gap) * smoothstep(0.0, sigma * 2.0, len - gap - vLocal.x);
+  float a = vShape.z * ends * exp(-vLocal.y * vLocal.y / (2.0 * sigma * sigma));
+  if (a < 0.003) discard;
+  gl_FragColor = vec4(vTint * a, a);
+}
+`;
+
+// The most segments drawn at once: a constellation and its neighbours on screen
+// come to a hundred or so
+export const MAX_SEGMENTS = 256;
+
+// A halo (6c): a ring at a fixed angle from the Moon, which in this projection is a
+// circle round its centre. Its inner edge is sharp and faintly red, as light
+// bent least by the ice comes out red; outside, it fades white into the sky.
+const haloVertex = /* glsl */ `
+varying vec2 vClip;
+
+void main() {
+  vClip = position.xy;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
+}
+`;
+
+const haloFragment = /* glsl */ `
+uniform vec2 center;
+uniform vec2 viewport;
+uniform float radius;
+uniform float strength;
+varying vec2 vClip;
+
+void main() {
+  vec2 p = vec2((vClip.x + 1.0) * 0.5 * viewport.x, (1.0 - vClip.y) * 0.5 * viewport.y);
+  float d = (distance(p, center) - radius) / radius;
+  float inner = exp(-(d * d) / (2.0 * 0.018 * 0.018));
+  float outer = exp(-max(d, 0.0) / 0.16) * smoothstep(-0.03, 0.0, d);
+  float a = strength * (0.55 * inner + 0.45 * outer) * 0.16;
+  if (a < 0.002) discard;
+  vec3 color = mix(vec3(1.0, 0.82, 0.68), vec3(0.86, 0.9, 1.0), smoothstep(-0.01, 0.06, d));
+  gl_FragColor = vec4(color * a, a);
+}
+`;
 
 // The glow: the same gradient the page draws behind the flat Moon (.moon-glow in
 // index.css, set by glowStyle in src/utils/moonPath.js), stop for stop, so the
@@ -276,7 +333,7 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
   const starMaterial = (twinkles) => new ShaderMaterial({
     vertexShader: starVertex,
     fragmentShader: starFragment,
-    uniforms: { ...shared, twinkleIndex: { value: twinkles ? -1 : -2 } }
+    uniforms: { ...shared, twinkleIndex: { value: twinkles ? -1 : -2 }, fade: { value: 1 } }
   });
 
   let starPoints = null;
@@ -325,6 +382,42 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
   meteors.frustumCulled = false;
   meteors.visible = false;
   scene.add(meteors);
+
+  // The rewards for staying (6c). The fainter stars arrive only when the eyes
+  // begin to adjust; the figure's segments are rewritten each frame it shows.
+  let faintPoints = null;
+  const lineGeometry = new BufferGeometry();
+  const lineAttribute = (size) => new BufferAttribute(new Float32Array(MAX_SEGMENTS * 4 * size), size).setUsage(DynamicDrawUsage);
+  lineGeometry.setAttribute('position', lineAttribute(3));
+  lineGeometry.setAttribute('local', lineAttribute(2));
+  lineGeometry.setAttribute('shape', lineAttribute(3));
+  lineGeometry.setAttribute('tint', lineAttribute(3));
+  const lineQuads = [];
+  for (let i = 0; i < MAX_SEGMENTS; i++) lineQuads.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4 + 2, i * 4 + 1, i * 4 + 3);
+  lineGeometry.setIndex(lineQuads);
+  lineGeometry.setDrawRange(0, 0);
+  const lineMaterial = new ShaderMaterial({
+    vertexShader: meteorVertex,
+    fragmentShader: lineFragment,
+    uniforms: { viewport: shared.viewport },
+    side: DoubleSide
+  });
+  const figure = new Mesh(lineGeometry, lineMaterial);
+  figure.renderOrder = layer(lineMaterial, 1.6);
+  figure.frustumCulled = false;
+  figure.visible = false;
+  scene.add(figure);
+
+  const haloMaterial = new ShaderMaterial({
+    vertexShader: haloVertex,
+    fragmentShader: haloFragment,
+    uniforms: { center: { value: new Vector2() }, viewport: shared.viewport, radius: { value: 1 }, strength: { value: 0 } }
+  });
+  const halo = new Mesh(new PlaneGeometry(2, 2), haloMaterial);
+  halo.renderOrder = layer(haloMaterial, 1.7);
+  halo.frustumCulled = false;
+  halo.visible = false;
+  scene.add(halo);
 
   const glowMaterial = new ShaderMaterial({
     vertexShader: glowVertex,
@@ -376,6 +469,7 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
       shared.focal.value = focal;
       shared.center.value.set(at[0], at[1]);
       glowMaterial.uniforms.center.value.set(at[0], at[1]);
+      haloMaterial.uniforms.center.value.set(at[0], at[1]);
       glowMaterial.uniforms.halfSize.value = 1.9 * outline;
       shared.pointerRadius.value = POINTER_RADIUS * ratio;
     },
@@ -419,6 +513,57 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
       meteorGeometry.setDrawRange(0, count * 6);
       meteors.visible = count > 0;
     },
+    // The stars from magnitude 6 to 6.5 (6c), added once, and how far they have come
+    // out (0-1)
+    addFaintStars(faint) {
+      if (faintPoints) return;
+      const geometry = new BufferGeometry();
+      pointAttributes(geometry, faint.count);
+      geometry.setAttribute('position', new Float32BufferAttribute(faint.directions, 3));
+      fillLooks(geometry, faint.magnitudes, faint.colorIndices);
+      const material = starMaterial(false);
+      material.uniforms.fade.value = 0;
+      faintPoints = new Points(geometry, material);
+      faintPoints.renderOrder = layer(material, 0.5);
+      faintPoints.frustumCulled = false;
+      scene.add(faintPoints);
+    },
+    setFaintStars(fade) {
+      if (faintPoints) faintPoints.material.uniforms.fade.value = fade;
+    },
+    // A figure's segments, each its ends in device pixels, its line's Gaussian width
+    // in device pixels, its light (0-1) and its colour
+    setFigure(list) {
+      const position = lineGeometry.getAttribute('position');
+      const local = lineGeometry.getAttribute('local');
+      const shape = lineGeometry.getAttribute('shape');
+      const tint = lineGeometry.getAttribute('tint');
+      const count = Math.min(list.length, MAX_SEGMENTS);
+      for (let i = 0; i < count; i++) {
+        const { from, to, sigma, light, color } = list[i];
+        const length = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1;
+        const ux = (to[0] - from[0]) / length;
+        const uy = (to[1] - from[1]) / length;
+        const pad = 3 * sigma;
+        const corners = [[0, -pad], [0, pad], [length, -pad], [length, pad]];
+        corners.forEach(([a, c], k) => {
+          const v = i * 4 + k;
+          position.setXYZ(v, from[0] + ux * a - uy * c, from[1] + uy * a + ux * c, 0);
+          local.setXY(v, a, c);
+          shape.setXYZ(v, length, sigma, light);
+          tint.setXYZ(v, ...color);
+        });
+      }
+      for (const attribute of [position, local, shape, tint]) attribute.needsUpdate = true;
+      lineGeometry.setDrawRange(0, count * 6);
+      figure.visible = count > 0;
+    },
+    // A halo round the Moon's centre, its radius in device pixels, its strength 0-1
+    setHalo(radius, strength) {
+      haloMaterial.uniforms.radius.value = radius;
+      haloMaterial.uniforms.strength.value = strength;
+      halo.visible = strength > 0.001;
+    },
     setGlow(strength, leanX, leanY) {
       glowMaterial.uniforms.strength.value = strength;
       glowMaterial.uniforms.lean.value.set(leanX, leanY);
@@ -437,6 +582,12 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
       planetMaterial.dispose();
       meteorGeometry.dispose();
       meteorMaterial.dispose();
+      faintPoints?.geometry.dispose();
+      faintPoints?.material.dispose();
+      lineGeometry.dispose();
+      lineMaterial.dispose();
+      halo.geometry.dispose();
+      haloMaterial.dispose();
       glow.geometry.dispose();
       glowMaterial.dispose();
       moon.geometry.dispose();
