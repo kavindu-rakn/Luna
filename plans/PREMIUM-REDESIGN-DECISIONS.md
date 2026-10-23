@@ -835,3 +835,12 @@ Settled in chat when Phase 6 began (22 Oct 2026):
   - Sound: the flung meteor's streak, quieter (about a quarter to a half as loud, by the
     meteor's brightness), as long as the meteor burns, crossing the way it does, and with
     the spark only for a bright one. It never sounds over a press's own sound.
+  - Found in the owner's test: no meteors at all on the Vercel preview. Vite listed the
+    app's stylesheet among the files to load before MoonScene's lazy imports, but the
+    build inlines that stylesheet into the page and drops the file, so the import of the
+    showers' code failed on the 404. The local preview had hidden it by answering the
+    missing file with the page. The same failure had been keeping the main-thread scene
+    (Safari before 17, and any browser that can't draw WebGL in a worker) on the flat Moon
+    in production since the stylesheet was inlined. A build step (luna-inlined-css in
+    vite.config.js) now takes the stylesheet out of those lists, and check:bundle fails if
+    any lazy import would load a file the output doesn't have.
