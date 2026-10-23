@@ -121,7 +121,7 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
         else if (type === 'rotated') {
           setRotated(Boolean(data.rotated));
           latest.current.onRotated?.(data.rotated);
-        }
+        } else if (type === 'meteor') cue('sky-meteor', data);
       },
       replaceCanvas: () => new Promise((resolve) => {
         canvasWaiter.current = resolve;
@@ -175,6 +175,29 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
   useEffect(() => {
     sceneRef.current?.send('setView', { view: sceneView(view) });
   }, [view]);
+
+  // A meteor shower's meteors (6b). The showers' code loads once the 3D sky is up,
+  // and not at all under reduced motion, which has none.
+  const [showers, setShowers] = useState(null);
+  useEffect(() => {
+    if (!isReady || reducedMotion || showers) return undefined;
+    let cancelled = false;
+    import('../sky/showers').then((module) => {
+      if (!cancelled) setShowers(module);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [isReady, reducedMotion, showers]);
+
+  // The showers in the sky at the moment and place shown: each one's rate, radiant
+  // and speed. Nothing goes while there are none and were none before.
+  const sentMeteors = useRef(false);
+  useEffect(() => {
+    if (!showers) return;
+    const list = showers.meteorsInSky(new Date(view.time), view.latitude, view.longitude);
+    if (!list.length && !sentMeteors.current) return;
+    sentMeteors.current = list.length > 0;
+    sceneRef.current?.send('setMeteors', { showers: list });
+  }, [showers, view]);
 
   useEffect(() => {
     sceneRef.current?.send('setReducedMotion', { reducedMotion });
