@@ -278,6 +278,29 @@ textarea {
   transition: opacity 0.5s var(--ease-observe);
 }
 
+/* A constellation's name as its figure draws itself (6c), in the sky behind the
+   interface. Timed with the figure (LINES_S in src/sky/rewards.js): 15 s in all,
+   the name coming in from 2.4 s and going from 12 s. */
+.sky-figure-name {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+  white-space: nowrap;
+  opacity: 0;
+  animation: sky-figure-name 15s linear forwards;
+}
+
+@keyframes sky-figure-name {
+  0%, 16% { opacity: 0; }
+  26%, 80% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
 .sky-scene.is-ready,
 .sky-flat.is-drawn {
   opacity: 1;

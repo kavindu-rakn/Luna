@@ -17,6 +17,19 @@ import { useSoundCues } from './audio/useSoundCues';
 // component waits for first paint, so the entry stays within its budget.
 const MoonScene = lazy(() => import('./components/MoonScene'));
 
+// The rewards for staying (6c) are prototypes until the owner chooses: only a
+// preview link shows one. ?reward=eyes, lines or halo starts it after `after`
+// seconds with the page in view (5 unless given). Read once, as the page loads:
+// the address bar soon describes the view and drops it.
+const rewardPreview = (() => {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const kind = params.get('reward');
+  if (!['eyes', 'lines', 'halo'].includes(kind)) return null;
+  const after = Number(params.get('after') ?? 5);
+  return { kind, after: Number.isFinite(after) && after >= 0 ? after : 5 };
+})();
+
 // Without WebGL the sky is drawn once, flat, from the same catalogue
 const SkyFallback = lazy(() => import('./components/SkyFallback'));
 
@@ -543,6 +556,7 @@ function App({ prerender = false }) {
                   <Suspense fallback={null}>
                     <MoonScene
                       view={moonView}
+                      reward={rewardPreview}
                       isReady={moonReady}
                       skyHost={skyHost}
                       tilt={tilt.on}
