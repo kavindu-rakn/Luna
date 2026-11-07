@@ -6,7 +6,7 @@
 import { BOUNDARIES, NAMES } from './boundaries.js';
 import { apply, multiply, precessionMatrix, transpose, unitVector, toRaDec, centuriesSinceJ2000 } from './frame.js';
 
-export const FULL_NAMES = {
+const FULL_NAMES = {
   And: 'Andromeda', Ant: 'Antlia', Aps: 'Apus', Aql: 'Aquila', Aqr: 'Aquarius', Ara: 'Ara', Ari: 'Aries',
   Aur: 'Auriga', Boo: 'Boötes', CMa: 'Canis Major', CMi: 'Canis Minor', CVn: 'Canes Venatici', Cae: 'Caelum',
   Cam: 'Camelopardalis', Cap: 'Capricornus', Car: 'Carina', Cas: 'Cassiopeia', Cen: 'Centaurus', Cep: 'Cepheus',

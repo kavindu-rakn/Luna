@@ -15,8 +15,8 @@
 // follows it, a reset, the settle after the first frame, a sharper texture
 // arriving, a resize, the sky sliding with the pointer or the phone's tilt, or a
 // star twinkling (at most fifteen times a second, and only now and then), a
-// meteor crossing (on a shower's nights, for the second or so each burns), or a
-// reward for staying coming and going. With
+// meteor crossing (on a shower's nights, for the second or so each burns), or the
+// eyes adjusting (a few steps a second, for a minute and a half). With
 // software WebGL (PageSpeed, blocklisted GPUs) a frame costs tens of
 // milliseconds, so a loop running at rest would hold its thread for the life of
 // the page.
@@ -41,7 +41,7 @@ import { createLunarMaterial } from './lunarMaterial.js';
 import { chooseTier, createTextureLoader, isSoftwareRendering, PIXEL_RATIO_CAP } from './textures.js';
 import { createSky, MAX_METEORS } from './sky.js';
 import { CATALOGUE_FILE, countBrighterThan, decodeStars, FAINT_FILE, FAINT_OFFSET } from '../sky/stars.js';
-import { EARTHSHINE_GAIN, eyesAt, figureSegments, HALO_RADIUS, HALO_S, haloAt, LINES_S, linesAt, segmentLight } from '../sky/rewards.js';
+import { EARTHSHINE_GAIN, eyesAt } from '../sky/rewards.js';
 import { apply, focalLength, project, skyFrame, unitVector, zenithDirection } from '../sky/frame.js';
 import {
   directionAt,
@@ -209,9 +209,6 @@ const loadStars = async (base, file = CATALOGUE_FILE, offset = 0) => {
   }
 };
 
-// A constellation's figure (6c): a soft blue-white, the stars' own colour at night
-const FIGURE_TINT = [0.8, 0.86, 1];
-const FIGURE_LIGHT = 0.42;
 
 // Throws if no WebGL 2 context can be had on this canvas; the caller falls back
 export const createScene = async (canvas, options) => {
@@ -311,9 +308,9 @@ export const createScene = async (canvas, options) => {
   let meteorTimer = null;
   const flights = [];
 
-  // A reward for staying (6c), once the page asks for one: { kind, start, segments }
-  let reward = null;
-  let rewardFrame = null;
+  // The eyes adjusting (6c), once the page says they have stayed: { start }
+  let eyes = null;
+  let eyesFrame = null;
   // The Moon's night side: earthshine for the phase, times how far the eyes have
   // adjusted
   let earthshineLevel = 0;
@@ -719,68 +716,22 @@ export const createScene = async (canvas, options) => {
       if (flights.length) animating = true;
     }
 
-    // A reward for staying (6c). Frames come while it changes; through a hold, a
-    // timer brings the next.
-    if (reward) {
-      const t = Math.max(0, now - reward.start) / 1000;
-      const wake = (seconds) => {
-        if (rewardFrame) return;
-        rewardFrame = setTimeout(() => {
-          rewardFrame = null;
+    // The eyes adjusting (6c): the fainter stars come out and the Moon's night side
+    // brightens, in steps four times a second, too small to see
+    if (eyes) {
+      const adjusted = eyesAt(Math.max(0, now - eyes.start) / 1000);
+      sky.setFaintStars(adjusted);
+      const gain = 1 + (EARTHSHINE_GAIN - 1) * adjusted;
+      if (Math.abs(gain - earthshineGain) > 0.002 || (adjusted === 1 && gain !== earthshineGain)) {
+        earthshineGain = gain;
+        applyEarthshine();
+        moonDirty = true;
+      }
+      if (adjusted < 1 && !eyesFrame) {
+        eyesFrame = setTimeout(() => {
+          eyesFrame = null;
           invalidate();
-        }, seconds * 1000);
-      };
-      if (reward.kind === 'eyes') {
-        // Slow enough that four steps a second never show
-        const adjusted = eyesAt(t);
-        sky.setFaintStars(adjusted);
-        const gain = 1 + (EARTHSHINE_GAIN - 1) * adjusted;
-        if (Math.abs(gain - earthshineGain) > 0.002 || (adjusted === 1 && gain !== earthshineGain)) {
-          earthshineGain = gain;
-          applyEarthshine();
-          moonDirty = true;
-        }
-        if (adjusted < 1) wake(0.25);
-      } else if (reward.kind === 'halo') {
-        const strength = haloAt(t);
-        sky.setHalo(focalLength(layout.width, layout.height) * scale * Math.tan((HALO_RADIUS * Math.PI) / 180), strength ?? 0);
-        if (strength === null) reward = null;
-        else if (t > HALO_S.rise && t < HALO_S.rise + HALO_S.hold) wake(HALO_S.rise + HALO_S.hold - t);
-        else animating = true;
-      } else if (reward.kind === 'lines') {
-        const shown = linesAt(t);
-        if (!shown || !frame) {
-          sky.setFigure([]);
-          reward = null;
-        } else {
-          const focal = focalLength(layout.width, layout.height);
-          const m = layout.moon;
-          const cx = (m.x + m.width / 2 + drift.x * PARALLAX_PX) * scale;
-          const cy = (m.y + m.height / 2 + drift.y * PARALLAX_PX) * scale;
-          // Under reduced motion the figure is all there at once, and only fades
-          const drawn = reducedMotion ? 1 : shown.drawn;
-          const halfDiagonal = Math.hypot(layout.width, layout.height) / 2;
-          const list = [];
-          for (const segment of reward.segments) {
-            if (segment.from >= drawn) continue;
-            const a = project(frame, focal, segment.a);
-            const b = project(frame, focal, segment.b);
-            if (!a || !b) continue;
-            const f = Math.min(1, (drawn - segment.from) / (segment.to - segment.from));
-            const light = segmentLight(segment.figure, Math.hypot(a[0] + b[0], a[1] + b[1]) / 2 / halfDiagonal);
-            if (light < 0.01) continue;
-            list.push({
-              from: [cx + a[0] * scale, cy + a[1] * scale],
-              to: [cx + (a[0] + (b[0] - a[0]) * f) * scale, cy + (a[1] + (b[1] - a[1]) * f) * scale],
-              sigma: 0.7 * scale,
-              light: FIGURE_LIGHT * shown.light * light,
-              color: FIGURE_TINT
-            });
-          }
-          sky.setFigure(list);
-          if (t > LINES_S.draw && t < LINES_S.draw + LINES_S.hold) wake(LINES_S.draw + LINES_S.hold - t);
-          else animating = true;
-        }
+        }, 250);
       }
     }
 
@@ -910,23 +861,13 @@ export const createScene = async (canvas, options) => {
       scheduleMeteor();
       invalidate();
     },
-    // A reward for staying (6c), from the page: 'eyes', 'lines' with the figures of
-    // the constellation the Moon is in and its neighbours, or 'halo'. Each comes
-    // once.
-    reward({ kind, figures }) {
-      if (reward?.kind === kind) return;
-      clearTimeout(rewardFrame);
-      rewardFrame = null;
-      sky.setHalo(0, 0);
-      sky.setFigure([]);
-      reward = {
-        kind,
-        start: performance.now(),
-        segments: kind === 'lines' && figures ? figureSegments(figures, unitVector) : null
-      };
+    // The page has been in view long enough (6c): the eyes begin to adjust. Once.
+    adjustEyes() {
+      if (eyes) return;
+      eyes = { start: performance.now() };
       // The fainter stars come only now, and not on the low tier, which draws only
       // the brightest
-      if (kind === 'eyes' && skyBase && tier !== 'low') {
+      if (skyBase && tier !== 'low') {
         loadStars(skyBase, FAINT_FILE, FAINT_OFFSET).then((faint) => {
           if (faint && !disposed) {
             sky.addFaintStars(faint);
@@ -1047,7 +988,7 @@ export const createScene = async (canvas, options) => {
       clearTimeout(twinkleFrame);
       clearTimeout(fitTimer);
       clearTimeout(meteorTimer);
-      clearTimeout(rewardFrame);
+      clearTimeout(eyesFrame);
       moon.geometry.dispose();
       material.uniforms.map.value?.dispose();
       material.uniforms.normalMap.value?.dispose();

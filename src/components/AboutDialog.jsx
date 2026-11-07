@@ -40,9 +40,8 @@ const CREDITS = [
     what: 'Stars',
     who: (
       <>
-        The Bright Star Catalogue (Hoffleit &amp; Warren), via CDS Strasbourg, the constellation
-        boundaries of Delporte (1930), as arranged by Roman (1987), and the constellation figures
-        of d3-celestial (Olaf Frohn)
+        The Bright Star Catalogue (Hoffleit &amp; Warren), via CDS Strasbourg, and the constellation
+        boundaries of Delporte (1930), as arranged by Roman (1987)
       </>
     )
   },
