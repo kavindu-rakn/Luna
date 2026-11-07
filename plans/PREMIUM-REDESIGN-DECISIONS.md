@@ -282,7 +282,7 @@ when the page opens.
 | 3c | One overlay system: anchored popovers on wide screens, sheets on phones, dim-only scrim | Done: PR #68 merged 10 Oct 2026 |
 | 4 | Phones and the timeline: bottom dock, timeline restyle, detents and haptics, first-visit touches | Done: 4a PR #69 (10 Oct 2026), 4b PR #70 (11 Oct 2026), 4c PR #71 (12 Oct 2026) |
 | 5 | Intro and Awwwards polish: cinematic intro, about/credits, branded 404, final performance pass, domain | Done but the domain: 5a PR #72, 5b PR #73, 5c PR #74, all merged 12 Oct 2026; the domain once bought |
-| 6 | New features: meteor-shower nights, reward for staying | In progress: 6a done (PR #83), 6b done (PR #84), both merged 23 Oct 2026; 6c the three rewards as prototypes, in review for the owner to choose |
+| 6 | New features: meteor-shower nights, reward for staying | In progress: 6a done (PR #83), 6b done (PR #84), both merged 23 Oct 2026; 6c (your eyes adjust, chosen from three prototypes) in review |
 
 ### Phase 0 notes
 
@@ -845,27 +845,23 @@ Settled in chat when Phase 6 began (22 Oct 2026):
     vite.config.js) now takes the stylesheet out of those lists, and check:bundle fails if
     any lazy import would load a file the output doesn't have.
 
-- 6c, the rewards for staying, as three prototypes for the owner to choose between.
-  None is switched on: a preview link starts one (?reward=eyes, lines or halo, after
-  `after` seconds with the page in view, 5 unless given). Once chosen, it comes after
-  about three minutes on the page, once a visit, with the sound lab's quiet reward.
-  - Your eyes adjust: over a minute and a half the stars from magnitude 6 to 6.5 come
-    out (3,324 more, from the Bright Star Catalogue already used; a second file,
-    stars-faint.bin, 19.9 KB, fetched only when it begins) and the Moon's night side
-    brightens to 1.6 times its earthshine. It stays for the rest of the visit, as dark
-    adaptation does. Not on the low tier, which draws only the brightest stars.
-  - The constellation draws itself: the figures trace themselves over four seconds,
-    hold for eight and fade over three, and the name of the constellation the Moon is
-    in fades in. The Moon is drawn about 28 times its true size and covers the middle
-    28° of the sky, so it hides most of its own constellation (Aries or Cancer
-    entirely): the neighbours on screen draw too, fading towards the screen's edges,
-    and the name sits beside the Moon, or above it on a phone. Figures from
-    d3-celestial (Olaf Frohn, BSD-3-Clause), all 88, in src/sky/lines.js (5.9 KB
-    gzipped, loaded only when it begins); credited in About.
-  - A lunar halo: a ring 22° from the Moon, with the faintly red, sharp inner edge and
-    the soft white outside of a real one, glows up over six seconds, holds for ten and
-    fades over eight. On a wide screen it sits just outside the Moon; on a phone it
-    runs off the sides, as a real 22° halo would.
-  - All three are drawn in the scene (src/scene/sky.js), timed by src/sky/rewards.js;
-    the page names the constellation. Under reduced motion the figure appears whole
-    instead of tracing; the fades stay.
+- 6c, the reward for staying: your eyes adjust.
+  - Three prototypes went to the owner on a preview: your eyes adjust, the constellation
+    drawing itself, and a lunar halo. On 7 Nov 2026, after trying all three on phones, the
+    owner chose the eyes: "a great detail that needs actually paying attention to find out".
+    The halo "turns out ugly and kills the vibe"; the constellations "drastically change
+    Luna from its purpose", and their drawings were inconsistent (the Moon, drawn about 28
+    times its true size, hides most of its own constellation, so its neighbours had to
+    draw instead). Both were removed, with the figure data they needed.
+  - After three minutes with the page in view (time in the background doesn't count),
+    once a visit, the eyes begin to adjust: over a minute and a half the stars from
+    magnitude 6 to 6.5 come out, 3,324 more, and the Moon's night side brightens to 1.6
+    times its earthshine. It stays for the rest of the visit, as dark adaptation does.
+    Nothing announces it but the sound lab's quiet reward, when sound is on.
+  - The fainter stars are the Bright Star Catalogue's, already used, in a second file
+    (public/assets/sky/stars-faint.bin, 19.9 KB) fetched only when the eyes begin to
+    adjust. Its magnitudes are stored less 5: a byte of magnitude × 20 holds only up to
+    6.35. Not on the low tier, which draws only the brightest stars; the earthshine
+    still brightens there.
+  - It updates four times a second, in steps too small to see, rather than drawing the
+    sky at full rate for a minute and a half.
