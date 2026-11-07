@@ -1,8 +1,8 @@
 // The sky pass: everything drawn straight onto the full-screen canvas, back to
-// front. The stars (G1), the five naked-eye planets, a shower's meteors (6b), the
-// glow off the Moon's lit limb (F6), and the Moon itself, which the scene renders
-// into a box of its own first and this pass lays down at whole pixels (see
-// scene.js).
+// front. The stars (G1), with the fainter ones that come out as the eyes adjust
+// (6c), the five naked-eye planets, a shower's meteors (6b), the glow off the
+// Moon's lit limb (F6), and the Moon itself, which the scene renders into a box of
+// its own first and this pass lays down at whole pixels (see scene.js).
 //
 // Every shader here places its geometry in device pixels from uniforms, so the
 // pass needs no camera of its own, and nothing in it is depth-tested: each layer
@@ -58,6 +58,8 @@ uniform float pointerRadius;
 uniform int twinkleIndex;
 uniform float twinkleGain;
 uniform vec3 twinkleTint;
+// A layer's light: 1, but for the fainter stars as the eyes adjust
+uniform float fade;
 
 // Peak brightness, Gaussian width in CSS pixels, and depth layer; then the halo's
 // strength
@@ -83,7 +85,7 @@ void main() {
   // the still Moon by each star's distance behind it
   vec2 p = center + parallax * (1.0 - look.z) + focal * vec2(v.x, -v.y) / v.z;
 
-  float peak = look.x;
+  float peak = look.x * fade;
   float near = 1.0 - smoothstep(0.0, pointerRadius, distance(p, pointer.xy));
   peak *= 1.0 + ${POINTER_GAIN.toFixed(2)} * pointer.z * near * near;
   vec3 color = tint;
@@ -276,7 +278,7 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
   const starMaterial = (twinkles) => new ShaderMaterial({
     vertexShader: starVertex,
     fragmentShader: starFragment,
-    uniforms: { ...shared, twinkleIndex: { value: twinkles ? -1 : -2 } }
+    uniforms: { ...shared, twinkleIndex: { value: twinkles ? -1 : -2 }, fade: { value: 1 } }
   });
 
   let starPoints = null;
@@ -325,6 +327,9 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
   meteors.frustumCulled = false;
   meteors.visible = false;
   scene.add(meteors);
+
+  // The stars from magnitude 6 to 6.5 (6c), only once the eyes begin to adjust
+  let faintPoints = null;
 
   const glowMaterial = new ShaderMaterial({
     vertexShader: glowVertex,
@@ -419,6 +424,24 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
       meteorGeometry.setDrawRange(0, count * 6);
       meteors.visible = count > 0;
     },
+    // The stars from magnitude 6 to 6.5 (6c), added once, and how far they have come
+    // out (0-1)
+    addFaintStars(faint) {
+      if (faintPoints) return;
+      const geometry = new BufferGeometry();
+      pointAttributes(geometry, faint.count);
+      geometry.setAttribute('position', new Float32BufferAttribute(faint.directions, 3));
+      fillLooks(geometry, faint.magnitudes, faint.colorIndices);
+      const material = starMaterial(false);
+      material.uniforms.fade.value = 0;
+      faintPoints = new Points(geometry, material);
+      faintPoints.renderOrder = layer(material, 0.5);
+      faintPoints.frustumCulled = false;
+      scene.add(faintPoints);
+    },
+    setFaintStars(fade) {
+      if (faintPoints) faintPoints.material.uniforms.fade.value = fade;
+    },
     setGlow(strength, leanX, leanY) {
       glowMaterial.uniforms.strength.value = strength;
       glowMaterial.uniforms.lean.value.set(leanX, leanY);
@@ -437,6 +460,8 @@ export const createSky = ({ stars = null, starCount = 0 } = {}) => {
       planetMaterial.dispose();
       meteorGeometry.dispose();
       meteorMaterial.dispose();
+      faintPoints?.geometry.dispose();
+      faintPoints?.material.dispose();
       glow.geometry.dispose();
       glowMaterial.dispose();
       moon.geometry.dispose();
