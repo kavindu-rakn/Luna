@@ -12,19 +12,24 @@
 // It fetches the two catalogues (about 600 KB) into scripts/sky/source/, which git
 // ignores, then writes:
 //
-//   public/assets/sky/stars.bin   every star to magnitude 6, brightest first
-//   src/sky/boundaries.js         the boundary table, for naming the constellation
+//   public/assets/sky/stars.bin        every star to magnitude 6, brightest first
+//   public/assets/sky/stars-faint.bin  those from 6 to 6.5, the dark-sky limit, for
+//                                      "Your eyes adjust" (Phase 6c)
+//   src/sky/boundaries.js              the boundary table, for naming the
+//                                      constellation
 //
 // stars.bin holds 6 bytes a star, little-endian: right ascension (uint16, a full
 // turn in 65,536 steps, 20″ each), declination (int16, ±90° in ±32,767 steps),
-// V magnitude × 20 (int8) and B−V colour × 50 (int8). Positions are J2000. Proper
-// motion is left out: the fastest of these stars has moved about 2′ since 2000,
-// a fraction of a pixel on screen.
+// V magnitude × 20 (int8) and B−V colour × 50 (int8). stars-faint.bin is the same,
+// but holds V − 5 rather than V, which a byte holds only up to 6.35. Positions are
+// J2000. Proper motion is left out: the fastest of these stars has moved about 2′
+// since 2000, a fraction of a pixel on screen.
 
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
+import { FAINT_OFFSET } from '../../src/sky/stars.js';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const SOURCE = path.join(ROOT, 'scripts/sky/source');
@@ -33,16 +38,19 @@ const CDS = 'https://cdsarc.cds.unistra.fr/ftp/';
 // The faintest stars kept: about what the eye sees from a dark site, and around
 // 5,000 of them
 export const MAGNITUDE_LIMIT = 6;
+// And the faint file's: the limit a dark-adapted eye reaches under a dark sky, the
+// one meteor counts assume
+export const FAINT_LIMIT = 6.5;
 // Stars with no measured colour are drawn as the Sun's
 const DEFAULT_BV = 0.65;
 
-const fetchSource = async (remote, file) => {
+const fetchSource = async (url, file) => {
   const target = path.join(SOURCE, file);
   if (fs.existsSync(target)) return fs.readFileSync(target);
   fs.mkdirSync(SOURCE, { recursive: true });
-  console.log(`fetching ${remote} from CDS…`);
-  const response = await fetch(CDS + remote);
-  if (!response.ok) throw new Error(`${remote}: HTTP ${response.status}`);
+  console.log(`fetching ${url}…`);
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
   const data = Buffer.from(await response.arrayBuffer());
   fs.writeFileSync(target, data);
   return data;
@@ -67,14 +75,16 @@ const readStars = (text) => {
   return stars;
 };
 
-const packStars = (stars) => {
-  const kept = stars.filter((s) => s.vmag <= MAGNITUDE_LIMIT).sort((a, b) => a.vmag - b.vmag || a.hr - b.hr);
+// The stars fainter than `from` and no fainter than `to`, their magnitudes stored
+// less `offset`
+const packStars = (stars, from, to, offset = 0) => {
+  const kept = stars.filter((s) => s.vmag > from && s.vmag <= to).sort((a, b) => a.vmag - b.vmag || a.hr - b.hr);
   const buffer = Buffer.alloc(kept.length * 6);
   kept.forEach((s, i) => {
     const o = i * 6;
     buffer.writeUInt16LE(Math.round((s.ra / 360) * 65536) % 65536, o);
     buffer.writeInt16LE(Math.round((s.dec / 90) * 32767), o + 2);
-    buffer.writeInt8(Math.round(s.vmag * 20), o + 4);
+    buffer.writeInt8(Math.round((s.vmag - offset) * 20), o + 4);
     buffer.writeInt8(Math.max(-128, Math.min(127, Math.round(s.bv * 50))), o + 5);
   });
   return { buffer, count: kept.length };
@@ -106,19 +116,22 @@ export const BOUNDARIES = [${table}];
 };
 
 const run = async () => {
-  const catalogue = zlib.gunzipSync(await fetchSource('V/50/catalog.gz', 'bsc5-catalog.gz')).toString('latin1');
-  await fetchSource('V/50/ReadMe', 'bsc5-ReadMe');
-  const boundaries = (await fetchSource('VI/42/data.dat', 'boundaries-data.dat')).toString('latin1');
-  await fetchSource('VI/42/ReadMe', 'boundaries-ReadMe');
+  const catalogue = zlib.gunzipSync(await fetchSource(`${CDS}V/50/catalog.gz`, 'bsc5-catalog.gz')).toString('latin1');
+  await fetchSource(`${CDS}V/50/ReadMe`, 'bsc5-ReadMe');
+  const boundaries = (await fetchSource(`${CDS}VI/42/data.dat`, 'boundaries-data.dat')).toString('latin1');
+  await fetchSource(`${CDS}VI/42/ReadMe`, 'boundaries-ReadMe');
 
   const stars = readStars(catalogue);
-  const { buffer, count } = packStars(stars);
   fs.mkdirSync(path.join(ROOT, 'public/assets/sky'), { recursive: true });
-  fs.writeFileSync(path.join(ROOT, 'public/assets/sky/stars.bin'), buffer);
-  console.log(`stars.bin: ${count} of ${stars.length} stars, ${buffer.length} bytes (${zlib.brotliCompressSync(buffer).length} brotli)`);
+  for (const [file, from, to, offset] of [['stars.bin', -Infinity, MAGNITUDE_LIMIT, 0], ['stars-faint.bin', MAGNITUDE_LIMIT, FAINT_LIMIT, FAINT_OFFSET]]) {
+    const { buffer, count } = packStars(stars, from, to, offset);
+    fs.writeFileSync(path.join(ROOT, 'public/assets/sky', file), buffer);
+    console.log(`${file}: ${count} of ${stars.length} stars, ${buffer.length} bytes (${zlib.brotliCompressSync(buffer).length} brotli)`);
+  }
 
   fs.mkdirSync(path.join(ROOT, 'src/sky'), { recursive: true });
   console.log(`boundaries.js: ${writeBoundaries(boundaries)} rows`);
+
 };
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
