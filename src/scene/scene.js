@@ -14,8 +14,9 @@
 // Nothing renders unless something changed: a new view, a drag and the spin that
 // follows it, a reset, the settle after the first frame, a sharper texture
 // arriving, a resize, the sky sliding with the pointer or the phone's tilt, or a
-// star twinkling (at most fifteen times a second, and only now and then), or a
-// meteor crossing (on a shower's nights, for the second or so each burns). With
+// star twinkling (at most fifteen times a second, and only now and then), a
+// meteor crossing (on a shower's nights, for the second or so each burns), or the
+// eyes adjusting (a few steps a second, for a minute and a half). With
 // software WebGL (PageSpeed, blocklisted GPUs) a frame costs tens of
 // milliseconds, so a loop running at rest would hold its thread for the life of
 // the page.
@@ -39,7 +40,8 @@ import {
 import { createLunarMaterial } from './lunarMaterial.js';
 import { chooseTier, createTextureLoader, isSoftwareRendering, PIXEL_RATIO_CAP } from './textures.js';
 import { createSky, MAX_METEORS } from './sky.js';
-import { CATALOGUE_FILE, countBrighterThan, decodeStars } from '../sky/stars.js';
+import { CATALOGUE_FILE, countBrighterThan, decodeStars, FAINT_FILE, FAINT_OFFSET } from '../sky/stars.js';
+import { EARTHSHINE_GAIN, eyesAt } from '../sky/rewards.js';
 import { apply, focalLength, project, skyFrame, unitVector, zenithDirection } from '../sky/frame.js';
 import {
   directionAt,
@@ -196,16 +198,17 @@ const nextFrame = typeof requestAnimationFrame === 'function'
   ? (fn) => requestAnimationFrame(fn)
   : (fn) => setTimeout(() => fn(performance.now()), FRAME_MS);
 
-const loadStars = async (base) => {
+const loadStars = async (base, file = CATALOGUE_FILE, offset = 0) => {
   try {
-    const response = await fetch(base + CATALOGUE_FILE);
-    if (!response.ok) throw new Error(`${CATALOGUE_FILE}: HTTP ${response.status}`);
-    return decodeStars(await response.arrayBuffer());
+    const response = await fetch(base + file);
+    if (!response.ok) throw new Error(`${file}: HTTP ${response.status}`);
+    return decodeStars(await response.arrayBuffer(), offset);
   } catch {
     // The Moon is drawn without its stars rather than not at all
     return null;
   }
 };
+
 
 // Throws if no WebGL 2 context can be had on this canvas; the caller falls back
 export const createScene = async (canvas, options) => {
@@ -305,6 +308,17 @@ export const createScene = async (canvas, options) => {
   let meteorTimer = null;
   const flights = [];
 
+  // The eyes adjusting (6c), once the page says they have stayed: { start }
+  let eyes = null;
+  let eyesFrame = null;
+  // The Moon's night side: earthshine for the phase, times how far the eyes have
+  // adjusted
+  let earthshineLevel = 0;
+  let earthshineGain = 1;
+  const applyEarthshine = () => {
+    material.uniforms.earthshine.value.copy(EARTHSHINE_COLOR).multiplyScalar(earthshineLevel * earthshineGain);
+  };
+
   let ratioCap = PIXEL_RATIO_CAP[tier];
   // In CSS pixels: the canvas, and the Moon's area on it
   const layout = { width, height, dpr, moon: { ...area } };
@@ -394,7 +408,8 @@ export const createScene = async (canvas, options) => {
     // Earth's lit fraction seen from the Moon is the Moon's unlit fraction seen from
     // Earth: 1 at New Moon, 0 at Full. sunView's z is the cosine of the phase angle.
     const lit = (1 + sunDirection.z) / 2;
-    material.uniforms.earthshine.value.copy(EARTHSHINE_COLOR).multiplyScalar(EARTHSHINE_MAX * (1 - lit) ** EARTHSHINE_FALLOFF);
+    earthshineLevel = EARTHSHINE_MAX * (1 - lit) ** EARTHSHINE_FALLOFF;
+    applyEarthshine();
 
     // The glow, as glowStyle sets it for the page: leaning towards the bright limb
     const limb = Math.hypot(sunDirection.x, sunDirection.y);
@@ -701,6 +716,25 @@ export const createScene = async (canvas, options) => {
       if (flights.length) animating = true;
     }
 
+    // The eyes adjusting (6c): the fainter stars come out and the Moon's night side
+    // brightens, in steps four times a second, too small to see
+    if (eyes) {
+      const adjusted = eyesAt(Math.max(0, now - eyes.start) / 1000);
+      sky.setFaintStars(adjusted);
+      const gain = 1 + (EARTHSHINE_GAIN - 1) * adjusted;
+      if (Math.abs(gain - earthshineGain) > 0.002 || (adjusted === 1 && gain !== earthshineGain)) {
+        earthshineGain = gain;
+        applyEarthshine();
+        moonDirty = true;
+      }
+      if (adjusted < 1 && !eyesFrame) {
+        eyesFrame = setTimeout(() => {
+          eyesFrame = null;
+          invalidate();
+        }, 250);
+      }
+    }
+
     // The sky slides; the Moon stays where the page put it. Its box sits at whole
     // pixels, with the fraction rendered into it, so the Moon only renders again
     // when it changes, never because the stars moved.
@@ -827,6 +861,22 @@ export const createScene = async (canvas, options) => {
       scheduleMeteor();
       invalidate();
     },
+    // The page has been in view long enough (6c): the eyes begin to adjust. Once.
+    adjustEyes() {
+      if (eyes) return;
+      eyes = { start: performance.now() };
+      // The fainter stars come only now, and not on the low tier, which draws only
+      // the brightest
+      if (skyBase && tier !== 'low') {
+        loadStars(skyBase, FAINT_FILE, FAINT_OFFSET).then((faint) => {
+          if (faint && !disposed) {
+            sky.addFaintStars(faint);
+            invalidate();
+          }
+        });
+      }
+      invalidate();
+    },
     // The showers in the sky at the moment and place shown (meteorsInSky in
     // src/sky/showers.js), radiants in J2000 degrees; empty when there are none
     setMeteors({ showers: list }) {
@@ -938,6 +988,7 @@ export const createScene = async (canvas, options) => {
       clearTimeout(twinkleFrame);
       clearTimeout(fitTimer);
       clearTimeout(meteorTimer);
+      clearTimeout(eyesFrame);
       moon.geometry.dispose();
       material.uniforms.map.value?.dispose();
       material.uniforms.normalMap.value?.dispose();

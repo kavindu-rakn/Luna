@@ -16,6 +16,8 @@ const CUES = {
   'sheet-close': ['close', 7],
   chime: ['chime', 6],
   meteor: ['meteor', 6],
+  // A reward for staying (6c) beginning: the sound lab's quiet reward
+  reward: ['reward', 3],
   // A shower's meteor crossing the sky by itself: under anything a press sets off
   'sky-meteor': ['skyMeteor', 0],
   'switch-on': ['on', 5],
