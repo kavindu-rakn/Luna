@@ -6,6 +6,7 @@ import { createTiltReader } from '../utils/tilt';
 import { isOpenSky, moonRadius } from '../utils/skyTarget';
 import { cue } from '../audio/sound';
 import { readMoonHintSeen, storeMoonHintSeen } from '../utils/moonHint';
+import { STAY_S } from '../sky/rewards';
 
 // A little beyond the limb still counts, as it always has
 const HIT_SLOP = 1.05;
@@ -175,6 +176,24 @@ const MoonScene = ({ view, isReady, skyHost, tilt, onScene, onReady, onFail, onL
   useEffect(() => {
     sceneRef.current?.send('setView', { view: sceneView(view) });
   }, [view]);
+
+  // The reward for staying (6c): after three minutes with the page in view, the
+  // eyes begin to adjust, once a visit
+  useEffect(() => {
+    if (!isReady) return undefined;
+    let left = STAY_S * 1000;
+    let last = performance.now();
+    const timer = setInterval(() => {
+      const now = performance.now();
+      if (!document.hidden) left -= now - last;
+      last = now;
+      if (left > 0) return;
+      clearInterval(timer);
+      cue('reward');
+      sceneRef.current?.send('adjustEyes');
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isReady]);
 
   // A meteor shower's meteors (6b). The showers' code loads once the 3D sky is up,
   // and not at all under reduced motion, which has none.

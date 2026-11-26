@@ -4,11 +4,15 @@
 // The WebGL sky and the flat one drawn without WebGL both read it from here.
 
 export const CATALOGUE_FILE = 'stars.bin';
+// The stars from magnitude 6 to 6.5, for "Your eyes adjust" (Phase 6c), loaded
+// only when it begins. Their magnitudes are stored less this.
+export const FAINT_FILE = 'stars-faint.bin';
+export const FAINT_OFFSET = 5;
 const RECORD = 6;
 
 // Six bytes a star: RA as a uint16 turn, Dec as an int16 quarter-turn, V × 20 and
-// B−V × 50 as int8s
-export const decodeStars = (buffer) => {
+// B−V × 50 as int8s (V less `offset`)
+export const decodeStars = (buffer, offset = 0) => {
   const view = new DataView(buffer);
   const count = Math.floor(buffer.byteLength / RECORD);
   const directions = new Float32Array(count * 3);
@@ -21,7 +25,7 @@ export const decodeStars = (buffer) => {
     directions[i * 3] = Math.cos(dec) * Math.cos(ra);
     directions[i * 3 + 1] = Math.cos(dec) * Math.sin(ra);
     directions[i * 3 + 2] = Math.sin(dec);
-    magnitudes[i] = view.getInt8(o + 4) / 20;
+    magnitudes[i] = view.getInt8(o + 4) / 20 + offset;
     colorIndices[i] = view.getInt8(o + 5) / 50;
   }
   return { count, directions, magnitudes, colorIndices };
